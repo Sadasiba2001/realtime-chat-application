@@ -2,7 +2,7 @@ import axios from 'axios';
 import { storage } from '../utils/storage.utils';
 import { useAuthStore } from '../store/useAuthStore';
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+export const API_BASE_URL = import.meta.env.VITE_REMOTE_BACKEND_URL || '';
 export const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'wss://footwork-vessel-guide.ngrok-free.dev/ws';
 
 export const apiClient = axios.create({
