@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { MessageSquare, Lock } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { MessageSquare, Lock, Loader2 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { MessageBubble } from './MessageBubble';
 import { formatDateDivider } from '../../utils/date.utils';
@@ -12,12 +12,26 @@ interface MessageAreaProps {
 export const MessageArea: React.FC<MessageAreaProps> = ({
   inChatSearchMatchId,
 }) => {
-  const { activeConversation, activeMessages, currentUser, setReplyTo, theme } = useChat();
+  const {
+    activeConversation,
+    activeMessages,
+    currentUser,
+    setReplyTo,
+    theme,
+    loadMoreHistory,
+    isLoadingHistory,
+    hasMoreHistory,
+  } = useChat();
+
   const bottomRef = useRef<HTMLDivElement>(null);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const prevMessagesLengthRef = useRef<number>(0);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Only auto-scroll to bottom if new messages are appended, or on initial load
+    if (activeMessages.length > prevMessagesLengthRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    prevMessagesLengthRef.current = activeMessages.length;
   }, [activeMessages.length, activeConversation?.id]);
 
   if (!activeConversation) {
@@ -54,19 +68,25 @@ export const MessageArea: React.FC<MessageAreaProps> = ({
         </div>
       </div>
 
-      {/* Mock Cursor Pagination trigger */}
-      <div className="flex justify-center mb-4">
-        <button
-          onClick={() => {
-            setIsLoadingMore(true);
-            setTimeout(() => setIsLoadingMore(false), 600);
-          }}
-          disabled={isLoadingMore}
-          className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline bg-white/80 dark:bg-[#0f172a]/80 px-3 py-1 rounded-full shadow-xs"
-        >
-          {isLoadingMore ? 'Loading previous messages...' : 'Load previous messages'}
-        </button>
-      </div>
+      {/* Pagination History Trigger */}
+      {hasMoreHistory && (
+        <div className="flex justify-center mb-4">
+          <button
+            onClick={() => loadMoreHistory()}
+            disabled={isLoadingHistory}
+            className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline bg-white/80 dark:bg-[#0f172a]/80 px-3.5 py-1.5 rounded-full shadow-xs border border-gray-200/60 dark:border-gray-800/80 flex items-center gap-1.5 transition-all"
+          >
+            {isLoadingHistory ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Loading previous messages...</span>
+              </>
+            ) : (
+              'Load previous messages'
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Date Separators & Messages */}
       {activeMessages.map((msg, index) => {
@@ -74,8 +94,8 @@ export const MessageArea: React.FC<MessageAreaProps> = ({
         const showDateDivider =
           !prevMsg || formatDateDivider(prevMsg.createdAt) !== formatDateDivider(msg.createdAt);
 
-        const sender = activeConversation.participants.find((p) => p.id === msg.senderId);
-        const isOutgoing = msg.senderId === currentUser.id;
+        const sender = activeConversation.participants.find((p) => String(p.id) === String(msg.senderId));
+        const isOutgoing = String(msg.senderId) === String(currentUser.id);
 
         return (
           <React.Fragment key={msg.id}>

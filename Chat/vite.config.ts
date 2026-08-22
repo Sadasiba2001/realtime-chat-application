@@ -22,6 +22,12 @@ export default defineConfig(({ mode }) => {
             'ngrok-skip-browser-warning': 'true',
           },
         },
+        '/ws': {
+          target: target,
+          ws: true,
+          changeOrigin: true,
+          secure: false,
+        },
       },
     },
   };

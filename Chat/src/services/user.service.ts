@@ -12,7 +12,26 @@ class UserService {
   }
 
   async getAllUsers(): Promise<User[]> {
-    return simulateNetworkDelay([...this.users]);
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.AUTH.USERS);
+      const resData = response.data;
+      const results = resData?.data?.results || resData?.results || resData?.data || resData;
+      if (Array.isArray(results) && results.length > 0) {
+        return results.map((item: { id: string | number; name?: string; username?: string; avatar?: string; is_active?: boolean; about?: string; phone_number?: string; phone?: string; email?: string }) => ({
+          id: String(item.id),
+          name: item.name || item.username || 'User',
+          username: item.username,
+          avatar: item.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
+          status: item.is_active ? 'online' : 'offline',
+          about: item.about || 'Available',
+          phone: item.phone_number || item.phone || '',
+          email: item.email || '',
+        }));
+      }
+      return simulateNetworkDelay([...this.users]);
+    } catch {
+      return simulateNetworkDelay([...this.users]);
+    }
   }
 
   async searchUsers(query: string): Promise<User[]> {

@@ -9,6 +9,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         self.message_service = MessageService()
         self.user = None
         self.target_user_id = None
+        self.user_group = None
         self.group_name = None
 
     async def connect(self):
@@ -19,42 +20,45 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=4001)
             return
 
-        # 2. Extract target user id from URL kwargs
-        try:
-            target_id_param = self.scope.get("url_route", {}).get("kwargs", {}).get("user_id")
-            self.target_user_id = int(target_id_param)
-        except (TypeError, ValueError):
-            await self.close(code=4000)
-            return
+        # 2. Join user's personal channel group (for persistent user-level delivery)
+        self.user_group = f"user_{self.user.id}"
+        await self.channel_layer.group_add(self.user_group, self.channel_name)
 
-        # 3. Validate target user (cannot be self, must exist and be active)
-        try:
-            await database_sync_to_async(self.message_service.validate_target_user)(
-                target_user_id=self.target_user_id,
-                authenticated_user_id=self.user.id,
-            )
-        except ValueError:
-            await self.close(code=4004)
-            return
+        # 3. If target user id was provided in URL kwargs, validate and join conversation group
+        target_id_param = self.scope.get("url_route", {}).get("kwargs", {}).get("user_id")
+        if target_id_param is not None:
+            try:
+                self.target_user_id = int(target_id_param)
+            except (TypeError, ValueError):
+                await self.close(code=4000)
+                return
 
-        # 4. Compute deterministic group name: chat_<min_id>_<max_id>
-        smaller_id = min(self.user.id, self.target_user_id)
-        larger_id = max(self.user.id, self.target_user_id)
-        self.group_name = f"chat_{smaller_id}_{larger_id}"
+            try:
+                await database_sync_to_async(self.message_service.validate_target_user)(
+                    target_user_id=self.target_user_id,
+                    authenticated_user_id=self.user.id,
+                )
+            except ValueError:
+                await self.close(code=4004)
+                return
 
-        # 5. Join private conversation group
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
+            smaller_id = min(self.user.id, self.target_user_id)
+            larger_id = max(self.user.id, self.target_user_id)
+            self.group_name = f"chat_{smaller_id}_{larger_id}"
+            await self.channel_layer.group_add(self.group_name, self.channel_name)
 
-        # 6. Accept WebSocket connection
+        # 4. Accept WebSocket connection
         await self.accept()
 
-        # 7. Send connection event
+        # 5. Send connection event
         await self.send_json({
             "type": "connection",
             "message": "Connected successfully.",
         })
 
     async def disconnect(self, close_code):
+        if self.user_group:
+            await self.channel_layer.group_discard(self.user_group, self.channel_name)
         if self.group_name:
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
@@ -90,10 +94,34 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             })
             return
 
+        # If URL specified a target user ID, use it; otherwise use payload receiver_id
+        if self.target_user_id is not None:
+            receiver_id = self.target_user_id
+        else:
+            receiver_id = content.get("receiver_id") or content.get("target_user_id")
+
+        if receiver_id is None:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Receiver ID is required.",
+            })
+            return
+
+        try:
+            receiver_id = int(receiver_id)
+        except (TypeError, ValueError):
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Invalid receiver ID format.",
+            })
+            return
+
         try:
             message_data = await database_sync_to_async(self.message_service.send_message)(
                 sender=self.user,
-                receiver_id=self.target_user_id,
+                receiver_id=receiver_id,
                 content=raw_content,
             )
         except ValueError as exc:
@@ -111,9 +139,18 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             })
             return
 
-        # Broadcast message to private conversation group
+        # Broadcast to sender's user group
         await self.channel_layer.group_send(
-            self.group_name,
+            f"user_{self.user.id}",
+            {
+                "type": "chat.message",
+                "data": message_data,
+            },
+        )
+
+        # Broadcast to receiver's user group
+        await self.channel_layer.group_send(
+            f"user_{receiver_id}",
             {
                 "type": "chat.message",
                 "data": message_data,
@@ -124,18 +161,52 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         page = content.get("page", 1)
         page_size = content.get("page_size", MessageService.DEFAULT_PAGE_SIZE)
 
+        if self.target_user_id is not None:
+            target_user_id = self.target_user_id
+        else:
+            target_user_id = content.get("target_user_id") or content.get("receiver_id")
+
+        if target_user_id is None:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Target user ID is required for history.",
+            })
+            return
+
         try:
+            target_user_id = int(target_user_id)
+        except (TypeError, ValueError):
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Invalid target user ID format.",
+            })
+            return
+
+        try:
+            await database_sync_to_async(self.message_service.validate_target_user)(
+                target_user_id=target_user_id,
+                authenticated_user_id=self.user.id,
+            )
             history_data = await database_sync_to_async(
                 self.message_service.get_conversation_messages
             )(
                 user1_id=self.user.id,
-                user2_id=self.target_user_id,
+                user2_id=target_user_id,
                 page=page,
                 page_size=page_size,
             )
             await self.send_json({
                 "type": "history",
+                "target_user_id": target_user_id,
                 "data": history_data,
+            })
+        except ValueError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": str(exc),
             })
         except Exception:
             await self.send_json({
