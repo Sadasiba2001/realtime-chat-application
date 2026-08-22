@@ -71,7 +71,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const session = await authService.verifySession();
         if (session) {
           setSessionUser(session);
-          webSocketService.connect(session.token);
         }
       } catch (err: unknown) {
         console.error('Session verification failed:', err);
@@ -88,7 +87,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const session = await authService.login(credentials);
       setSessionUser(session);
-      webSocketService.connect(session.token);
     } catch (err: unknown) {
       const parsedError = parseErrorMessage(err, 'Invalid email or password');
       setError(parsedError);
@@ -104,7 +102,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const session = await authService.register(payload);
       setSessionUser(session);
-      webSocketService.connect(session.token);
     } catch (err: unknown) {
       const parsedError = parseErrorMessage(err, 'Registration failed. Please check your credentials.');
       setError(parsedError);

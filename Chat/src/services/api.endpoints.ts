@@ -4,5 +4,6 @@ export const API_ENDPOINTS = {
     LOGIN: '/api/v1/auth/login/',
     LOGOUT: '/api/v1/auth/logout/',
     SEARCH_USERS: '/api/v1/auth/users/search/',
+    USERS: '/api/v1/auth/users/',
   },
 } as const;

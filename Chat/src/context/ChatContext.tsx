@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type {
   User,
@@ -13,9 +13,19 @@ import type {
   CallLog,
   StatusItem,
 } from '../types/chat.types';
+import type {
+  BackendHistoryData,
+  BackendMessagePayload,
+  WSSocketStatus,
+} from '../types/websocket.types';
 import { userService } from '../services/user.service';
 import { chatService } from '../services/chat.service';
 import { messageService } from '../services/message.service';
+import { webSocketService } from '../services/websocket.service';
+import { storage } from '../utils/storage.utils';
+import { useAuthStore } from '../store/useAuthStore';
+import { formatMessageTime } from '../utils/date.utils';
+import { CURRENT_USER } from '../mock/users';
 import { MOCK_CALL_LOGS } from '../mock/calls';
 import { MOCK_STATUSES } from '../mock/status';
 
@@ -47,6 +57,9 @@ interface ChatContextType {
   mobileShowChat: boolean;
   activeModal: string | null;
   modalPayload: unknown;
+  socketStatus: WSSocketStatus;
+  isLoadingHistory: boolean;
+  hasMoreHistory: boolean;
 
   // Actions
   setActiveTab: (tab: ActiveTab) => void;
@@ -72,26 +85,36 @@ interface ChatContextType {
   setSearchQuery: (query: string) => void;
   setInChatSearchQuery: (query: string) => void;
   backToChatListMobile: () => void;
+  loadMoreHistory: () => Promise<void>;
 }
 
 export const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User>({
-    id: 'user_me',
-    name: 'Barsha Barik',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-    status: 'online',
-    about: 'Available | Standard response time < 5 mins 🚀',
-    phone: '+91 98765 43210',
-    email: 'barsha@example.com',
+  const storeUser = useAuthStore((state) => state.user);
+
+  const [currentUser, setCurrentUser] = useState<User>(() => {
+    const su = useAuthStore.getState().user;
+    if (su) {
+      return {
+        id: String(su.id),
+        name: su.name,
+        username: su.username,
+        avatar: su.avatar,
+        status: su.status || 'online',
+        about: su.about || '',
+        phone: su.phone || '',
+        email: su.email,
+      };
+    }
+    return { ...CURRENT_USER };
   });
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>('conv_rahul');
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({});
   const [activeTab, setActiveTab] = useState<ActiveTab>('chats');
-  const [theme, setTheme] = useState<ThemeMode>('dark');
+  const [theme, setTheme] = useState<ThemeMode>(storage.getTheme());
   const [searchQuery, setSearchQuery] = useState('');
   const [inChatSearchQuery, setInChatSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
@@ -100,13 +123,46 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [callLogs] = useState<CallLog[]>(MOCK_CALL_LOGS);
   const [statuses] = useState<StatusItem[]>(MOCK_STATUSES);
 
+  // WebSocket & Pagination State
+  const [socketStatus, setSocketStatus] = useState<WSSocketStatus>('disconnected');
+  const [historyPages, setHistoryPages] = useState<Record<string, number>>({});
+  const [hasMoreHistoryMap, setHasMoreHistoryMap] = useState<Record<string, boolean>>({});
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
   // Responsive & Modal state
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [modalPayload, setModalPayload] = useState<unknown>(null);
 
-  // Initialize Theme and data
+  const activeConversationIdRef = useRef<string | null>(activeConversationId);
+  activeConversationIdRef.current = activeConversationId;
+
+  const currentUserRef = useRef<User>(currentUser);
+  currentUserRef.current = currentUser;
+
+  const conversationsRef = useRef<Conversation[]>(conversations);
+  conversationsRef.current = conversations;
+
+  // Sync storeUser with currentUser
+  useEffect(() => {
+    if (storeUser) {
+      const updated: User = {
+        id: String(storeUser.id),
+        name: storeUser.name,
+        username: storeUser.username,
+        avatar: storeUser.avatar,
+        status: storeUser.status || 'online',
+        about: storeUser.about || '',
+        phone: storeUser.phone || '',
+        email: storeUser.email,
+      };
+      setCurrentUser(updated);
+      currentUserRef.current = updated;
+    }
+  }, [storeUser]);
+
+  // Theme synchronization
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') {
@@ -114,8 +170,10 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } else {
       root.classList.remove('dark');
     }
+    storage.setTheme(theme);
   }, [theme]);
 
+  // Responsive window resize listener
   useEffect(() => {
     const handleResize = () => {
       setIsMobileView(window.innerWidth < 768);
@@ -124,37 +182,258 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Helper to map backend message to frontend Message model
+  const mapBackendMessage = useCallback(
+    (backendMsg: BackendMessagePayload, targetConvId: string): Message => {
+      return {
+        id: String(backendMsg.id),
+        conversationId: targetConvId,
+        senderId: String(backendMsg.sender_id),
+        text: backendMsg.content,
+        timestamp: formatMessageTime(backendMsg.created_at),
+        status: 'delivered',
+        createdAt: backendMsg.created_at,
+      };
+    },
+    []
+  );
+
+  // Helper to resolve conversation ID from sender and receiver IDs
+  const resolveConversationIdForUsers = useCallback(
+    (senderId: string | number, receiverId: string | number): string => {
+      const sId = String(senderId);
+      const rId = String(receiverId);
+      const myId = String(currentUserRef.current.id);
+
+      const targetOtherId = sId === myId ? rId : sId;
+
+      // Find direct conversation matching targetOtherId
+      const found = conversationsRef.current.find(
+        (c) => c.type === 'direct' && c.participantIds.some((pId) => String(pId) === targetOtherId)
+      );
+
+      if (found) return found.id;
+      return `conv_${targetOtherId}`;
+    },
+    []
+  );
+
+  // Set up WebSocket global listeners
+  useEffect(() => {
+    const unsubStatus = webSocketService.on<WSSocketStatus>('SOCKET_STATUS', (status) => {
+      console.log('[ChatContext] Socket status changed to:', status);
+      setSocketStatus(status);
+    });
+
+    const unsubNewMessage = webSocketService.on<BackendMessagePayload>('NEW_MESSAGE', (payload) => {
+      console.log('[ChatContext] Real-time NEW_MESSAGE received:', payload);
+      const convId = resolveConversationIdForUsers(payload.sender_id, payload.receiver_id);
+      const newMsg = mapBackendMessage(payload, convId);
+
+      const myId = String(currentUserRef.current.id);
+      const otherId = String(payload.sender_id) === myId ? String(payload.receiver_id) : String(payload.sender_id);
+
+      setMessagesMap((prev) => {
+        const existingList = prev[convId] || [];
+        // Replace temporary optimistic message if matching text and sender
+        const optimisticIndex = existingList.findIndex(
+          (m) => m.id.startsWith('temp_') && m.senderId === String(payload.sender_id) && m.text === payload.content
+        );
+
+        if (optimisticIndex > -1) {
+          const updated = [...existingList];
+          updated[optimisticIndex] = newMsg;
+          return { ...prev, [convId]: updated };
+        }
+
+        // Prevent duplicate IDs
+        if (existingList.some((m) => m.id === newMsg.id)) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          [convId]: [...existingList, newMsg],
+        };
+      });
+
+      setConversations((prev) => {
+        const exists = prev.some((c) => c.id === convId);
+        if (exists) {
+          return prev.map((c) =>
+            c.id === convId
+              ? {
+                  ...c,
+                  lastMessage: newMsg,
+                  updatedAt: newMsg.createdAt || new Date().toISOString(),
+                }
+              : c
+          );
+        }
+
+        // Dynamically add new conversation to sidebar on incoming message
+        const newConversation: Conversation = {
+          id: convId,
+          type: 'direct',
+          participantIds: [myId, otherId],
+          participants: [
+            currentUserRef.current,
+            {
+              id: otherId,
+              name: `User ${otherId}`,
+              avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+              status: 'online',
+              about: 'Available',
+              phone: '',
+            },
+          ],
+          unreadCount: convId === activeConversationIdRef.current ? 0 : 1,
+          lastMessage: newMsg,
+          pinned: false,
+          muted: false,
+          createdAt: newMsg.createdAt || new Date().toISOString(),
+          updatedAt: newMsg.createdAt || new Date().toISOString(),
+        };
+
+        return [newConversation, ...prev];
+      });
+    });
+
+    const unsubHistory = webSocketService.on<BackendHistoryData>('HISTORY_LOADED', (payload) => {
+      console.log('[ChatContext] HISTORY_LOADED received:', payload);
+      setIsLoadingHistory(false);
+      const activeId = activeConversationIdRef.current;
+      if (!activeId) return;
+
+      const results = payload.results || [];
+      const formattedMsgs = results.map((item) => mapBackendMessage(item, activeId));
+
+      setMessagesMap((prev) => {
+        const existing = prev[activeId] || [];
+        const page = payload.page || 1;
+
+        if (page === 1) {
+          const existingById = new Map(existing.map((m) => [m.id, m]));
+          formattedMsgs.forEach((m) => existingById.set(m.id, m));
+          const merged = Array.from(existingById.values()).sort(
+            (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+          );
+          return { ...prev, [activeId]: merged };
+        } else {
+          const existingIds = new Set(existing.map((m) => m.id));
+          const olderUnique = formattedMsgs.filter((m) => !existingIds.has(m.id));
+          const merged = [...olderUnique, ...existing].sort(
+            (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+          );
+          return { ...prev, [activeId]: merged };
+        }
+      });
+
+      setHistoryPages((prev) => ({ ...prev, [activeId]: payload.page || 1 }));
+      setHasMoreHistoryMap((prev) => ({
+        ...prev,
+        [activeId]: (payload.page || 1) * (payload.page_size || 50) < payload.count,
+      }));
+
+      // Update last message in conversation list
+      if (formattedMsgs.length > 0) {
+        const latest = formattedMsgs[formattedMsgs.length - 1];
+        setConversations((prev) =>
+          prev.map((c) => (c.id === activeId ? { ...c, lastMessage: latest } : c))
+        );
+      }
+    });
+
+    return () => {
+      unsubStatus();
+      unsubNewMessage();
+      unsubHistory();
+    };
+  }, [mapBackendMessage, resolveConversationIdForUsers]);
+
+  // Load initial user & conversations from backend
   useEffect(() => {
     const loadInitialData = async () => {
-      const user = await userService.getCurrentUser();
-      setCurrentUser(user);
+      try {
+        const activeMyUser = currentUserRef.current;
+        const allUsers = await userService.getAllUsers();
 
-      const convs = await chatService.getConversations();
-      setConversations(convs);
+        // Build direct conversations from real backend registered users
+        const realUsers = allUsers.filter((u) => String(u.id) !== String(activeMyUser.id));
 
-      if (convs.length > 0) {
-        const initialId = convs[0].id;
-        const initialMsgs = await messageService.getMessagesByConversationId(initialId);
-        setMessagesMap((prev) => ({ ...prev, [initialId]: initialMsgs }));
+        let initialConversations: Conversation[] = [];
+
+        if (realUsers.length > 0) {
+          initialConversations = realUsers.map((user) => ({
+            id: `conv_${user.id}`,
+            type: 'direct',
+            participantIds: [String(activeMyUser.id), String(user.id)],
+            participants: [activeMyUser, user],
+            unreadCount: 0,
+            pinned: false,
+            muted: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }));
+        } else {
+          const fallbackConvs = await chatService.getConversations();
+          initialConversations = fallbackConvs;
+        }
+
+        setConversations(initialConversations);
+
+        if (initialConversations.length > 0 && !activeConversationIdRef.current) {
+          setActiveConversationId(initialConversations[0].id);
+        }
+      } catch (err) {
+        console.error('Failed to load initial chat data:', err);
       }
     };
+
     loadInitialData();
   }, []);
 
+  // Connect WebSocket whenever activeConversation changes
   useEffect(() => {
-    if (activeConversationId && !messagesMap[activeConversationId]) {
-      messageService.getMessagesByConversationId(activeConversationId).then((msgs) => {
-        setMessagesMap((prev) => ({ ...prev, [activeConversationId]: msgs }));
-      });
+    if (!activeConversationId) {
+      webSocketService.disconnect();
+      return;
     }
-    if (activeConversationId) {
-      chatService.markAsRead(activeConversationId).then(() => {
-        setConversations((prev) =>
-          prev.map((c) => (c.id === activeConversationId ? { ...c, unreadCount: 0 } : c))
-        );
-      });
+
+    const conv = conversations.find((c) => c.id === activeConversationId);
+    if (!conv) return;
+
+    if (conv.type === 'direct') {
+      const otherUser = conv.participants.find((p) => String(p.id) !== String(currentUser.id));
+      const targetUserId = otherUser ? otherUser.id : conv.participantIds.find((id) => String(id) !== String(currentUser.id));
+      const token = storage.getAuthToken();
+
+      if (targetUserId && token) {
+        let cleanTargetId: string | number = targetUserId;
+        const numMatch = String(targetUserId).match(/\d+/);
+        if (numMatch) {
+          cleanTargetId = numMatch[0];
+        }
+
+        console.log(`[ChatContext] Connecting WebSocket to target user: ${cleanTargetId}`);
+        webSocketService.connect(cleanTargetId, token);
+
+        // Fetch conversation history via WebSocket
+        setTimeout(() => {
+          webSocketService.fetchHistory(1, 50);
+        }, 150);
+      }
+    } else {
+      webSocketService.disconnect();
     }
-  }, [activeConversationId, messagesMap]);
+
+    // Mark as read
+    chatService.markAsRead(activeConversationId).then(() => {
+      setConversations((prev) =>
+        prev.map((c) => (c.id === activeConversationId ? { ...c, unreadCount: 0 } : c))
+      );
+    });
+  }, [activeConversationId, conversations, currentUser.id]);
 
   const selectConversation = (id: string | null) => {
     setActiveConversationId(id);
@@ -169,20 +448,47 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setMobileShowChat(false);
   };
 
+  const loadMoreHistory = async () => {
+    if (!activeConversationId || isLoadingHistory) return;
+
+    const conv = conversations.find((c) => c.id === activeConversationId);
+    if (!conv || conv.type !== 'direct') return;
+
+    const currentPage = historyPages[activeConversationId] || 1;
+    const nextPage = currentPage + 1;
+
+    setIsLoadingHistory(true);
+    const sent = webSocketService.fetchHistory(nextPage, 50);
+    if (!sent) {
+      setIsLoadingHistory(false);
+    }
+  };
+
   const sendMessage = async (text: string, attachments?: Attachment[]) => {
     if (!activeConversationId) return;
 
-    const newMsg = await messageService.sendMessage(
-      activeConversationId,
-      currentUser.id,
-      text,
+    const activeConv = conversations.find((c) => c.id === activeConversationId);
+    const trimmed = text.trim();
+    if (!trimmed && (!attachments || attachments.length === 0)) return;
+
+    const isSocketOpen = webSocketService.isConnected();
+
+    // Optimistic UI message display
+    const optimisticMsg: Message = {
+      id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      conversationId: activeConversationId,
+      senderId: String(currentUser.id),
+      text: trimmed,
+      timestamp: formatMessageTime(new Date().toISOString()),
+      status: isSocketOpen ? 'delivered' : 'sent',
       attachments,
-      replyingToMessage || undefined
-    );
+      replyTo: replyingToMessage || undefined,
+      createdAt: new Date().toISOString(),
+    };
 
     setMessagesMap((prev) => ({
       ...prev,
-      [activeConversationId]: [...(prev[activeConversationId] || []), newMsg],
+      [activeConversationId]: [...(prev[activeConversationId] || []), optimisticMsg],
     }));
 
     setConversations((prev) =>
@@ -190,7 +496,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         c.id === activeConversationId
           ? {
               ...c,
-              lastMessage: newMsg,
+              lastMessage: optimisticMsg,
               updatedAt: new Date().toISOString(),
             }
           : c
@@ -199,42 +505,23 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     setReplyingToMessage(null);
 
-    const activeConv = conversations.find((c) => c.id === activeConversationId);
-    if (activeConv && activeConv.type === 'direct') {
-      const otherUser = activeConv.participants.find((p) => p.id !== currentUser.id);
-      if (otherUser) {
-        setTimeout(async () => {
-          const replies = [
-            "Got it! Thanks for sharing.",
-            "Sounds good, I will check it out shortly 👍",
-            "Awesome! Let me review this.",
-            "Perfect, let's keep moving forward!",
-          ];
-          const randomReply = replies[Math.floor(Math.random() * replies.length)];
-          const mockIncoming = await messageService.sendMessage(
-            activeConversationId,
-            otherUser.id,
-            randomReply
-          );
+    // Send over WebSocket if direct chat
+    if (activeConv?.type === 'direct' && isSocketOpen && trimmed) {
+      console.log('[ChatContext] Dispatching real message via WebSocket:', trimmed);
+      webSocketService.sendMessage(trimmed);
+      return;
+    }
 
-          setMessagesMap((prev) => ({
-            ...prev,
-            [activeConversationId]: [...(prev[activeConversationId] || []), mockIncoming],
-          }));
-
-          setConversations((prev) =>
-            prev.map((c) =>
-              c.id === activeConversationId
-                ? {
-                    ...c,
-                    lastMessage: mockIncoming,
-                    updatedAt: new Date().toISOString(),
-                  }
-                : c
-            )
-          );
-        }, 2500);
-      }
+    // Fallback send via MessageService
+    if (!isSocketOpen) {
+      console.warn('[ChatContext] WebSocket not open. Message saved locally.');
+      await messageService.sendMessage(
+        activeConversationId,
+        currentUser.id,
+        trimmed,
+        attachments,
+        replyingToMessage || undefined
+      );
     }
   };
 
@@ -352,6 +639,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId) || null;
   const activeMessages = activeConversationId ? messagesMap[activeConversationId] || [] : [];
+  const hasMoreHistory = activeConversationId ? hasMoreHistoryMap[activeConversationId] ?? false : false;
 
   return (
     <ChatContext.Provider
@@ -374,6 +662,9 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         mobileShowChat,
         activeModal,
         modalPayload,
+        socketStatus,
+        isLoadingHistory,
+        hasMoreHistory,
         setActiveTab,
         selectConversation,
         sendMessage,
@@ -397,6 +688,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setSearchQuery,
         setInChatSearchQuery,
         backToChatListMobile,
+        loadMoreHistory,
       }}
     >
       {children}
