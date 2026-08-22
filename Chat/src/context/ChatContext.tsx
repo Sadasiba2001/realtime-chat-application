@@ -18,6 +18,7 @@ import { chatService } from '../services/chat.service';
 import { messageService } from '../services/message.service';
 import { MOCK_CALL_LOGS } from '../mock/calls';
 import { MOCK_STATUSES } from '../mock/status';
+import { storage } from '../utils/storage.utils';
 
 export type FilterCategory = 'all' | 'unread' | 'favorites' | 'groups';
 
@@ -91,7 +92,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [activeConversationId, setActiveConversationId] = useState<string | null>('conv_rahul');
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({});
   const [activeTab, setActiveTab] = useState<ActiveTab>('chats');
-  const [theme, setTheme] = useState<ThemeMode>('dark');
+  const [theme, setTheme] = useState<ThemeMode>(() => storage.getTheme());
   const [searchQuery, setSearchQuery] = useState('');
   const [inChatSearchQuery, setInChatSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
@@ -114,6 +115,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } else {
       root.classList.remove('dark');
     }
+    storage.setTheme(theme);
   }, [theme]);
 
   useEffect(() => {
