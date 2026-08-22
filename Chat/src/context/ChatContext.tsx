@@ -144,6 +144,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const conversationsRef = useRef<Conversation[]>(conversations);
   conversationsRef.current = conversations;
 
+  const allUsersRef = useRef<User[]>([]);
+
   // Sync storeUser with currentUser and ensure user-level WebSocket is connected
   useEffect(() => {
     if (storeUser) {
@@ -268,21 +270,21 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         // If conversation not yet present in list, dynamically add it
+        // If conversation not yet present in list, dynamically add it
+        const knownOtherUser = allUsersRef.current.find((u) => String(u.id) === String(otherId)) || {
+          id: otherId,
+          name: `User ${otherId}`,
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          status: 'online',
+          about: 'Available',
+          phone: '',
+        };
+
         const newConversation: Conversation = {
           id: convId,
           type: 'direct',
           participantIds: [myId, otherId],
-          participants: [
-            currentUserRef.current,
-            {
-              id: otherId,
-              name: `User ${otherId}`,
-              avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-              status: 'online',
-              about: 'Available',
-              phone: '',
-            },
-          ],
+          participants: [currentUserRef.current, knownOtherUser],
           unreadCount: isCurrentActive ? 0 : (String(payload.sender_id) !== myId ? 1 : 0),
           lastMessage: newMsg,
           pinned: false,
@@ -356,9 +358,22 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         const activeMyUser = currentUserRef.current;
         const allUsers = await userService.getAllUsers();
+        allUsersRef.current = allUsers;
 
-        // Build direct conversations from real backend registered users
-        const realUsers = allUsers.filter((u) => String(u.id) !== String(activeMyUser.id));
+        // Build direct conversations, excluding self-chats (by ID and email)
+        const realUsers = allUsers.filter((u) => {
+          const uId = String(u.id);
+          const myId = String(activeMyUser.id);
+          const storeId = storeUser ? String(storeUser.id) : null;
+          const myEmail = activeMyUser.email?.toLowerCase();
+          const storeEmail = storeUser?.email?.toLowerCase();
+          const uEmail = u.email?.toLowerCase();
+
+          if (uId === myId || (storeId && uId === storeId)) return false;
+          if (myEmail && uEmail && myEmail === uEmail) return false;
+          if (storeEmail && uEmail && storeEmail === uEmail) return false;
+          return true;
+        });
 
         let initialConversations: Conversation[] = [];
 
@@ -374,6 +389,11 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           }));
+
+          // Fetch message history for each real user
+          realUsers.forEach((user) => {
+            webSocketService.fetchHistory(user.id, 1, 50);
+          });
         } else {
           const fallbackConvs = await chatService.getConversations();
           initialConversations = fallbackConvs;
@@ -381,12 +401,11 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         setConversations(initialConversations);
 
-        if (initialConversations.length > 0 && !activeConversationIdRef.current) {
-          const firstId = initialConversations[0].id;
-          setActiveConversationId(firstId);
-
-          const firstConv = initialConversations[0];
-          const targetId = getTargetUserIdFromConversation(activeMyUser.id, firstConv.participantIds);
+        // Auto select first conversation ONLY IF it has messages
+        const firstWithMessages = initialConversations.find((c) => !!c.lastMessage);
+        if (firstWithMessages && !activeConversationIdRef.current) {
+          setActiveConversationId(firstWithMessages.id);
+          const targetId = getTargetUserIdFromConversation(activeMyUser.id, firstWithMessages.participantIds);
           if (targetId) {
             webSocketService.fetchHistory(targetId, 1, 50);
           }
@@ -397,7 +416,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     loadInitialData();
-  }, []);
+  }, [storeUser]);
 
   // Fetch message history when switching conversations (without reconnecting WebSocket)
   const selectConversation = (id: string | null) => {
