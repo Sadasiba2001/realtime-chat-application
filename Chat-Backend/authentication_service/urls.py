@@ -7,6 +7,7 @@ from authentication_service.controller import (
     token_verify,
     get_users,
     get_user_by_id,
+    search_users,
 )
 
 urlpatterns = [
@@ -15,6 +16,7 @@ urlpatterns = [
     path("logout/", logout, name="logout"),
     path("token/refresh/", token_refresh, name="token_refresh"),
     path("token/verify/", token_verify, name="token_verify"),
+    path("users/search/", search_users, name="search_users"),
     path("users/", get_users, name="get_users"),
     path("users/<int:user_id>/", get_user_by_id, name="get_user_by_id"),
 ]

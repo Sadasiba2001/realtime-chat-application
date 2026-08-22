@@ -7,6 +7,10 @@ from .authentication_controller import (
     get_users,
     get_user_by_id,
 )
+from .user_controller import (
+    search_users,
+    UserSearchPagination,
+)
 
 __all__ = [
     "register",
@@ -16,4 +20,6 @@ __all__ = [
     "token_verify",
     "get_users",
     "get_user_by_id",
+    "search_users",
+    "UserSearchPagination",
 ]

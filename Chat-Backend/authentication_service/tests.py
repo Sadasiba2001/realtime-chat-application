@@ -270,3 +270,228 @@ class AuthenticationAPITests(APITestCase):
         self.assertTrue(response.data["status"])
         self.assertEqual(response.data["data"]["email"], "detail.auth@example.com")
         self.assertNotIn("password", response.data["data"])
+
+
+@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
+class UserSearchAPITests(APITestCase):
+    def setUp(self):
+        self.search_url = "/api/v1/auth/users/search/"
+
+        # Authenticated user
+        self.current_user = User.objects.create_user(
+            email="current.user@example.com",
+            username="currentuser",
+            name="Current User",
+            phone_number="+919999999999",
+            password="Password@123",
+        )
+        self.access_token = str(RefreshToken.for_user(self.current_user).access_token)
+
+        # Other test users
+        self.user_rahul_sharma = User.objects.create_user(
+            email="rahul.sharma@example.com",
+            username="rahulsharma",
+            name="Rahul Sharma",
+            phone_number="+919876543210",
+            password="Password@123",
+        )
+        self.user_rahul_reddy = User.objects.create_user(
+            email="rahul.reddy@example.com",
+            username="rahulreddy",
+            name="Rahul Reddy",
+            phone_number="+919845612370",
+            password="Password@123",
+        )
+        self.user_ananya = User.objects.create_user(
+            email="ananya.iyer@example.com",
+            username="ananyaiyer",
+            name="Ananya Iyer",
+            phone_number="+919812345678",
+            password="Password@123",
+        )
+        self.inactive_user = User.objects.create_user(
+            email="inactive.rahul@example.com",
+            username="inactiverahul",
+            name="Inactive Rahul",
+            phone_number="+919876000000",
+            password="Password@123",
+            is_active=False,
+        )
+
+    # 1. Authentication Tests
+    def test_search_unauthenticated_fails(self):
+        response = self.client.get(f"{self.search_url}?q=rahul")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_search_invalid_jwt_fails(self):
+        self.client.credentials(HTTP_AUTHORIZATION="Bearer invalid.token.here")
+        response = self.client.get(f"{self.search_url}?q=rahul")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_search_valid_jwt_success(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        response = self.client.get(f"{self.search_url}?q=rahul")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["status"])
+        self.assertEqual(response.data["message"], "Users retrieved successfully.")
+
+    # 2. Query Validation Tests
+    def test_search_missing_query_param_fails(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        response = self.client.get(self.search_url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data,
+            {
+                "status": False,
+                "message": "Search query is required.",
+            },
+        )
+
+    def test_search_empty_query_param_fails(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        response = self.client.get(f"{self.search_url}?q=")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data,
+            {
+                "status": False,
+                "message": "Search query is required.",
+            },
+        )
+
+    def test_search_whitespace_query_param_fails(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        response = self.client.get(f"{self.search_url}?q=   ")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data,
+            {
+                "status": False,
+                "message": "Search query is required.",
+            },
+        )
+
+    # 3. Search Matching Tests
+    def test_search_by_username_partial(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        response = self.client.get(f"{self.search_url}?q=rahul")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data["data"]["results"]
+        self.assertEqual(response.data["data"]["count"], 2)
+        self.assertEqual(len(results), 2)
+        # Deterministic ordering: rahulreddy before rahulsharma
+        self.assertEqual(results[0]["username"], "rahulreddy")
+        self.assertEqual(results[1]["username"], "rahulsharma")
+
+    def test_search_by_email_partial(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        response = self.client.get(f"{self.search_url}?q=ananya.iyer")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data["data"]["results"]
+        self.assertEqual(response.data["data"]["count"], 1)
+        self.assertEqual(results[0]["username"], "ananyaiyer")
+        self.assertEqual(results[0]["name"], "Ananya Iyer")
+
+    def test_search_by_phone_number_partial(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        response = self.client.get(f"{self.search_url}?q=987654")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data["data"]["results"]
+        self.assertEqual(response.data["data"]["count"], 1)
+        self.assertEqual(results[0]["username"], "rahulsharma")
+
+    def test_search_case_insensitivity(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        response = self.client.get(f"{self.search_url}?q=RAHUL")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data["data"]["results"]
+        self.assertEqual(response.data["data"]["count"], 2)
+        usernames = [u["username"] for u in results]
+        self.assertIn("rahulreddy", usernames)
+        self.assertIn("rahulsharma", usernames)
+
+    # 4. Exclusion Tests
+    def test_search_excludes_current_authenticated_user(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        # Search for currentuser
+        response = self.client.get(f"{self.search_url}?q=currentuser")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["data"]["count"], 0)
+        self.assertEqual(response.data["data"]["results"], [])
+
+    def test_search_excludes_inactive_users(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        response = self.client.get(f"{self.search_url}?q=inactive")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["data"]["count"], 0)
+        self.assertEqual(response.data["data"]["results"], [])
+
+    # 5. Empty Results
+    def test_search_no_matches_returns_empty_list(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        response = self.client.get(f"{self.search_url}?q=nonexistent_query_xyz")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["status"])
+        self.assertEqual(response.data["message"], "Users retrieved successfully.")
+        self.assertEqual(response.data["data"]["count"], 0)
+        self.assertEqual(response.data["data"]["results"], [])
+
+    # 6. Response Fields Security
+    def test_search_response_exposes_only_safe_fields(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        response = self.client.get(f"{self.search_url}?q=rahulsharma")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        result = response.data["data"]["results"][0]
+
+        # Allowed fields
+        self.assertEqual(set(result.keys()), {"id", "name", "username"})
+        self.assertEqual(result["name"], "Rahul Sharma")
+        self.assertEqual(result["username"], "rahulsharma")
+
+        # Forbidden fields
+        forbidden_fields = [
+            "password",
+            "password_hash",
+            "email",
+            "phone_number",
+            "is_superuser",
+            "is_staff",
+            "role",
+            "is_active",
+        ]
+        for field in forbidden_fields:
+            self.assertNotIn(field, result)
+
+    # 7. Pagination Tests
+    def test_search_pagination(self):
+        # Create 15 matching users
+        for i in range(15):
+            User.objects.create_user(
+                email=f"searchtest{i:02d}@example.com",
+                username=f"searchtest{i:02d}",
+                name=f"Search Test {i:02d}",
+                password="Password@123",
+            )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+
+        # Page 1, page_size 10
+        res_page1 = self.client.get(f"{self.search_url}?q=searchtest&page=1&page_size=10")
+        self.assertEqual(res_page1.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_page1.data["data"]["count"], 15)
+        self.assertEqual(len(res_page1.data["data"]["results"]), 10)
+        self.assertEqual(res_page1.data["data"]["results"][0]["username"], "searchtest00")
+
+        # Page 2, page_size 10
+        res_page2 = self.client.get(f"{self.search_url}?q=searchtest&page=2&page_size=10")
+        self.assertEqual(res_page2.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res_page2.data["data"]["results"]), 5)
+        self.assertEqual(res_page2.data["data"]["results"][0]["username"], "searchtest10")
+
+        # Max page_size cap at 50
+        res_max = self.client.get(f"{self.search_url}?q=searchtest&page_size=100")
+        self.assertEqual(res_max.status_code, status.HTTP_200_OK)
+        # Should return all 15 as max page_size is 50
+        self.assertEqual(len(res_max.data["data"]["results"]), 15)
+

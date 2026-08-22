@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { apiClient, simulateNetworkDelay } from './api.client';
 import { API_ENDPOINTS } from './api.endpoints';
 import { CURRENT_USER } from '../mock/users';
+import { userService } from './user.service';
 
 const parseJwt = (token: string): Record<string, unknown> | null => {
   try {
@@ -180,6 +181,10 @@ class AuthService {
     };
 
     return simulateNetworkDelay(mockSession);
+  }
+
+  async searchUsers(query: string) {
+    return userService.searchUsers(query);
   }
 }
 
