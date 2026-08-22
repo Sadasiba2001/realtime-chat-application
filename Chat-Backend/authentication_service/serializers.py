@@ -49,3 +49,14 @@ class UserResponseSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = fields
+
+
+class UserSearchResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "name",
+            "username",
+        ]
+        read_only_fields = fields

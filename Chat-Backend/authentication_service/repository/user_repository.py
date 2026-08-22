@@ -1,4 +1,5 @@
 from typing import Optional
+from django.db.models import Q, QuerySet
 from authentication_service.models import User, UserRole
 
 
@@ -47,7 +48,7 @@ class UserRepository:
         email: str,
         phone_number: str = "",
         password: str = None,
-        role: str = UserRole.NORMAL_USER
+        role: str = UserRole.NORMAL_USER,
     ) -> User:
         return User.objects.create_user(
             email=email,
@@ -55,5 +56,18 @@ class UserRepository:
             name=name,
             phone_number=phone_number,
             password=password,
-            role=role
+            role=role,
+        )
+
+    @staticmethod
+    def search_users(query: str, exclude_user_id: int) -> QuerySet[User]:
+        return (
+            User.objects.filter(is_active=True)
+            .exclude(id=exclude_user_id)
+            .filter(
+                Q(username__icontains=query)
+                | Q(email__icontains=query)
+                | Q(phone_number__icontains=query)
+            )
+            .order_by("username")
         )
