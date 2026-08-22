@@ -9,7 +9,6 @@ export interface User {
   about: string;
   phone: string;
   email?: string;
-  username?: string;
   lastSeen?: string;
 }
 

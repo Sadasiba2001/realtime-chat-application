@@ -28,7 +28,6 @@ import { getDirectConversationId, getTargetUserIdFromConversation } from '../uti
 import { CURRENT_USER } from '../mock/users';
 import { MOCK_CALL_LOGS } from '../mock/calls';
 import { MOCK_STATUSES } from '../mock/status';
-import { storage } from '../utils/storage.utils';
 
 export type FilterCategory = 'all' | 'unread' | 'favorites' | 'groups';
 
