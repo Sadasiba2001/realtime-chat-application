@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Users, Check } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { useChat } from '../../context/ChatContext';
 import { MOCK_USERS } from '../../mock/users';
+import { userService } from '../../services/user.service';
 import { Avatar } from '../common/Avatar';
 import type { User } from '../../types/chat.types';
 
@@ -12,12 +13,36 @@ export const NewChatModal: React.FC = () => {
   const [isGroupMode, setIsGroupMode] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<User[]>([]);
+  const [searchResults, setSearchResults] = useState<User[]>(MOCK_USERS);
+
+  useEffect(() => {
+    let isMounted = true;
+    userService
+      .searchUsers(search)
+      .then((users) => {
+        if (isMounted) setSearchResults(users);
+      })
+      .catch(() => {
+        if (isMounted) {
+          const q = search.toLowerCase().trim();
+          const filtered = MOCK_USERS.filter(
+            (u) =>
+              u.name.toLowerCase().includes(q) ||
+              (u as { username?: string }).username?.toLowerCase().includes(q) ||
+              u.phone.toLowerCase().includes(q) ||
+              (u.email && u.email.toLowerCase().includes(q))
+          );
+          setSearchResults(filtered);
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [search]);
 
   if (activeModal !== 'new_chat') return null;
 
-  const contacts = MOCK_USERS.filter(
-    (u: User) => u.id !== currentUser.id && u.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const contacts = searchResults.filter((u: User) => u.id !== currentUser.id);
 
   const toggleSelectMember = (user: User) => {
     if (selectedMembers.some((m) => m.id === user.id)) {
