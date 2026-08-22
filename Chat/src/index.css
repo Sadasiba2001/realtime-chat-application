@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+
 @layer base {
   :root {
     --bg-primary: #f0f7ff;

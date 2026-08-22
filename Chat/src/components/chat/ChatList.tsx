@@ -59,6 +59,9 @@ export const ChatList: React.FC = () => {
   }, [searchQuery]);
 
   const filteredConversations = conversations.filter((c) => {
+    // Only display conversations that have messages or are currently active
+    if (!c.lastMessage && c.id !== activeConversationId) return false;
+
     if (filterCategory === 'unread' && c.unreadCount === 0) return false;
     if (filterCategory === 'favorites' && !c.pinned) return false;
     if (filterCategory === 'groups' && c.type !== 'group') return false;
