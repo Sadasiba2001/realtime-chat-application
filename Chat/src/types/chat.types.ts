@@ -12,7 +12,7 @@ export interface User {
   lastSeen?: string;
 }
 
-export type MessageStatus = 'sent' | 'delivered' | 'read';
+export type MessageStatus = 'sent' | 'delivered' | 'read' | 'error';
 
 export type AttachmentType = 'image' | 'video' | 'document' | 'audio' | 'location' | 'contact';
 
