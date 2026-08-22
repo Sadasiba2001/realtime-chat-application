@@ -42,12 +42,16 @@ export const AuthPage: React.FC = () => {
 
       <div className="w-full max-w-md bg-white dark:bg-[#0f172a] rounded-3xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-800 animate-fade-in max-h-[92vh] flex flex-col">
         {/* Compact Top Header Card */}
-        <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-800 px-6 py-4 text-white text-center relative flex-shrink-0 overflow-hidden">
-          <div className="absolute -right-6 -bottom-6 w-28 h-28 bg-white/10 rounded-full blur-xl pointer-events-none" />
-          <div className="inline-flex items-center justify-center mb-1 transition-transform hover:scale-105">
-            <img src={appLogo} alt="Logo" className="w-14 h-14 object-contain drop-shadow-md" />
+        <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-800 px-6 py-3 text-white text-center relative flex-shrink-0 overflow-hidden">
+          <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none" />
+          <div className="inline-flex items-center justify-center transition-transform hover:scale-105">
+            <img
+              src={appLogo}
+              alt="Logo"
+              className="w-36 h-36 -my-8 object-contain drop-shadow-lg scale-125"
+            />
           </div>
-          <h1 className="text-xl font-bold tracking-tight">SB Chat Web Pro</h1>
+          <h1 className="text-lg font-bold tracking-tight">SB Chat Web Pro</h1>
           <p className="text-[11px] text-sky-100 mt-0.5 max-w-xs mx-auto">
             Real-time scalable messaging system
           </p>
@@ -58,21 +62,19 @@ export const AuthPage: React.FC = () => {
           <div className="flex bg-gray-100 dark:bg-[#1e293b] p-1 rounded-2xl mb-4 text-xs font-semibold">
             <button
               onClick={() => setIsLoginView(true)}
-              className={`flex-1 py-2 rounded-xl transition-all ${
-                isLoginView
-                  ? 'bg-white dark:bg-[#0f172a] text-sky-600 dark:text-sky-400 shadow-xs'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              }`}
+              className={`flex-1 py-2 rounded-xl transition-all ${isLoginView
+                ? 'bg-white dark:bg-[#0f172a] text-sky-600 dark:text-sky-400 shadow-xs'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
             >
               Sign In
             </button>
             <button
               onClick={() => setIsLoginView(false)}
-              className={`flex-1 py-2 rounded-xl transition-all ${
-                !isLoginView
-                  ? 'bg-white dark:bg-[#0f172a] text-sky-600 dark:text-sky-400 shadow-xs'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              }`}
+              className={`flex-1 py-2 rounded-xl transition-all ${!isLoginView
+                ? 'bg-white dark:bg-[#0f172a] text-sky-600 dark:text-sky-400 shadow-xs'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
             >
               Create Account
             </button>
