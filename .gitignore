@@ -1,0 +1,178 @@
+# ============================================================
+# Python / Django Backend
+# ============================================================
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python packaging
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+
+# Django static/media files
+staticfiles/
+media/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Django migrations
+# NOTE: Do NOT ignore migrations in a real Django project.
+# migrations/
+# */migrations/
+
+
+# ============================================================
+# React / Node.js Frontend
+# ============================================================
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Vite
+.vite/
+
+# Cache
+.cache/
+.parcel-cache/
+.turbo/
+
+
+# ============================================================
+# IDE / Editors
+# ============================================================
+
+.vscode/
+.idea/
+
+# VS Code
+*.code-workspace
+
+# JetBrains
+*.iml
+
+
+# ============================================================
+# Operating System
+# ============================================================
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+
+
+# ============================================================
+# Logs
+# ============================================================
+
+*.log
+logs/
+
+
+# ============================================================
+# Temporary / Backup Files
+# ============================================================
+
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.backup
+
+
+# ============================================================
+# Secrets / Credentials
+# ============================================================
+
+*.pem
+*.key
+*.crt
+
+# Local configuration
+config.local.*
+settings.local.*
+
+
+# ============================================================
+# Database / Local Development
+# ============================================================
+
+*.sqlite
+*.sqlite3
+*.sqlite3-journal
+
+
+# ============================================================
+# Docker
+# ============================================================
+
+# Do NOT ignore Dockerfile or docker-compose files.
+# Only ignore local Docker data if you create it.
+.docker/
+
+
+# ============================================================
+# Test / Coverage
+# ============================================================
+
+coverage/
+.nyc_output/
+
+
+# ============================================================
+# OS / Misc
+# ============================================================
+
+*.pid
+*.seed
