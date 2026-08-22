@@ -9,7 +9,6 @@ type EventCallback<T = unknown> = (data: T) => void;
 class WebSocketService {
   private socket: WebSocket | null = null;
   private listeners: Map<string, Set<EventCallback<any>>> = new Map();
-  private currentTargetUserId: string | number | null = null;
   private currentToken: string | null = null;
   private socketStatus: WSSocketStatus = 'disconnected';
   private reconnectAttempts = 0;
@@ -17,7 +16,7 @@ class WebSocketService {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private intentionalDisconnect = false;
 
-  private resolveWebSocketUrl(targetUserId: string | number, token: string): string {
+  private resolveWebSocketUrl(token: string): string {
     let rawWsUrl = (import.meta.env.VITE_WS_URL || '').trim();
     const rawBackendUrl = (import.meta.env.VITE_REMOTE_BACKEND_URL || '').trim();
 
@@ -45,43 +44,36 @@ class WebSocketService {
       baseUrl = 'ws://localhost:8000/ws';
     }
 
-    return `${baseUrl}/chat/${targetUserId}/?token=${encodeURIComponent(token)}`;
+    return `${baseUrl}/chat/?token=${encodeURIComponent(token)}`;
   }
 
-  public connect(targetUserId: string | number, token: string): void {
-    if (!targetUserId || !token) {
-      console.warn('[WebSocket] Cannot connect: targetUserId or token missing.');
+  public connect(token: string): void {
+    if (!token) {
+      console.warn('[WebSocket] Cannot connect: auth token missing.');
       return;
     }
 
-    // If already connected to this target user with this token, do nothing
-    if (
-      this.socket &&
-      this.socket.readyState === WebSocket.OPEN &&
-      String(this.currentTargetUserId) === String(targetUserId) &&
-      this.currentToken === token
-    ) {
+    // If already open with this token, do nothing
+    if (this.socket && this.socket.readyState === WebSocket.OPEN && this.currentToken === token) {
       return;
     }
 
     this.intentionalDisconnect = false;
     this.cleanupSocket();
-
-    this.currentTargetUserId = targetUserId;
     this.currentToken = token;
     this.setStatus('connecting');
 
-    const wsUrl = this.resolveWebSocketUrl(targetUserId, token);
-    console.log(`[WebSocket] Connecting to target user ${targetUserId}... (${wsUrl.split('?')[0]})`);
+    const wsUrl = this.resolveWebSocketUrl(token);
+    console.log(`[WebSocket] Connecting to user-level socket... (${wsUrl.split('?')[0]})`);
 
     try {
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
-        console.log(`[WebSocket] Connection opened for target user: ${targetUserId}`);
+        console.log('[WebSocket] User-level WebSocket connected successfully.');
         this.reconnectAttempts = 0;
         this.setStatus('connected');
-        this.emit('CONNECT', { targetUserId, timestamp: new Date().toISOString() });
+        this.emit('CONNECT', { status: 'connected', timestamp: new Date().toISOString() });
       };
 
       this.socket.onmessage = (event: MessageEvent) => {
@@ -94,33 +86,31 @@ class WebSocketService {
       };
 
       this.socket.onerror = (event) => {
-        console.warn(`[WebSocket] Socket error for user ${targetUserId}:`, event);
+        console.warn('[WebSocket] Socket error:', event);
         this.setStatus('error');
         this.emit('ERROR', { code: 'SOCKET_ERROR', message: 'WebSocket encountered an error.' });
       };
 
       this.socket.onclose = (event: CloseEvent) => {
-        console.log(`[WebSocket] Connection closed (code: ${event.code}, reason: ${event.reason || 'None'})`);
+        console.log(`[WebSocket] Socket closed (code: ${event.code}, reason: ${event.reason || 'None'})`);
         this.cleanupSocket();
         this.setStatus('disconnected');
         this.emit('DISCONNECT', { code: event.code, reason: event.reason });
 
-        // Auto-reconnect if not intentionally disconnected and not auth rejection (code 4001 or 4004)
+        // Auto-reconnect on unexpected disconnect (not auth 4001/4004)
         if (
           !this.intentionalDisconnect &&
           event.code !== 4001 &&
           event.code !== 4004 &&
-          event.code !== 4000 &&
           this.reconnectAttempts < this.maxReconnectAttempts &&
-          this.currentTargetUserId &&
           this.currentToken
         ) {
           const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000);
           this.reconnectAttempts += 1;
           console.log(`[WebSocket] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
           this.reconnectTimer = setTimeout(() => {
-            if (this.currentTargetUserId && this.currentToken && !this.intentionalDisconnect) {
-              this.connect(this.currentTargetUserId, this.currentToken);
+            if (this.currentToken && !this.intentionalDisconnect) {
+              this.connect(this.currentToken);
             }
           }, delay);
         }
@@ -143,11 +133,11 @@ class WebSocketService {
         break;
 
       case 'history':
-        this.emit('HISTORY_LOADED', event.data);
+        this.emit('HISTORY_LOADED', event);
         break;
 
       case 'error':
-        console.error('[WebSocket] Server error event:', event);
+        console.error('[WebSocket] Server error:', event);
         this.emit('ERROR', event);
         break;
 
@@ -156,14 +146,19 @@ class WebSocketService {
     }
   }
 
-  public sendMessage(content: string): boolean {
+  public sendMessage(receiverId: string | number, content: string): boolean {
     const trimmed = content.trim();
-    if (!trimmed) return false;
+    if (!trimmed || !receiverId) return false;
+
+    // Clean numeric ID if string like "user_2"
+    const numMatch = String(receiverId).match(/\d+/);
+    const cleanReceiverId = numMatch ? parseInt(numMatch[0], 10) : receiverId;
 
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(
         JSON.stringify({
           type: 'message',
+          receiver_id: cleanReceiverId,
           content: trimmed,
         })
       );
@@ -174,11 +169,17 @@ class WebSocketService {
     return false;
   }
 
-  public fetchHistory(page: number = 1, pageSize: number = 50): boolean {
+  public fetchHistory(targetUserId: string | number, page: number = 1, pageSize: number = 50): boolean {
+    if (!targetUserId) return false;
+
+    const numMatch = String(targetUserId).match(/\d+/);
+    const cleanTargetId = numMatch ? parseInt(numMatch[0], 10) : targetUserId;
+
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(
         JSON.stringify({
           type: 'history',
+          target_user_id: cleanTargetId,
           page,
           page_size: pageSize,
         })
@@ -197,7 +198,6 @@ class WebSocketService {
       this.reconnectTimer = null;
     }
     this.cleanupSocket();
-    this.currentTargetUserId = null;
     this.currentToken = null;
     this.setStatus('disconnected');
   }
@@ -250,10 +250,6 @@ class WebSocketService {
 
   public isConnected(): boolean {
     return this.socketStatus === 'connected' && this.socket?.readyState === WebSocket.OPEN;
-  }
-
-  public getCurrentTargetUserId(): string | number | null {
-    return this.currentTargetUserId;
   }
 }
 

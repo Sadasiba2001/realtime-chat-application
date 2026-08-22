@@ -1,6 +1,7 @@
 import type { Conversation, User } from '../types/chat.types';
 import { MOCK_CONVERSATIONS } from '../mock/conversations';
 import { simulateNetworkDelay } from './api.client';
+import { getDirectConversationId } from '../utils/conversation.utils';
 
 class ChatService {
   private conversations: Conversation[] = [...MOCK_CONVERSATIONS];
@@ -15,18 +16,17 @@ class ChatService {
   }
 
   async createDirectConversation(me: User, contact: User): Promise<Conversation> {
-    const existing = this.conversations.find(
-      (c) => c.type === 'direct' && c.participantIds.includes(contact.id)
-    );
+    const convId = getDirectConversationId(me.id, contact.id);
+    const existing = this.conversations.find((c) => c.id === convId);
 
     if (existing) {
       return simulateNetworkDelay(existing);
     }
 
     const newConv: Conversation = {
-      id: `conv_${contact.id}`,
+      id: convId,
       type: 'direct',
-      participantIds: [me.id, contact.id],
+      participantIds: [String(me.id), String(contact.id)],
       participants: [me, contact],
       unreadCount: 0,
       pinned: false,
@@ -45,7 +45,7 @@ class ChatService {
       id: `conv_group_${Date.now()}`,
       type: 'group',
       name: groupName,
-      participantIds: allParticipants.map((p) => p.id),
+      participantIds: allParticipants.map((p) => String(p.id)),
       participants: allParticipants,
       unreadCount: 0,
       pinned: false,

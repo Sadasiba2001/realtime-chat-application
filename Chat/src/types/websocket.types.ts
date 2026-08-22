@@ -20,6 +20,7 @@ export type WSServerMessageType = 'connection' | 'message' | 'history' | 'error'
 export interface WSConnectionEvent {
   type: 'connection';
   message: string;
+  user_id?: number | string;
 }
 
 export interface WSMessageEvent {
@@ -29,6 +30,7 @@ export interface WSMessageEvent {
 
 export interface WSHistoryEvent {
   type: 'history';
+  target_user_id?: number | string;
   data: BackendHistoryData;
 }
 
@@ -42,11 +44,13 @@ export type WSServerEvent = WSConnectionEvent | WSMessageEvent | WSHistoryEvent 
 
 export interface WSClientSendMessage {
   type: 'message';
+  receiver_id: number | string;
   content: string;
 }
 
 export interface WSClientFetchHistory {
   type: 'history';
+  target_user_id: number | string;
   page?: number;
   page_size?: number;
 }

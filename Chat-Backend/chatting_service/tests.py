@@ -356,3 +356,79 @@ class ChatWebSocketTests(TestCase):
         self.assertEqual(resp2["data"]["results"][1]["content"], "Message 4")
 
         await comm.disconnect()
+
+    # 6. User-Level Persistent WebSocket Tests
+    async def test_user_level_socket_connect_and_messaging(self):
+        # Connect User A to user-level socket
+        comm_a = WebsocketCommunicator(application, f"/ws/chat/?token={self.token_a}")
+        connected_a, _ = await comm_a.connect()
+        self.assertTrue(connected_a)
+        await comm_a.receive_json_from()  # connection event
+
+        # Connect User B to user-level socket (not tied to any specific chat)
+        comm_b = WebsocketCommunicator(application, f"/ws/chat/?token={self.token_b}")
+        connected_b, _ = await comm_b.connect()
+        self.assertTrue(connected_b)
+        await comm_b.receive_json_from()  # connection event
+
+        # Connect User C to user-level socket
+        comm_c = WebsocketCommunicator(application, f"/ws/chat/?token={self.token_c}")
+        connected_c, _ = await comm_c.connect()
+        self.assertTrue(connected_c)
+        await comm_c.receive_json_from()  # connection event
+
+        # User A sends message targeting User B
+        await comm_a.send_json_to({
+            "type": "message",
+            "receiver_id": self.user_b.id,
+            "content": "Hello User B from user-level socket!",
+        })
+
+        # User A and User B receive it
+        event_a = await comm_a.receive_json_from()
+        event_b = await comm_b.receive_json_from()
+
+        self.assertEqual(event_a["type"], "message")
+        self.assertEqual(event_a["data"]["sender_id"], self.user_a.id)
+        self.assertEqual(event_a["data"]["receiver_id"], self.user_b.id)
+        self.assertEqual(event_a["data"]["content"], "Hello User B from user-level socket!")
+
+        self.assertEqual(event_b["type"], "message")
+        self.assertEqual(event_b["data"]["sender_id"], self.user_a.id)
+        self.assertEqual(event_b["data"]["receiver_id"], self.user_b.id)
+        self.assertEqual(event_b["data"]["content"], "Hello User B from user-level socket!")
+
+        # User C receives nothing
+        self.assertTrue(await comm_c.receive_nothing())
+
+        await comm_a.disconnect()
+        await comm_b.disconnect()
+        await comm_c.disconnect()
+
+    async def test_user_level_history_retrieval(self):
+        await Message.objects.acreate(
+            sender=self.user_a,
+            receiver=self.user_b,
+            content="Persistent History Test",
+        )
+
+        comm = WebsocketCommunicator(application, f"/ws/chat/?token={self.token_a}")
+        connected, _ = await comm.connect()
+        self.assertTrue(connected)
+        await comm.receive_json_from()
+
+        await comm.send_json_to({
+            "type": "history",
+            "target_user_id": self.user_b.id,
+            "page": 1,
+            "page_size": 10,
+        })
+
+        resp = await comm.receive_json_from()
+        self.assertEqual(resp["type"], "history")
+        self.assertEqual(resp["target_user_id"], self.user_b.id)
+        self.assertEqual(len(resp["data"]["results"]), 1)
+        self.assertEqual(resp["data"]["results"][0]["content"], "Persistent History Test")
+
+        await comm.disconnect()
+
