@@ -219,8 +219,15 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const convId = getDirectConversationId(payload.sender_id, payload.receiver_id);
       const newMsg = mapBackendMessage(payload, convId);
 
-      const myId = String(currentUserRef.current.id);
-      const otherId = String(payload.sender_id) === myId ? String(payload.receiver_id) : String(payload.sender_id);
+      const currentMyIdStr = String(currentUserRef.current.id);
+      const myIdMatch = currentMyIdStr.match(/\d+/);
+      const senderMatch = String(payload.sender_id).match(/\d+/);
+      
+      const isMyMessage = (myIdMatch && senderMatch)
+        ? myIdMatch[0] === senderMatch[0]
+        : String(payload.sender_id) === currentMyIdStr;
+
+      const otherId = isMyMessage ? String(payload.receiver_id) : String(payload.sender_id);
 
       // 1. Insert/update message in that conversation's message list
       setMessagesMap((prev) => {
@@ -230,7 +237,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const optimisticIndex = existingList.findIndex(
           (m) =>
             m.id.startsWith('temp_') &&
-            String(m.senderId) === String(payload.sender_id) &&
+            (String(m.senderId) === String(payload.sender_id) || (myIdMatch && String(m.senderId).includes(myIdMatch[0]))) &&
             m.text.trim() === payload.content.trim()
         );
 
@@ -262,7 +269,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               ? {
                   ...c,
                   lastMessage: newMsg,
-                  unreadCount: isCurrentActive ? 0 : (c.unreadCount || 0) + (String(payload.sender_id) !== myId ? 1 : 0),
+                  unreadCount: isCurrentActive ? 0 : (c.unreadCount || 0) + (!isMyMessage ? 1 : 0),
                   updatedAt: newMsg.createdAt || new Date().toISOString(),
                 }
               : c
@@ -270,8 +277,12 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         // If conversation not yet present in list, dynamically add it
-        // If conversation not yet present in list, dynamically add it
-        const knownOtherUser = allUsersRef.current.find((u) => String(u.id) === String(otherId)) || {
+        const knownOtherUser = allUsersRef.current.find((u) => {
+          const uMatch = String(u.id).match(/\d+/);
+          const oMatch = String(otherId).match(/\d+/);
+          if (uMatch && oMatch) return uMatch[0] === oMatch[0];
+          return String(u.id) === String(otherId);
+        }) || {
           id: otherId,
           name: `User ${otherId}`,
           avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
@@ -283,9 +294,9 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const newConversation: Conversation = {
           id: convId,
           type: 'direct',
-          participantIds: [myId, otherId],
+          participantIds: [currentMyIdStr, otherId],
           participants: [currentUserRef.current, knownOtherUser],
-          unreadCount: isCurrentActive ? 0 : (String(payload.sender_id) !== myId ? 1 : 0),
+          unreadCount: isCurrentActive ? 0 : (!isMyMessage ? 1 : 0),
           lastMessage: newMsg,
           pinned: false,
           muted: false,
@@ -519,9 +530,34 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Send through real Django WebSocket
     console.log(`[ChatContext] Sending WebSocket message to receiver ${targetUserId}:`, trimmed);
-    const sent = webSocketService.sendMessage(targetUserId, trimmed);
+    let sent = webSocketService.sendMessage(targetUserId, trimmed);
     if (!sent) {
-      console.error('[ChatContext] Failed to dispatch message via WebSocket: Socket not connected.');
+      const token = storage.getAuthToken();
+      if (token && !webSocketService.isConnected()) {
+        console.log('[ChatContext] Socket disconnected. Reconnecting WebSocket and retrying send...');
+        webSocketService.connect(token);
+        // Brief retry after initiating connection
+        setTimeout(() => {
+          const retrySent = webSocketService.sendMessage(targetUserId, trimmed);
+          if (!retrySent) {
+            console.error('[ChatContext] Failed to dispatch message via WebSocket: Socket not connected.');
+            setMessagesMap((prev) => ({
+              ...prev,
+              [activeConversationId]: (prev[activeConversationId] || []).map((m) =>
+                m.id === optimisticMsg.id ? { ...m, status: 'error' } : m
+              ),
+            }));
+          }
+        }, 500);
+      } else {
+        console.error('[ChatContext] Failed to dispatch message via WebSocket: Socket not connected.');
+        setMessagesMap((prev) => ({
+          ...prev,
+          [activeConversationId]: (prev[activeConversationId] || []).map((m) =>
+            m.id === optimisticMsg.id ? { ...m, status: 'error' } : m
+          ),
+        }));
+      }
     }
   };
 
@@ -585,6 +621,16 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const createNewChat = async (contact: User) => {
+    const myIdStr = String(currentUser.id).trim();
+    const contactIdStr = String(contact.id).trim();
+    const myMatch = myIdStr.match(/\d+/);
+    const contactMatch = contactIdStr.match(/\d+/);
+    if (myIdStr === contactIdStr || (myMatch && contactMatch && myMatch[0] === contactMatch[0])) {
+      console.warn('[ChatContext] Cannot start conversation with self.');
+      closeModal();
+      return;
+    }
+
     const conv = await chatService.createDirectConversation(currentUser, contact);
     setConversations((prev) => {
       if (prev.some((c) => c.id === conv.id)) return prev;

@@ -77,7 +77,18 @@ export const ChatList: React.FC = () => {
 
   const pinnedConversations = filteredConversations.filter((c) => c.pinned);
   const unpinnedConversations = filteredConversations.filter((c) => !c.pinned);
-  const availableSearchedUsers = searchedUsers.filter((u) => u.id !== currentUser.id);
+  const availableSearchedUsers = searchedUsers.filter((u) => {
+    const myIdStr = String(currentUser.id).trim();
+    const uIdStr = String(u.id).trim();
+    if (myIdStr === uIdStr) return false;
+
+    const myMatch = myIdStr.match(/\d+/);
+    const uMatch = uIdStr.match(/\d+/);
+    if (myMatch && uMatch && myMatch[0] === uMatch[0]) return false;
+
+    if (currentUser.email && u.email && currentUser.email.toLowerCase() === u.email.toLowerCase()) return false;
+    return true;
+  });
 
   const filterChips: { id: FilterCategory; label: string }[] = [
     { id: 'all', label: 'All' },

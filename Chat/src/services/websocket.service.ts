@@ -35,13 +35,18 @@ class WebSocketService {
       const wsProtocol = isHttps ? 'wss' : 'ws';
       const host = rawBackendUrl.replace(/^https?:\/\//, '').replace(/\/+$/, '');
       baseUrl = `${wsProtocol}://${host}/ws`;
-    } else if (typeof window !== 'undefined') {
-      const isHttps = window.location.protocol === 'https:';
-      const wsProtocol = isHttps ? 'wss' : 'ws';
-      const host = window.location.host;
-      baseUrl = `${wsProtocol}://${host}/ws`;
-    } else {
-      baseUrl = 'ws://localhost:8000/ws';
+    }
+
+    if (!baseUrl) {
+      if (typeof window !== 'undefined') {
+        const isHttps = window.location.protocol === 'https:';
+        const wsProtocol = isHttps ? 'wss' : 'ws';
+        const hostname = window.location.hostname || 'localhost';
+        const port = (window.location.port === '5173' || window.location.port === '3000') ? '8000' : (window.location.port || '8000');
+        baseUrl = `${wsProtocol}://${hostname}:${port}/ws`;
+      } else {
+        baseUrl = 'ws://localhost:8000/ws';
+      }
     }
 
     return `${baseUrl}/chat/?token=${encodeURIComponent(token)}`;
@@ -74,6 +79,7 @@ class WebSocketService {
         this.reconnectAttempts = 0;
         this.setStatus('connected');
         this.emit('CONNECT', { status: 'connected', timestamp: new Date().toISOString() });
+        this.flushPendingQueue();
       };
 
       this.socket.onmessage = (event: MessageEvent) => {
@@ -146,6 +152,20 @@ class WebSocketService {
     }
   }
 
+  private pendingQueue: string[] = [];
+
+  private flushPendingQueue(): void {
+    if (this.socket && this.socket.readyState === WebSocket.OPEN && this.pendingQueue.length > 0) {
+      console.log(`[WebSocket] Flushing ${this.pendingQueue.length} pending queued messages...`);
+      while (this.pendingQueue.length > 0) {
+        const payloadStr = this.pendingQueue.shift();
+        if (payloadStr) {
+          this.socket.send(payloadStr);
+        }
+      }
+    }
+  }
+
   public sendMessage(receiverId: string | number, content: string): boolean {
     const trimmed = content.trim();
     if (!trimmed || !receiverId) return false;
@@ -154,14 +174,20 @@ class WebSocketService {
     const numMatch = String(receiverId).match(/\d+/);
     const cleanReceiverId = numMatch ? parseInt(numMatch[0], 10) : receiverId;
 
+    const payloadStr = JSON.stringify({
+      type: 'message',
+      receiver_id: cleanReceiverId,
+      content: trimmed,
+    });
+
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(
-        JSON.stringify({
-          type: 'message',
-          receiver_id: cleanReceiverId,
-          content: trimmed,
-        })
-      );
+      this.socket.send(payloadStr);
+      return true;
+    }
+
+    if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
+      console.log('[WebSocket] Socket connecting: Queuing message for transmission upon connect.');
+      this.pendingQueue.push(payloadStr);
       return true;
     }
 
@@ -175,15 +201,21 @@ class WebSocketService {
     const numMatch = String(targetUserId).match(/\d+/);
     const cleanTargetId = numMatch ? parseInt(numMatch[0], 10) : targetUserId;
 
+    const payloadStr = JSON.stringify({
+      type: 'history',
+      target_user_id: cleanTargetId,
+      page,
+      page_size: pageSize,
+    });
+
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(
-        JSON.stringify({
-          type: 'history',
-          target_user_id: cleanTargetId,
-          page,
-          page_size: pageSize,
-        })
-      );
+      this.socket.send(payloadStr);
+      return true;
+    }
+
+    if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
+      console.log('[WebSocket] Socket connecting: Queuing history request for transmission upon connect.');
+      this.pendingQueue.push(payloadStr);
       return true;
     }
 

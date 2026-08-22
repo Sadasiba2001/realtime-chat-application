@@ -42,7 +42,18 @@ export const NewChatModal: React.FC = () => {
 
   if (activeModal !== 'new_chat') return null;
 
-  const contacts = searchResults.filter((u: User) => u.id !== currentUser.id);
+  const contacts = searchResults.filter((u: User) => {
+    const myIdStr = String(currentUser.id).trim();
+    const uIdStr = String(u.id).trim();
+    if (myIdStr === uIdStr) return false;
+
+    const myMatch = myIdStr.match(/\d+/);
+    const uMatch = uIdStr.match(/\d+/);
+    if (myMatch && uMatch && myMatch[0] === uMatch[0]) return false;
+
+    if (currentUser.email && u.email && currentUser.email.toLowerCase() === u.email.toLowerCase()) return false;
+    return true;
+  });
 
   const toggleSelectMember = (user: User) => {
     if (selectedMembers.some((m) => m.id === user.id)) {

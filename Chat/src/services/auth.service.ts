@@ -168,19 +168,24 @@ class AuthService {
       return storedUser;
     }
 
-    const mockSession: UserSession = {
-      id: CURRENT_USER.id,
-      name: CURRENT_USER.name,
-      username: 'Barsha',
-      avatar: CURRENT_USER.avatar,
-      email: CURRENT_USER.email || 'barsha@example.com',
-      phone: CURRENT_USER.phone,
-      status: 'online',
-      about: CURRENT_USER.about,
-      token,
-    };
+    const jwtPayload = parseJwt(token);
+    if (jwtPayload && jwtPayload.user_id) {
+      const user: UserSession = {
+        id: String(jwtPayload.user_id),
+        name: String(jwtPayload.name || jwtPayload.username || `User ${jwtPayload.user_id}`),
+        username: String(jwtPayload.username || ''),
+        avatar: CURRENT_USER.avatar,
+        email: String(jwtPayload.email || ''),
+        phone: CURRENT_USER.phone,
+        status: 'online',
+        about: CURRENT_USER.about,
+        token,
+      };
+      useAuthStore.getState().setAuth(user, { access: token, refresh: storage.getRefreshToken() || '' });
+      return user;
+    }
 
-    return simulateNetworkDelay(mockSession);
+    return null;
   }
 
   async searchUsers(query: string) {

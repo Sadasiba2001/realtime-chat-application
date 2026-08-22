@@ -148,14 +148,15 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             },
         )
 
-        # Broadcast to receiver's user group
-        await self.channel_layer.group_send(
-            f"user_{receiver_id}",
-            {
-                "type": "chat.message",
-                "data": message_data,
-            },
-        )
+        # Broadcast to receiver's user group (if distinct from sender)
+        if receiver_id != self.user.id:
+            await self.channel_layer.group_send(
+                f"user_{receiver_id}",
+                {
+                    "type": "chat.message",
+                    "data": message_data,
+                },
+            )
 
     async def handle_history(self, content: dict):
         page = content.get("page", 1)

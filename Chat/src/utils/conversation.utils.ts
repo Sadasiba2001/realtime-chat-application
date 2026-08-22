@@ -32,7 +32,20 @@ export const getTargetUserIdFromConversation = (
   currentUserId: string | number,
   participantIds: (string | number)[]
 ): string | number | null => {
-  const currentStr = String(currentUserId);
-  const other = participantIds.find((id) => String(id) !== currentStr);
+  const currentStr = String(currentUserId).trim();
+  const currentNumMatch = currentStr.match(/\d+/);
+  const currentNum = currentNumMatch ? parseInt(currentNumMatch[0], 10) : null;
+
+  const other = participantIds.find((id) => {
+    const idStr = String(id).trim();
+    if (currentNum !== null) {
+      const idNumMatch = idStr.match(/\d+/);
+      const idNum = idNumMatch ? parseInt(idNumMatch[0], 10) : null;
+      if (idNum !== null) {
+        return currentNum !== idNum;
+      }
+    }
+    return idStr !== currentStr;
+  });
   return other ?? null;
 };
