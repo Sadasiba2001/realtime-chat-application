@@ -74,13 +74,14 @@ class ChatService {
             id: partnerId,
             name: partnerUser.name || partnerUser.username || `User ${partnerId}`,
             username: partnerUser.username,
-            avatar: partnerUser.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
+            avatar: partnerUser.avatar || '',
             status: partnerUser.status || (item.status === 'online' ? 'online' : 'offline'),
             about: partnerUser.about || 'Available',
             phone: partnerUser.phone_number || partnerUser.phone || '',
             email: partnerUser.email || '',
             lastSeen: partnerUser.last_seen || partnerUser.lastSeen || item.last_seen || undefined,
           };
+
 
 
           const lastMsg = item.last_message

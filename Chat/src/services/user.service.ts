@@ -21,7 +21,7 @@ class UserService {
           id: String(item.id),
           name: item.name || item.username || 'User',
           username: item.username,
-          avatar: item.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
+          avatar: item.avatar || '',
           status: item.status || 'offline',
           about: item.about || 'Available',
           phone: item.phone_number || item.phone || '',
@@ -47,7 +47,7 @@ class UserService {
           id: String(item.id),
           name: item.name || item.username || 'User',
           username: item.username,
-          avatar: item.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
+          avatar: item.avatar || '',
           status: item.status || 'offline',
           about: item.about || 'Available',
           phone: item.phone_number || item.phone || '',
@@ -55,6 +55,7 @@ class UserService {
           lastSeen: item.last_seen || undefined,
         }));
       }
+
 
       return [];
     } catch (err) {

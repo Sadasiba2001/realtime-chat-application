@@ -11,6 +11,44 @@ interface AvatarProps {
   onClick?: () => void;
 }
 
+const AVATAR_BG_COLORS = [
+  'bg-gradient-to-br from-indigo-500 to-purple-600',
+  'bg-gradient-to-br from-sky-500 to-blue-600',
+  'bg-gradient-to-br from-emerald-500 to-teal-600',
+  'bg-gradient-to-br from-amber-500 to-orange-600',
+  'bg-gradient-to-br from-rose-500 to-pink-600',
+  'bg-gradient-to-br from-violet-500 to-indigo-600',
+  'bg-gradient-to-br from-fuchsia-500 to-rose-600',
+  'bg-gradient-to-br from-teal-500 to-cyan-600',
+  'bg-gradient-to-br from-blue-600 to-indigo-700',
+  'bg-gradient-to-br from-pink-500 to-rose-600',
+  'bg-gradient-to-br from-amber-600 to-red-600',
+  'bg-gradient-to-br from-purple-600 to-pink-600',
+];
+
+const getAvatarColor = (name: string): string => {
+  const clean = (name || '').trim();
+  let hash = 0;
+  for (let i = 0; i < clean.length; i++) {
+    hash = clean.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % AVATAR_BG_COLORS.length;
+  return AVATAR_BG_COLORS[index];
+};
+
+const getInitials = (name: string): string => {
+  const clean = (name || '').trim();
+  if (!clean) return 'U';
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  if (clean.length >= 2) {
+    return clean.substring(0, 2).toUpperCase();
+  }
+  return clean.toUpperCase();
+};
+
 export const Avatar: React.FC<AvatarProps> = ({
   src,
   name,
@@ -41,19 +79,22 @@ export const Avatar: React.FC<AvatarProps> = ({
     busy: 'bg-rose-500',
   };
 
-  const initials = name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .substring(0, 2)
-    .toUpperCase();
+  const initials = getInitials(name);
+  const bgColorClass = getAvatarColor(name);
+
+  // Ignore unsplash placeholder images so user always gets their distinct initial avatar
+  const hasValidCustomAvatar =
+    Boolean(src) &&
+    typeof src === 'string' &&
+    src.trim() !== '' &&
+    !src.includes('images.unsplash.com');
 
   return (
     <div
       className={`relative inline-block flex-shrink-0 cursor-pointer ${className}`}
       onClick={onClick}
     >
-      {src ? (
+      {hasValidCustomAvatar ? (
         <img
           src={src}
           alt={name}
@@ -61,7 +102,7 @@ export const Avatar: React.FC<AvatarProps> = ({
         />
       ) : (
         <div
-          className={`${sizeClasses[size]} rounded-full bg-emerald-600 text-white font-semibold flex items-center justify-center shadow-xs`}
+          className={`${sizeClasses[size]} rounded-full ${bgColorClass} text-white font-bold flex items-center justify-center shadow-xs select-none tracking-wider`}
         >
           {initials}
         </div>
@@ -76,3 +117,4 @@ export const Avatar: React.FC<AvatarProps> = ({
     </div>
   );
 };
+

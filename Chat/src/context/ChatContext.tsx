@@ -285,11 +285,12 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }) || {
           id: otherId,
           name: `User ${otherId}`,
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          avatar: '',
           status: 'online',
           about: 'Available',
           phone: '',
         };
+
 
         const newConversation: Conversation = {
           id: convId,
