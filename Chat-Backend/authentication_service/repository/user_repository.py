@@ -66,8 +66,28 @@ class UserRepository:
             .exclude(id=exclude_user_id)
             .filter(
                 Q(username__icontains=query)
+                | Q(name__icontains=query)
                 | Q(email__icontains=query)
                 | Q(phone_number__icontains=query)
             )
             .order_by("username")
         )
+
+    @staticmethod
+    def update_profile_image(
+        user: User,
+        profile_image_url: str,
+        profile_image_public_id: str,
+    ) -> User:
+        user.profile_image = profile_image_url
+        user.profile_image_public_id = profile_image_public_id
+        user.save(update_fields=["profile_image", "profile_image_public_id", "updated_at"])
+        return user
+
+    @staticmethod
+    def remove_profile_image(user: User) -> User:
+        user.profile_image = None
+        user.profile_image_public_id = None
+        user.save(update_fields=["profile_image", "profile_image_public_id", "updated_at"])
+        return user
+

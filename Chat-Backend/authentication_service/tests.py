@@ -445,9 +445,13 @@ class UserSearchAPITests(APITestCase):
         result = response.data["data"]["results"][0]
 
         # Allowed fields
-        self.assertEqual(set(result.keys()), {"id", "name", "username"})
+        self.assertEqual(
+            set(result.keys()),
+            {"id", "name", "username", "profile_image", "profile_image_url", "avatar"},
+        )
         self.assertEqual(result["name"], "Rahul Sharma")
         self.assertEqual(result["username"], "rahulsharma")
+
 
         # Forbidden fields
         forbidden_fields = [
@@ -494,4 +498,102 @@ class UserSearchAPITests(APITestCase):
         self.assertEqual(res_max.status_code, status.HTTP_200_OK)
         # Should return all 15 as max page_size is 50
         self.assertEqual(len(res_max.data["data"]["results"]), 15)
+
+    # 8. Profile Image Upload and Management Tests
+    def test_manage_profile_image_unauthenticated(self):
+        url = "/api/v1/auth/users/profile-image/"
+        res_post = self.client.post(url, {})
+        self.assertEqual(res_post.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        res_delete = self.client.delete(url)
+        self.assertEqual(res_delete.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_upload_profile_image_missing_file(self):
+        url = "/api/v1/auth/users/profile-image/"
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        res = self.client.post(url, {})
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(res.data["status"])
+        self.assertEqual(res.data["message"], "Image file is required.")
+
+    def test_upload_profile_image_invalid_format(self):
+        url = "/api/v1/auth/users/profile-image/"
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        fake_file = SimpleUploadedFile("test.txt", b"not an image", content_type="text/plain")
+        res = self.client.post(url, {"image": fake_file}, format="multipart")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(res.data["status"])
+        self.assertIn("not a valid or supported image", res.data["message"].lower())
+
+    def test_upload_profile_image_success_and_replacement(self):
+        import io
+        from PIL import Image
+        from unittest.mock import patch
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        url = "/api/v1/auth/users/profile-image/"
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+
+        # Create valid 100x100 PNG
+        img_bytes = io.BytesIO()
+        Image.new("RGB", (100, 100), color="blue").save(img_bytes, format="PNG")
+        img_bytes.seek(0)
+        valid_file = SimpleUploadedFile("avatar.png", img_bytes.getvalue(), content_type="image/png")
+
+        mock_secure_url = f"https://res.cloudinary.com/demo/image/upload/v12345/sb-chat/profiles/user_{self.current_user.id}.png"
+        mock_public_id = f"sb-chat/profiles/user_{self.current_user.id}"
+
+        with patch("cloudinary.uploader.upload") as mock_upload:
+            mock_upload.return_value = {
+                "secure_url": mock_secure_url,
+                "public_id": mock_public_id,
+            }
+
+            res = self.client.post(url, {"image": valid_file}, format="multipart")
+            self.assertEqual(res.status_code, status.HTTP_200_OK)
+            self.assertTrue(res.data["status"])
+            self.assertEqual(res.data["data"]["profile_image_url"], mock_secure_url)
+            self.assertEqual(res.data["data"]["profile_image_public_id"], mock_public_id)
+
+            self.current_user.refresh_from_db()
+            self.assertEqual(self.current_user.profile_image, mock_secure_url)
+            self.assertEqual(self.current_user.profile_image_public_id, mock_public_id)
+
+            # Test replacement with second upload
+            img_bytes2 = io.BytesIO()
+            Image.new("RGB", (150, 150), color="green").save(img_bytes2, format="PNG")
+            img_bytes2.seek(0)
+            valid_file2 = SimpleUploadedFile("avatar2.png", img_bytes2.getvalue(), content_type="image/png")
+
+            res2 = self.client.post(url, {"image": valid_file2}, format="multipart")
+            self.assertEqual(res2.status_code, status.HTTP_200_OK)
+            self.current_user.refresh_from_db()
+            # Verified: public ID stays sb-chat/profiles/user_{id} (1 user = 1 active asset)
+            self.assertEqual(self.current_user.profile_image_public_id, mock_public_id)
+
+    def test_remove_profile_image(self):
+        from unittest.mock import patch
+        url = "/api/v1/auth/users/profile-image/"
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+
+        self.current_user.profile_image = "https://res.cloudinary.com/test.png"
+        self.current_user.profile_image_public_id = f"sb-chat/profiles/user_{self.current_user.id}"
+        self.current_user.save()
+
+        with patch("cloudinary.uploader.destroy") as mock_destroy:
+            mock_destroy.return_value = {"result": "ok"}
+
+            res = self.client.delete(url)
+            self.assertEqual(res.status_code, status.HTTP_200_OK)
+            self.assertTrue(res.data["status"])
+            self.assertIsNone(res.data["data"]["profile_image_url"])
+
+            self.current_user.refresh_from_db()
+            self.assertIsNone(self.current_user.profile_image)
+            self.assertIsNone(self.current_user.profile_image_public_id)
+            mock_destroy.assert_called_once_with(f"sb-chat/profiles/user_{self.current_user.id}", invalidate=True)
+
+
 

@@ -401,4 +401,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     async def presence_event(self, event: dict):
         await self.send_json(event["data"])
 
+    async def user_profile_event(self, event: dict):
+        await self.send_json(event["data"])
+
+
 

@@ -150,10 +150,15 @@ class WebSocketService {
         this.emit('MESSAGE_STATUS_UPDATE', event);
         break;
 
+      case 'profile_update':
+        this.emit('PROFILE_UPDATE', event);
+        break;
+
       case 'error':
         console.error('[WebSocket] Server error:', event);
         this.emit('ERROR', event);
         break;
+
 
 
 

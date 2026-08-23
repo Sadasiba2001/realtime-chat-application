@@ -1,14 +1,21 @@
 import type { User } from '../types/chat.types';
-import { CURRENT_USER, MOCK_USERS } from '../mock/users';
-import { apiClient, simulateNetworkDelay } from './api.client';
+import { apiClient } from './api.client';
 import { API_ENDPOINTS } from './api.endpoints';
 
 class UserService {
-  private users: User[] = [...MOCK_USERS];
-  private currentUser: User = { ...CURRENT_USER };
+  private currentUser: User = {
+    id: '',
+    name: 'User',
+    username: '',
+    avatar: '',
+    status: 'offline',
+    about: 'Available',
+    phone: '',
+    email: '',
+  };
 
   async getCurrentUser(): Promise<User> {
-    return simulateNetworkDelay({ ...this.currentUser });
+    return { ...this.currentUser };
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -17,11 +24,11 @@ class UserService {
       const resData = response.data;
       const results = resData?.data?.results || resData?.results || resData?.data || resData;
       if (Array.isArray(results) && results.length > 0) {
-        return results.map((item: { id: string | number; name?: string; username?: string; avatar?: string; is_active?: boolean; status?: User['status']; last_seen?: string; about?: string; phone_number?: string; phone?: string; email?: string }) => ({
+        return results.map((item: { id: string | number; name?: string; username?: string; profile_image?: string; profile_image_url?: string; avatar?: string; is_active?: boolean; status?: User['status']; last_seen?: string; about?: string; phone_number?: string; phone?: string; email?: string }) => ({
           id: String(item.id),
           name: item.name || item.username || 'User',
           username: item.username,
-          avatar: item.avatar || '',
+          avatar: item.profile_image_url || item.profile_image || item.avatar || '',
           status: item.status || 'offline',
           about: item.about || 'Available',
           phone: item.phone_number || item.phone || '',
@@ -29,9 +36,9 @@ class UserService {
           lastSeen: item.last_seen || undefined,
         }));
       }
-      return simulateNetworkDelay([...this.users]);
+      return [];
     } catch {
-      return simulateNetworkDelay([...this.users]);
+      return [];
     }
   }
 
@@ -43,11 +50,11 @@ class UserService {
       const resData = response.data;
       const results = resData?.data?.results || resData?.results || resData?.data || resData;
       if (Array.isArray(results)) {
-        return results.map((item: { id: string | number; name?: string; username?: string; avatar?: string; is_active?: boolean; status?: User['status']; last_seen?: string; about?: string; phone_number?: string; phone?: string; email?: string }) => ({
+        return results.map((item: { id: string | number; name?: string; username?: string; profile_image?: string; profile_image_url?: string; avatar?: string; is_active?: boolean; status?: User['status']; last_seen?: string; about?: string; phone_number?: string; phone?: string; email?: string }) => ({
           id: String(item.id),
           name: item.name || item.username || 'User',
           username: item.username,
-          avatar: item.avatar || '',
+          avatar: item.profile_image_url || item.profile_image || item.avatar || '',
           status: item.status || 'offline',
           about: item.about || 'Available',
           phone: item.phone_number || item.phone || '',
@@ -56,29 +63,45 @@ class UserService {
         }));
       }
 
-
       return [];
-    } catch (err) {
-      if (import.meta.env.VITE_ENABLE_MOCK_FALLBACK === 'true') {
-        const q = query.toLowerCase().trim();
-        if (!q) return simulateNetworkDelay([...this.users]);
-        const filtered = this.users.filter(
-          (u) =>
-            u.name.toLowerCase().includes(q) ||
-            (u as { username?: string }).username?.toLowerCase().includes(q) ||
-            u.phone.toLowerCase().includes(q) ||
-            (u.email && u.email.toLowerCase().includes(q))
-        );
-        return simulateNetworkDelay(filtered);
-      }
-      throw err;
+    } catch {
+      return [];
     }
   }
 
   async updateProfile(updates: Partial<User>): Promise<User> {
     this.currentUser = { ...this.currentUser, ...updates };
-    return simulateNetworkDelay({ ...this.currentUser });
+    return { ...this.currentUser };
+  }
+
+
+  async uploadProfileImage(file: File): Promise<{ profile_image_url: string; profile_image_public_id?: string }> {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await apiClient.post(API_ENDPOINTS.AUTH.PROFILE_IMAGE, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    const data = response.data?.data || response.data;
+    const newAvatarUrl = data?.profile_image_url || data?.profile_image || '';
+    this.currentUser = {
+      ...this.currentUser,
+      avatar: newAvatarUrl,
+    };
+    return data;
+  }
+
+  async deleteProfileImage(): Promise<void> {
+    await apiClient.delete(API_ENDPOINTS.AUTH.PROFILE_IMAGE);
+    this.currentUser = {
+      ...this.currentUser,
+      avatar: '',
+    };
   }
 }
 
 export const userService = new UserService();
+

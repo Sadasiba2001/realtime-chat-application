@@ -57,6 +57,14 @@ export interface WSMessageStatusEvent {
   receiver_id?: number | string;
 }
 
+export interface WSProfileUpdateEvent {
+  type: 'profile_update';
+  user_id: number | string;
+  profile_image_url?: string | null;
+  profile_image?: string | null;
+  avatar?: string | null;
+}
+
 export interface WSErrorEvent {
   type: 'error';
   code: string;
@@ -69,6 +77,7 @@ export type WSServerEvent =
   | WSHistoryEvent
   | WSPresenceEvent
   | WSMessageStatusEvent
+  | WSProfileUpdateEvent
   | WSErrorEvent;
 
 export interface WSClientSendMessage {
@@ -114,9 +123,11 @@ export type WSEventType =
   | 'MESSAGE_READ'
   | 'USER_TYPING'
   | 'PRESENCE_CHANGE'
+  | 'PROFILE_UPDATE'
   | 'SOCKET_STATUS'
   | 'HISTORY_LOADED'
   | 'ERROR';
+
 
 
 export interface WSMessagePayload {

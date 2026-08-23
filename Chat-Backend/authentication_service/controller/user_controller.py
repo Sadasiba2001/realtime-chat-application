@@ -61,3 +61,73 @@ def search_users(request):
 
     serializer = UserSearchResponseSerializer(page, many=True)
     return paginator.get_paginated_response(serializer.data)
+
+
+@api_view(["POST", "DELETE"])
+@permission_classes([IsAuthenticated])
+def manage_profile_image(request):
+    user_service = UserService()
+
+    if request.method == "POST":
+        image_file = (
+            request.FILES.get("image")
+            or request.FILES.get("profile_image")
+            or request.FILES.get("avatar")
+            or request.FILES.get("file")
+        )
+        if not image_file:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Image file is required.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            result = user_service.upload_profile_image(user=request.user, file=image_file)
+            return Response(
+                {
+                    "status": True,
+                    "message": "Profile picture updated successfully.",
+                    "data": result,
+                },
+                status=status.HTTP_200_OK,
+            )
+        except ValueError as exc:
+            return Response(
+                {
+                    "status": False,
+                    "message": str(exc),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as exc:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Failed to upload profile picture. Please try again.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    elif request.method == "DELETE":
+        try:
+            result = user_service.remove_profile_image(user=request.user)
+            return Response(
+                {
+                    "status": True,
+                    "message": "Profile picture removed successfully.",
+                    "data": result,
+                },
+                status=status.HTTP_200_OK,
+            )
+        except Exception:
+            return Response(
+                {
+                    "status": False,
+                    "message": "Failed to remove profile picture.",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+

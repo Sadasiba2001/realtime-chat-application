@@ -19,9 +19,11 @@ import type {
   BackendMessagePayload,
   WSHistoryEvent,
   WSMessageStatusEvent,
+  WSProfileUpdateEvent,
   WSPresenceEvent,
   WSSocketStatus,
 } from '../types/websocket.types';
+
 
 
 import { userService } from '../services/user.service';
@@ -31,11 +33,9 @@ import { storage } from '../utils/storage.utils';
 import { useAuthStore } from '../store/useAuthStore';
 import { formatMessageTime } from '../utils/date.utils';
 import { getDirectConversationId, getTargetUserIdFromConversation } from '../utils/conversation.utils';
-import { CURRENT_USER } from '../mock/users';
-import { MOCK_CALL_LOGS } from '../mock/calls';
-import { MOCK_STATUSES } from '../mock/status';
 
 export type FilterCategory = 'all' | 'unread' | 'favorites' | 'groups';
+
 
 export interface ActiveCallState {
   contact: User;
@@ -80,7 +80,10 @@ interface ChatContextType {
   createNewChat: (contact: User) => Promise<void>;
   createNewGroup: (name: string, members: User[]) => Promise<void>;
   updateUserProfile: (updates: Partial<User>) => Promise<void>;
+  uploadProfilePicture: (file: File) => Promise<string>;
+  removeProfilePicture: () => Promise<void>;
   toggleTheme: () => void;
+
   startCall: (contact: User, type: CallType) => void;
   endCall: () => void;
   toggleCallMute: () => void;
@@ -106,14 +109,23 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         id: String(su.id),
         name: su.name,
         username: su.username,
-        avatar: su.avatar,
+        avatar: su.avatar && !su.avatar.includes('images.unsplash.com') ? su.avatar : '',
         status: su.status || 'online',
         about: su.about || '',
         phone: su.phone || '',
         email: su.email,
       };
     }
-    return { ...CURRENT_USER };
+    return {
+      id: '',
+      name: 'User',
+      username: '',
+      avatar: '',
+      status: 'offline',
+      about: 'Available',
+      phone: '',
+      email: '',
+    };
   });
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -126,8 +138,9 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
   const [replyingToMessage, setReplyingToMessage] = useState<ReplyPreview | null>(null);
   const [activeCall, setActiveCall] = useState<ActiveCallState | null>(null);
-  const [callLogs] = useState<CallLog[]>(MOCK_CALL_LOGS);
-  const [statuses] = useState<StatusItem[]>(MOCK_STATUSES);
+  const [callLogs] = useState<CallLog[]>([]);
+  const [statuses] = useState<StatusItem[]>([]);
+
 
   // WebSocket & Pagination State
   const [socketStatus, setSocketStatus] = useState<WSSocketStatus>('disconnected');
@@ -155,11 +168,12 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Sync storeUser with currentUser and ensure user-level WebSocket is connected
   useEffect(() => {
     if (storeUser) {
+      const cleanAvatar = storeUser.avatar && !storeUser.avatar.includes('images.unsplash.com') ? storeUser.avatar : '';
       const updated: User = {
         id: String(storeUser.id),
         name: storeUser.name,
         username: storeUser.username,
-        avatar: storeUser.avatar,
+        avatar: cleanAvatar,
         status: storeUser.status || 'online',
         about: storeUser.about || '',
         phone: storeUser.phone || '',
@@ -167,6 +181,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       };
       setCurrentUser(updated);
       currentUserRef.current = updated;
+
 
       const token = storage.getAuthToken();
       if (token) {
@@ -519,14 +534,59 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       );
     });
 
+    const unsubProfileUpdate = webSocketService.on<WSProfileUpdateEvent>('PROFILE_UPDATE', (event) => {
+      console.log('[ChatContext] Real-time PROFILE_UPDATE event received:', event);
+      const targetUserId = String(event.user_id).trim();
+      const newAvatar = event.profile_image_url || event.profile_image || event.avatar || '';
+      const targetMatch = targetUserId.match(/\d+/);
+
+      const myIdStr = String(currentUserRef.current.id).trim();
+      const myMatch = myIdStr.match(/\d+/);
+      const isMe = targetMatch && myMatch ? targetMatch[0] === myMatch[0] : targetUserId === myIdStr;
+
+      if (isMe) {
+        setCurrentUser((prev) => ({ ...prev, avatar: newAvatar }));
+      }
+
+      setConversations((prev) =>
+        prev.map((conv) => {
+          let hasParticipant = false;
+          const updatedParticipants = conv.participants.map((p) => {
+            const pIdStr = String(p.id).trim();
+            const pMatch = pIdStr.match(/\d+/);
+            const isMatch = targetMatch && pMatch ? targetMatch[0] === pMatch[0] : pIdStr === targetUserId;
+            if (isMatch) {
+              hasParticipant = true;
+              return { ...p, avatar: newAvatar };
+            }
+            return p;
+          });
+
+          if (hasParticipant) {
+            return { ...conv, participants: updatedParticipants };
+          }
+          return conv;
+        })
+      );
+
+      allUsersRef.current = allUsersRef.current.map((u) => {
+        const uIdStr = String(u.id).trim();
+        const uMatch = uIdStr.match(/\d+/);
+        const isMatch = targetMatch && uMatch ? targetMatch[0] === uMatch[0] : uIdStr === targetUserId;
+        return isMatch ? { ...u, avatar: newAvatar } : u;
+      });
+    });
+
     return () => {
       unsubStatus();
       unsubNewMessage();
       unsubMessageStatus();
       unsubHistory();
       unsubPresence();
+      unsubProfileUpdate();
     };
   }, [mapBackendMessage]);
+
 
 
 
@@ -796,9 +856,22 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setCurrentUser(updated);
   };
 
+  const uploadProfilePicture = async (file: File): Promise<string> => {
+    const result = await userService.uploadProfileImage(file);
+    const newAvatarUrl = result.profile_image_url || '';
+    setCurrentUser((prev) => ({ ...prev, avatar: newAvatarUrl }));
+    return newAvatarUrl;
+  };
+
+  const removeProfilePicture = async (): Promise<void> => {
+    await userService.deleteProfileImage();
+    setCurrentUser((prev) => ({ ...prev, avatar: '' }));
+  };
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
+
 
   const startCall = (contact: User, type: CallType) => {
     setActiveCall({
@@ -871,7 +944,10 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         createNewChat,
         createNewGroup,
         updateUserProfile,
+        uploadProfilePicture,
+        removeProfilePicture,
         toggleTheme,
+
         startCall,
         endCall,
         toggleCallMute,

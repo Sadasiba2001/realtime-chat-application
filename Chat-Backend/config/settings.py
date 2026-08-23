@@ -185,3 +185,10 @@ SIMPLE_JWT = {
 
     'JTI_CLAIM': 'jti',
 }
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME = env('CLOUD_NAME', default='')
+CLOUDINARY_API_KEY = env('API_KEY', default='')
+CLOUDINARY_API_SECRET = env('API_SECRET', default='')
+CLOUDINARY_URL = env('CLOUDINARY_URL', default='')
+

@@ -1,21 +1,20 @@
 import type { Conversation, User, UserPresence, MessageStatus } from '../types/chat.types';
-
-
-import { MOCK_CONVERSATIONS } from '../mock/conversations';
 import { apiClient, simulateNetworkDelay } from './api.client';
 import { API_ENDPOINTS } from './api.endpoints';
 import { getDirectConversationId } from '../utils/conversation.utils';
 import { formatMessageTime } from '../utils/date.utils';
 
 interface RawConversationPartner {
+
   id?: number | string;
   name?: string;
   username?: string;
-  email?: string;
+  avatar?: string;
+  profile_image?: string;
+  profile_image_url?: string;
   phone_number?: string;
   phone?: string;
-  avatar?: string;
-  is_active?: boolean;
+  email?: string;
   status?: UserPresence;
   last_seen?: string;
   lastSeen?: string;
@@ -27,6 +26,9 @@ interface RawConversationItem {
   user_id?: number | string;
   username?: string;
   name?: string;
+  avatar?: string;
+  profile_image?: string;
+  profile_image_url?: string;
   status?: UserPresence;
   last_seen?: string;
   last_message?: {
@@ -37,14 +39,13 @@ interface RawConversationItem {
     status?: string;
     created_at: string;
   } | null;
-
   last_message_at?: string | null;
   unread_count?: number;
 }
 
 
 class ChatService {
-  private conversations: Conversation[] = [...MOCK_CONVERSATIONS];
+  private conversations: Conversation[] = [];
 
   async getConversations(currentUser?: User): Promise<Conversation[]> {
     try {
@@ -57,28 +58,26 @@ class ChatService {
         const myUser: User = currentUser || {
           id: String(myId),
           name: 'Me',
+          username: '',
           avatar: '',
           status: 'online',
-          about: '',
+          about: 'Available',
           phone: '',
+          email: '',
         };
 
         return results.map((item: RawConversationItem) => {
-          const partnerUser: RawConversationPartner = item.user || {
-            id: item.user_id,
-            username: item.username,
-            name: item.name || item.username,
-          };
-          const partnerId = String(partnerUser.id || '0');
+          const partnerUser = item.user || {};
+          const partnerId = String(partnerUser.id || item.user_id || '0');
           const convId = getDirectConversationId(myId, partnerId);
 
 
           const contactUser: User = {
             id: partnerId,
-            name: partnerUser.name || partnerUser.username || `User ${partnerId}`,
-            username: partnerUser.username,
-            avatar: partnerUser.avatar || '',
-            status: partnerUser.status || (item.status === 'online' ? 'online' : 'offline'),
+            name: partnerUser.name || partnerUser.username || item.name || item.username || `User ${partnerId}`,
+            username: partnerUser.username || item.username,
+            avatar: partnerUser.profile_image_url || partnerUser.profile_image || partnerUser.avatar || item.profile_image_url || item.profile_image || item.avatar || '',
+            status: partnerUser.status || item.status || 'offline',
             about: partnerUser.about || 'Available',
             phone: partnerUser.phone_number || partnerUser.phone || '',
             email: partnerUser.email || '',
@@ -115,11 +114,8 @@ class ChatService {
         });
       }
       return [];
-    } catch (err) {
-      if (import.meta.env.VITE_ENABLE_MOCK_FALLBACK === 'true') {
-        return simulateNetworkDelay([...this.conversations]);
-      }
-      throw err;
+    } catch {
+      return [];
     }
   }
 
@@ -166,7 +162,7 @@ class ChatService {
       muted: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      groupAvatar: `https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=150&auto=format&fit=crop&q=80`,
+      groupAvatar: '',
     };
 
     this.conversations.unshift(newConv);

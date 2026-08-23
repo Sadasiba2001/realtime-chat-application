@@ -38,29 +38,36 @@ export const StatusView: React.FC = () => {
             Recent Updates
           </span>
 
-          {statuses.map((item: StatusItem) => (
-            <div
-              key={item.id}
-              onClick={() => setActiveStatus(item)}
-              className="flex items-center gap-3.5 p-2.5 rounded-2xl hover:bg-gray-100 dark:hover:bg-[#202c33] cursor-pointer transition-colors"
-            >
-              <div
-                className={`p-0.5 rounded-full border-2 ${
-                  item.viewed ? 'border-gray-300 dark:border-gray-700' : 'border-emerald-500'
-                }`}
-              >
-                <Avatar src={item.user.avatar} name={item.user.name} size="md" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                  {item.user.name}
-                </h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{item.timestamp}</p>
-              </div>
+          {statuses.length === 0 ? (
+            <div className="text-center py-8 text-gray-400 text-xs">
+              No recent status updates from contacts
             </div>
-          ))}
+          ) : (
+            statuses.map((item: StatusItem) => (
+              <div
+                key={item.id}
+                onClick={() => setActiveStatus(item)}
+                className="flex items-center gap-3.5 p-2.5 rounded-2xl hover:bg-gray-100 dark:hover:bg-[#202c33] cursor-pointer transition-colors"
+              >
+                <div
+                  className={`p-0.5 rounded-full border-2 ${
+                    item.viewed ? 'border-gray-300 dark:border-gray-700' : 'border-emerald-500'
+                  }`}
+                >
+                  <Avatar src={item.user.avatar} name={item.user.name} size="md" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                    {item.user.name}
+                  </h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{item.timestamp}</p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
+
 
       {/* Main Status Preview Area */}
       <div className="flex-1 hidden md:flex flex-col items-center justify-center bg-gray-900 text-white relative">

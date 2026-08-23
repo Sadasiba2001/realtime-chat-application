@@ -36,6 +36,9 @@ class LoginSerializer(serializers.Serializer):
 
 
 class UserResponseSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+    profile_image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
@@ -45,20 +48,41 @@ class UserResponseSerializer(serializers.ModelSerializer):
             "email",
             "phone_number",
             "role",
+            "profile_image",
+            "profile_image_url",
+            "avatar",
             "is_active",
             "last_seen",
             "created_at",
         ]
         read_only_fields = fields
 
+    def get_avatar(self, obj):
+        return obj.profile_image or ""
+
+    def get_profile_image_url(self, obj):
+        return obj.profile_image or None
 
 
 class UserSearchResponseSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+    profile_image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
             "id",
             "name",
             "username",
+            "profile_image",
+            "profile_image_url",
+            "avatar",
         ]
         read_only_fields = fields
+
+    def get_avatar(self, obj):
+        return obj.profile_image or ""
+
+    def get_profile_image_url(self, obj):
+        return obj.profile_image or None
+

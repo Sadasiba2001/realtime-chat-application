@@ -9,6 +9,7 @@ from .authentication_controller import (
 )
 from .user_controller import (
     search_users,
+    manage_profile_image,
     UserSearchPagination,
 )
 
@@ -21,5 +22,7 @@ __all__ = [
     "get_users",
     "get_user_by_id",
     "search_users",
+    "manage_profile_image",
     "UserSearchPagination",
 ]
+

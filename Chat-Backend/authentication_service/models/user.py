@@ -67,10 +67,18 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
+    profile_image = models.URLField(max_length=500, blank=True, null=True, default=None)
+    profile_image_public_id = models.CharField(max_length=255, blank=True, null=True, default=None)
     last_seen = models.DateTimeField(null=True, blank=True, default=None)
     date_joined = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def profile_image_url(self):
+        return self.profile_image
+
+
 
 
     objects = UserManager()

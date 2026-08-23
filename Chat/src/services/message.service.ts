@@ -1,14 +1,14 @@
 import type { Message, Attachment, ReplyPreview } from '../types/chat.types';
-import { MOCK_MESSAGES } from '../mock/messages';
 import { simulateNetworkDelay } from './api.client';
 
 class MessageService {
-  private messagesStore: Record<string, Message[]> = { ...MOCK_MESSAGES };
+  private messagesStore: Record<string, Message[]> = {};
 
   async getMessagesByConversationId(conversationId: string): Promise<Message[]> {
     const list = this.messagesStore[conversationId] || [];
     return simulateNetworkDelay([...list]);
   }
+
 
   async sendMessage(
     conversationId: string,

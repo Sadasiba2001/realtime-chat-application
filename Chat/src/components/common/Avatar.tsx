@@ -1,5 +1,6 @@
 import React from 'react';
 import type { UserPresence } from '../../types/chat.types';
+import { getOptimizedCloudinaryUrl } from '../../utils/cloudinary.utils';
 
 interface AvatarProps {
   src?: string;
@@ -10,6 +11,7 @@ interface AvatarProps {
   className?: string;
   onClick?: () => void;
 }
+
 
 const AVATAR_BG_COLORS = [
   'bg-gradient-to-br from-indigo-500 to-purple-600',
@@ -89,6 +91,8 @@ export const Avatar: React.FC<AvatarProps> = ({
     src.trim() !== '' &&
     !src.includes('images.unsplash.com');
 
+  const optimizedSrc = getOptimizedCloudinaryUrl(src, size);
+
   return (
     <div
       className={`relative inline-block flex-shrink-0 cursor-pointer ${className}`}
@@ -96,8 +100,9 @@ export const Avatar: React.FC<AvatarProps> = ({
     >
       {hasValidCustomAvatar ? (
         <img
-          src={src}
+          src={optimizedSrc}
           alt={name}
+          loading={size === 'sm' || size === 'md' ? 'lazy' : 'eager'}
           className={`${sizeClasses[size]} rounded-full object-cover shadow-xs border border-gray-200 dark:border-gray-700/50`}
         />
       ) : (
@@ -107,6 +112,7 @@ export const Avatar: React.FC<AvatarProps> = ({
           {initials}
         </div>
       )}
+
 
       {showStatus && status && (
         <span

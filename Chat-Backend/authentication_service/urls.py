@@ -8,6 +8,7 @@ from authentication_service.controller import (
     get_users,
     get_user_by_id,
     search_users,
+    manage_profile_image,
 )
 
 urlpatterns = [
@@ -17,6 +18,8 @@ urlpatterns = [
     path("token/refresh/", token_refresh, name="token_refresh"),
     path("token/verify/", token_verify, name="token_verify"),
     path("users/search/", search_users, name="search_users"),
+    path("users/profile-image/", manage_profile_image, name="manage_profile_image"),
     path("users/", get_users, name="get_users"),
     path("users/<int:user_id>/", get_user_by_id, name="get_user_by_id"),
 ]
+
