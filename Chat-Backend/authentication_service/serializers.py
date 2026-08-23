@@ -46,9 +46,11 @@ class UserResponseSerializer(serializers.ModelSerializer):
             "phone_number",
             "role",
             "is_active",
+            "last_seen",
             "created_at",
         ]
         read_only_fields = fields
+
 
 
 class UserSearchResponseSerializer(serializers.ModelSerializer):

@@ -1,4 +1,5 @@
-import type { Conversation, User } from '../types/chat.types';
+import type { Conversation, User, UserPresence } from '../types/chat.types';
+
 import { MOCK_CONVERSATIONS } from '../mock/conversations';
 import { apiClient, simulateNetworkDelay } from './api.client';
 import { API_ENDPOINTS } from './api.endpoints';
@@ -14,6 +15,9 @@ interface RawConversationPartner {
   phone?: string;
   avatar?: string;
   is_active?: boolean;
+  status?: UserPresence;
+  last_seen?: string;
+  lastSeen?: string;
   about?: string;
 }
 
@@ -22,6 +26,8 @@ interface RawConversationItem {
   user_id?: number | string;
   username?: string;
   name?: string;
+  status?: UserPresence;
+  last_seen?: string;
   last_message?: {
     id: number | string;
     sender_id: number | string;
@@ -32,6 +38,7 @@ interface RawConversationItem {
   last_message_at?: string | null;
   unread_count?: number;
 }
+
 
 class ChatService {
   private conversations: Conversation[] = [...MOCK_CONVERSATIONS];
@@ -68,11 +75,13 @@ class ChatService {
             name: partnerUser.name || partnerUser.username || `User ${partnerId}`,
             username: partnerUser.username,
             avatar: partnerUser.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
-            status: partnerUser.is_active !== false ? 'online' : 'offline',
+            status: partnerUser.status || (item.status === 'online' ? 'online' : 'offline'),
             about: partnerUser.about || 'Available',
             phone: partnerUser.phone_number || partnerUser.phone || '',
             email: partnerUser.email || '',
+            lastSeen: partnerUser.last_seen || partnerUser.lastSeen || item.last_seen || undefined,
           };
+
 
           const lastMsg = item.last_message
             ? {

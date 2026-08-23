@@ -76,3 +76,18 @@ class MessageRepository:
             .order_by("-last_message_created_at")
         )
 
+    @staticmethod
+    def get_conversation_partner_ids(user_id: int) -> list[int]:
+        partner_id_expr = Case(
+            When(sender_id=user_id, then=F("receiver_id")),
+            default=F("sender_id"),
+            output_field=BigIntegerField(),
+        )
+        return list(
+            Message.objects.filter(Q(sender_id=user_id) | Q(receiver_id=user_id))
+            .annotate(partner_id=partner_id_expr)
+            .values_list("partner_id", flat=True)
+            .distinct()
+        )
+
+

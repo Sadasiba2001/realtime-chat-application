@@ -9,7 +9,7 @@ from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from config.asgi import application
 from chatting_service.models import Message
 from chatting_service.repository import MessageRepository
-from chatting_service.services import MessageService
+from chatting_service.services import MessageService, PresenceService
 
 User = get_user_model()
 
@@ -53,6 +53,7 @@ class ChatServiceUnitTests(TestCase):
         )
         self.service = MessageService()
         self.repository = MessageRepository()
+        self.presence_service = PresenceService()
         self.client = APIClient()
 
     def test_create_and_get_messages_repository(self):
@@ -140,10 +141,59 @@ class ChatServiceUnitTests(TestCase):
         self.assertEqual(len(data["data"]), 1)
         self.assertEqual(data["data"][0]["user"]["id"], self.user2.id)
         self.assertEqual(data["data"][0]["last_message"]["content"], "Direct message to user 2")
+        # Initially user2 is offline
+        self.assertEqual(data["data"][0]["user"]["status"], "offline")
 
     def test_get_conversations_api_unauthenticated(self):
         response = self.client.get("/api/chat/conversations/")
         self.assertEqual(response.status_code, 401)
+
+    def test_presence_service_single_and_multi_connection(self):
+        user_id = self.user2.id
+        # Initially offline
+        self.assertFalse(self.presence_service.is_user_online(user_id))
+
+        # Tab 1 connects
+        is_first = self.presence_service.user_connected(user_id)
+        self.assertTrue(is_first)
+        self.assertTrue(self.presence_service.is_user_online(user_id))
+
+        # Tab 2 connects (multi-tab)
+        is_first_tab2 = self.presence_service.user_connected(user_id)
+        self.assertFalse(is_first_tab2)
+        self.assertTrue(self.presence_service.is_user_online(user_id))
+
+        # Tab 1 closes (still 1 tab open)
+        is_last_tab1, last_seen_tab1 = self.presence_service.user_disconnected(user_id)
+        self.assertFalse(is_last_tab1)
+        self.assertIsNone(last_seen_tab1)
+        self.assertTrue(self.presence_service.is_user_online(user_id))
+
+        # Tab 2 closes (0 tabs open -> offline)
+        is_last_tab2, last_seen_tab2 = self.presence_service.user_disconnected(user_id)
+        self.assertTrue(is_last_tab2)
+        self.assertIsNotNone(last_seen_tab2)
+        self.assertFalse(self.presence_service.is_user_online(user_id))
+
+        # Check user last_seen updated
+        self.user2.refresh_from_db()
+        self.assertIsNotNone(self.user2.last_seen)
+
+    def test_presence_initial_state_in_conversations(self):
+        self.repository.create_message(self.user1, self.user2, "Message")
+        # Set user2 as connected
+        self.presence_service.user_connected(self.user2.id)
+
+        convs = self.service.get_user_conversations(self.user1.id)
+        self.assertEqual(len(convs), 1)
+        self.assertEqual(convs[0]["user"]["status"], "online")
+
+        # Disconnect user2
+        self.presence_service.user_disconnected(self.user2.id)
+        convs_after = self.service.get_user_conversations(self.user1.id)
+        self.assertEqual(convs_after[0]["user"]["status"], "offline")
+        self.assertIsNotNone(convs_after[0]["user"]["last_seen"])
+
 
 
 

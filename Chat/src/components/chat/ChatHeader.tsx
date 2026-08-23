@@ -13,6 +13,8 @@ import {
 import { useChat } from '../../context/ChatContext';
 import { Avatar } from '../common/Avatar';
 
+import { formatLastSeen } from '../../utils/date.utils';
+
 interface ChatHeaderProps {
   onToggleSearch: () => void;
   onToggleInfo: () => void;
@@ -56,7 +58,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     ? 'typing...'
     : otherParticipant?.status === 'online'
     ? 'Online'
-    : otherParticipant?.lastSeen || 'Offline';
+    : formatLastSeen(otherParticipant?.lastSeen);
+
 
   return (
     <header className="h-16 px-4 flex items-center justify-between bg-white dark:bg-[#0f172a] border-b border-gray-200 dark:border-gray-800/80 z-20 select-none shadow-xs">

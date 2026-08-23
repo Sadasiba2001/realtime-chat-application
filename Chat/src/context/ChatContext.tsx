@@ -16,8 +16,10 @@ import type {
 import type {
   BackendMessagePayload,
   WSHistoryEvent,
+  WSPresenceEvent,
   WSSocketStatus,
 } from '../types/websocket.types';
+
 import { userService } from '../services/user.service';
 import { chatService } from '../services/chat.service';
 import { webSocketService } from '../services/websocket.service';
@@ -354,12 +356,54 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     });
 
+    const unsubPresence = webSocketService.on<WSPresenceEvent>('PRESENCE_CHANGE', (event) => {
+      console.log('[ChatContext] Real-time presence update received:', event);
+      const targetUserId = String(event.user_id).trim();
+      const newStatus = event.status;
+      const newLastSeen = event.last_seen;
+      const targetMatch = targetUserId.match(/\d+/);
+
+      setConversations((prev) =>
+        prev.map((conv) => {
+          let hasParticipant = false;
+          const updatedParticipants = conv.participants.map((p) => {
+            const pIdStr = String(p.id).trim();
+            const pMatch = pIdStr.match(/\d+/);
+
+            const isMatch = targetMatch && pMatch
+              ? targetMatch[0] === pMatch[0]
+              : pIdStr === targetUserId;
+
+            if (isMatch) {
+              hasParticipant = true;
+              return {
+                ...p,
+                status: newStatus,
+                lastSeen: newLastSeen || p.lastSeen,
+              };
+            }
+            return p;
+          });
+
+          if (hasParticipant) {
+            return {
+              ...conv,
+              participants: updatedParticipants,
+            };
+          }
+          return conv;
+        })
+      );
+    });
+
     return () => {
       unsubStatus();
       unsubNewMessage();
       unsubHistory();
+      unsubPresence();
     };
   }, [mapBackendMessage]);
+
 
   // Load existing direct conversations from backend
   useEffect(() => {

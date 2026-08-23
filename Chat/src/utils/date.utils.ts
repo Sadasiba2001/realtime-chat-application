@@ -38,3 +38,21 @@ export const formatDateDivider = (dateString?: string): string => {
 
   return date.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
 };
+
+export const formatLastSeen = (dateString?: string): string => {
+  if (!dateString) return 'Offline';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+
+  const now = new Date();
+  const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffSeconds < 60) return 'Last seen just now';
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) return `Last seen ${diffMinutes}m ago`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `Last seen ${diffHours}h ago`;
+  if (diffHours < 48) return 'Last seen yesterday';
+  return `Last seen ${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+};
+

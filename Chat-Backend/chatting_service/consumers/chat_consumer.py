@@ -1,12 +1,13 @@
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
-from chatting_service.services import MessageService
+from chatting_service.services import MessageService, PresenceService
 
 
 class ChatConsumer(AsyncJsonWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.message_service = MessageService()
+        self.presence_service = PresenceService()
         self.user = None
         self.target_user_id = None
         self.user_group = None
@@ -50,10 +51,28 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         # 4. Accept WebSocket connection
         await self.accept()
 
-        # 5. Send connection event
+        # 5. Track presence (increment connection count) and broadcast if became ONLINE
+        is_first_connection = await database_sync_to_async(self.presence_service.user_connected)(self.user.id)
+        if is_first_connection:
+            partner_ids = await database_sync_to_async(self.message_service.get_conversation_partner_ids)(self.user.id)
+            for partner_id in partner_ids:
+                await self.channel_layer.group_send(
+                    f"user_{partner_id}",
+                    {
+                        "type": "presence.event",
+                        "data": {
+                            "type": "presence",
+                            "user_id": self.user.id,
+                            "status": "online",
+                        },
+                    },
+                )
+
+        # 6. Send connection event
         await self.send_json({
             "type": "connection",
             "message": "Connected successfully.",
+            "user_id": self.user.id,
         })
 
     async def disconnect(self, close_code):
@@ -61,6 +80,31 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.channel_layer.group_discard(self.user_group, self.channel_name)
         if self.group_name:
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+        # Track presence (decrement connection count) and broadcast if became OFFLINE
+        if self.user and self.user.is_authenticated:
+            is_last_connection, last_seen_iso = await database_sync_to_async(
+                self.presence_service.user_disconnected
+            )(self.user.id)
+
+            if is_last_connection:
+                partner_ids = await database_sync_to_async(
+                    self.message_service.get_conversation_partner_ids
+                )(self.user.id)
+                for partner_id in partner_ids:
+                    await self.channel_layer.group_send(
+                        f"user_{partner_id}",
+                        {
+                            "type": "presence.event",
+                            "data": {
+                                "type": "presence",
+                                "user_id": self.user.id,
+                                "status": "offline",
+                                "last_seen": last_seen_iso,
+                            },
+                        },
+                    )
+
 
     async def receive_json(self, content, **kwargs):
         if not isinstance(content, dict):
@@ -221,3 +265,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             "type": "message",
             "data": event["data"],
         })
+
+    async def presence_event(self, event: dict):
+        await self.send_json(event["data"])
+

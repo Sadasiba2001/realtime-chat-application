@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from authentication_service.repository import UserRepository
 from chatting_service.repository import MessageRepository
 from chatting_service.models import Message
+from chatting_service.services.presence_service import PresenceService
 
 User = get_user_model()
 
@@ -15,9 +16,12 @@ class MessageService:
         self,
         message_repository: Optional[MessageRepository] = None,
         user_repository: Optional[UserRepository] = None,
+        presence_service: Optional[PresenceService] = None,
     ):
         self.message_repository = message_repository or MessageRepository()
         self.user_repository = user_repository or UserRepository()
+        self.presence_service = presence_service or PresenceService()
+
 
     def validate_target_user(self, target_user_id: int, authenticated_user_id: int) -> User:
         try:
@@ -106,6 +110,7 @@ class MessageService:
                 if partner.last_message_created_at
                 else None
             )
+            presence = self.presence_service.get_user_presence(partner.id)
             results.append({
                 "user": {
                     "id": partner.id,
@@ -114,9 +119,13 @@ class MessageService:
                     "email": partner.email,
                     "phone_number": partner.phone_number or "",
                     "is_active": partner.is_active,
+                    "status": presence["status"],
+                    "last_seen": presence["last_seen"],
                 },
                 "user_id": partner.id,
                 "username": partner.username,
+                "status": presence["status"],
+                "last_seen": presence["last_seen"],
                 "last_message": {
                     "id": partner.last_message_id,
                     "sender_id": partner.last_message_sender_id,
@@ -129,6 +138,9 @@ class MessageService:
             })
         return results
 
+    def get_conversation_partner_ids(self, user_id: int) -> List[int]:
+        return self.message_repository.get_conversation_partner_ids(user_id=user_id)
+
     @staticmethod
     def format_message(message: Message) -> Dict[str, Any]:
         return {
@@ -138,4 +150,5 @@ class MessageService:
             "content": message.content,
             "created_at": message.created_at.isoformat().replace("+00:00", "Z"),
         }
+
 

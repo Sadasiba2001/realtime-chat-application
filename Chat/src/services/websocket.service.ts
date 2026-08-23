@@ -142,10 +142,15 @@ class WebSocketService {
         this.emit('HISTORY_LOADED', event);
         break;
 
+      case 'presence':
+        this.emit('PRESENCE_CHANGE', event);
+        break;
+
       case 'error':
         console.error('[WebSocket] Server error:', event);
         this.emit('ERROR', event);
         break;
+
 
       default:
         console.warn('[WebSocket] Unknown event type:', event);

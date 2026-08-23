@@ -15,7 +15,7 @@ export interface BackendHistoryData {
   results: BackendMessagePayload[];
 }
 
-export type WSServerMessageType = 'connection' | 'message' | 'history' | 'error';
+export type WSServerMessageType = 'connection' | 'message' | 'history' | 'presence' | 'error';
 
 export interface WSConnectionEvent {
   type: 'connection';
@@ -34,13 +34,26 @@ export interface WSHistoryEvent {
   data: BackendHistoryData;
 }
 
+export interface WSPresenceEvent {
+  type: 'presence';
+  user_id: number | string;
+  status: 'online' | 'offline';
+  last_seen?: string;
+}
+
 export interface WSErrorEvent {
   type: 'error';
   code: string;
   message: string;
 }
 
-export type WSServerEvent = WSConnectionEvent | WSMessageEvent | WSHistoryEvent | WSErrorEvent;
+export type WSServerEvent =
+  | WSConnectionEvent
+  | WSMessageEvent
+  | WSHistoryEvent
+  | WSPresenceEvent
+  | WSErrorEvent;
+
 
 export interface WSClientSendMessage {
   type: 'message';
