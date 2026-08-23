@@ -8,11 +8,9 @@ import {
   Info,
   Pin,
   VolumeX,
-  Radio,
 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { Avatar } from '../common/Avatar';
-
 import { formatLastSeen } from '../../utils/date.utils';
 
 interface ChatHeaderProps {
@@ -32,7 +30,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     toggleMute,
     isMobileView,
     backToChatListMobile,
-    socketStatus,
   } = useChat();
 
   const [showDropdown, setShowDropdown] = useState(false);
@@ -59,7 +56,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     : otherParticipant?.status === 'online'
     ? 'Online'
     : formatLastSeen(otherParticipant?.lastSeen);
-
 
   return (
     <header className="h-16 px-4 flex items-center justify-between bg-white dark:bg-[#0f172a] border-b border-gray-200 dark:border-gray-800/80 z-20 select-none shadow-xs">
@@ -88,27 +84,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                 {displayName}
               </h3>
-              {!isGroup && (
-                <span
-                  className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md font-medium ${
-                    socketStatus === 'connected'
-                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50'
-                      : socketStatus === 'connecting'
-                      ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50'
-                      : 'bg-gray-100 dark:bg-slate-800 text-gray-400'
-                  }`}
-                  title={`WebSocket Status: ${socketStatus}`}
-                >
-                  <Radio className={`w-2.5 h-2.5 ${socketStatus === 'connected' ? 'animate-pulse' : ''}`} />
-                  {socketStatus === 'connected' ? 'Live' : socketStatus === 'connecting' ? 'Connecting' : 'Offline'}
-                </span>
-              )}
             </div>
             <p
               className={`text-xs truncate ${
                 activeConversation.isTyping || otherParticipant?.status === 'online'
                   ? 'text-sky-600 dark:text-sky-400 font-medium'
-                : 'text-gray-500 dark:text-gray-400'
+                  : 'text-gray-500 dark:text-gray-400'
               }`}
             >
               {statusSubtext}
@@ -116,6 +97,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
         </div>
       </div>
+
 
       {/* Action Buttons */}
       <div className="flex items-center gap-1 md:gap-2">
