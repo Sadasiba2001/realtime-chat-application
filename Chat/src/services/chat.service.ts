@@ -1,4 +1,5 @@
-import type { Conversation, User, UserPresence } from '../types/chat.types';
+import type { Conversation, User, UserPresence, MessageStatus } from '../types/chat.types';
+
 
 import { MOCK_CONVERSATIONS } from '../mock/conversations';
 import { apiClient, simulateNetworkDelay } from './api.client';
@@ -33,8 +34,10 @@ interface RawConversationItem {
     sender_id: number | string;
     receiver_id: number | string;
     content: string;
+    status?: string;
     created_at: string;
   } | null;
+
   last_message_at?: string | null;
   unread_count?: number;
 }
@@ -91,10 +94,11 @@ class ChatService {
                 senderId: String(item.last_message.sender_id),
                 text: item.last_message.content,
                 timestamp: formatMessageTime(item.last_message.created_at),
-                status: 'delivered' as const,
+                status: (item.last_message.status as MessageStatus) || 'sent',
                 createdAt: item.last_message.created_at,
               }
             : undefined;
+
 
           return {
             id: convId,

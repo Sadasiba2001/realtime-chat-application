@@ -76,16 +76,17 @@ export const ChatItem: React.FC<ChatItemProps> = ({
             ) : lastMsg ? (
               <>
                 {isOutgoing && (
-                  <span className="inline-flex text-sky-500 dark:text-sky-400">
+                  <span className="inline-flex">
                     {lastMsg.status === 'read' ? (
-                      <CheckCheck className="w-3.5 h-3.5 text-sky-500" />
+                      <CheckCheck className="w-3.5 h-3.5 text-emerald-500 font-bold" />
                     ) : lastMsg.status === 'delivered' ? (
-                      <CheckCheck className="w-3.5 h-3.5" />
+                      <CheckCheck className="w-3.5 h-3.5 text-gray-400 dark:text-gray-400" />
                     ) : (
-                      <Check className="w-3.5 h-3.5" />
+                      <Check className="w-3.5 h-3.5 text-gray-400 dark:text-gray-400" />
                     )}
                   </span>
                 )}
+
                 <span className="truncate">
                   {lastMsg.isDeleted ? <i>Message deleted</i> : lastMsg.text || 'Attachment'}
                 </span>

@@ -2,6 +2,12 @@ from django.conf import settings
 from django.db import models
 
 
+class MessageStatus(models.TextChoices):
+    SENT = "sent", "Sent"
+    DELIVERED = "delivered", "Delivered"
+    READ = "read", "Read"
+
+
 class Message(models.Model):
     id = models.BigAutoField(primary_key=True)
     sender = models.ForeignKey(
@@ -15,6 +21,12 @@ class Message(models.Model):
         related_name="received_messages",
     )
     content = models.TextField()
+    status = models.CharField(
+        max_length=10,
+        choices=MessageStatus.choices,
+        default=MessageStatus.SENT,
+        db_index=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -24,7 +36,9 @@ class Message(models.Model):
         indexes = [
             models.Index(fields=["sender", "receiver", "created_at"]),
             models.Index(fields=["receiver", "sender", "created_at"]),
+            models.Index(fields=["receiver", "status"]),
         ]
 
     def __str__(self):
-        return f"Message {self.id} from {self.sender_id} to {self.receiver_id}: {self.content[:30]}"
+        return f"Message {self.id} [{self.status}] from {self.sender_id} to {self.receiver_id}: {self.content[:30]}"
+

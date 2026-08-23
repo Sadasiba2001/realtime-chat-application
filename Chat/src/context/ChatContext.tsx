@@ -5,6 +5,7 @@ import type {
   User,
   Conversation,
   Message,
+  MessageStatus,
   Attachment,
   ReplyPreview,
   ThemeMode,
@@ -13,12 +14,15 @@ import type {
   CallLog,
   StatusItem,
 } from '../types/chat.types';
+
 import type {
   BackendMessagePayload,
   WSHistoryEvent,
+  WSMessageStatusEvent,
   WSPresenceEvent,
   WSSocketStatus,
 } from '../types/websocket.types';
+
 
 import { userService } from '../services/user.service';
 import { chatService } from '../services/chat.service';
@@ -200,7 +204,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         senderId: String(backendMsg.sender_id),
         text: backendMsg.content,
         timestamp: formatMessageTime(backendMsg.created_at),
-        status: 'delivered',
+        status: (backendMsg.status as MessageStatus) || 'sent',
         createdAt: backendMsg.created_at,
       };
     },
@@ -230,6 +234,17 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         : String(payload.sender_id) === currentMyIdStr;
 
       const otherId = isMyMessage ? String(payload.receiver_id) : String(payload.sender_id);
+      const isCurrentActive = convId === activeConversationIdRef.current;
+
+      // If incoming message addressed to current user, acknowledge delivery and read
+      if (!isMyMessage) {
+        webSocketService.sendDeliveryReceipt(payload.id);
+
+        if (isCurrentActive) {
+          webSocketService.sendReadReceipt(payload.sender_id, [payload.id]);
+          newMsg.status = 'read';
+        }
+      }
 
       // 1. Insert/update message in that conversation's message list
       setMessagesMap((prev) => {
@@ -262,7 +277,6 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       // 2. Update conversation list and unread counts (and move conversation to top)
       setConversations((prev) => {
-        const isCurrentActive = convId === activeConversationIdRef.current;
         const existingConv = prev.find((c) => c.id === convId);
 
         if (existingConv) {
@@ -291,7 +305,6 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           phone: '',
         };
 
-
         const newConversation: Conversation = {
           id: convId,
           type: 'direct',
@@ -309,6 +322,82 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
     });
 
+    const unsubMessageStatus = webSocketService.on<WSMessageStatusEvent>('MESSAGE_STATUS_UPDATE', (event) => {
+      console.log('[ChatContext] MESSAGE_STATUS_UPDATE received:', event);
+      const newStatus = event.status;
+      const rawIds = event.message_ids || (event.message_id !== undefined ? [event.message_id] : []);
+      if (rawIds.length === 0) return;
+
+      const targetIdStrs = new Set(rawIds.map((id) => String(id)));
+      const targetNumericIds = new Set(
+        rawIds
+          .map((id) => {
+            const match = String(id).match(/\d+/);
+            return match ? match[0] : null;
+          })
+          .filter(Boolean)
+      );
+
+      // Update messagesMap
+      setMessagesMap((prev) => {
+        let anyChanged = false;
+        const nextState: Record<string, Message[]> = {};
+
+        for (const [cId, list] of Object.entries(prev)) {
+          let listChanged = false;
+          const updatedList = list.map((msg) => {
+            const mStr = String(msg.id);
+            const mMatch = mStr.match(/\d+/);
+            const isMatch = targetIdStrs.has(mStr) || (mMatch && targetNumericIds.has(mMatch[0]));
+
+            if (isMatch) {
+              // Never regress status
+              if (msg.status === 'read' && (newStatus === 'delivered' || newStatus === 'sent')) {
+                return msg;
+              }
+              if (msg.status === 'delivered' && newStatus === 'sent') {
+                return msg;
+              }
+              if (msg.status !== newStatus) {
+                listChanged = true;
+                anyChanged = true;
+                return { ...msg, status: newStatus };
+              }
+            }
+            return msg;
+          });
+
+          nextState[cId] = listChanged ? updatedList : list;
+        }
+
+        return anyChanged ? nextState : prev;
+      });
+
+      // Update lastMessage in conversations list
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (!conv.lastMessage) return conv;
+          const lmStr = String(conv.lastMessage.id);
+          const lmMatch = lmStr.match(/\d+/);
+          const isMatch = targetIdStrs.has(lmStr) || (lmMatch && targetNumericIds.has(lmMatch[0]));
+
+          if (isMatch) {
+            if (conv.lastMessage.status === 'read' && (newStatus === 'delivered' || newStatus === 'sent')) {
+              return conv;
+            }
+            return {
+              ...conv,
+              lastMessage: {
+                ...conv.lastMessage,
+                status: newStatus,
+              },
+            };
+          }
+          return conv;
+        })
+      );
+    });
+
     const unsubHistory = webSocketService.on<WSHistoryEvent>('HISTORY_LOADED', (event) => {
       console.log('[ChatContext] HISTORY_LOADED received:', event);
       setIsLoadingHistory(false);
@@ -320,6 +409,39 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const payload = event.data;
       const results = payload.results || [];
       const formattedMsgs = results.map((item) => mapBackendMessage(item, convId));
+
+      const currentMyId = String(currentUserRef.current.id);
+      const myMatch = currentMyId.match(/\d+/);
+
+      // Acknowledge delivery for any incoming messages still 'sent'
+      const incomingSentIds = results
+        .filter((item) => {
+          const sMatch = String(item.sender_id).match(/\d+/);
+          const isIncoming = myMatch && sMatch
+            ? myMatch[0] !== sMatch[0]
+            : String(item.sender_id) !== currentMyId;
+          return isIncoming && (!item.status || item.status === 'sent');
+        })
+        .map((item) => item.id);
+
+      if (incomingSentIds.length > 0) {
+        webSocketService.sendDeliveryReceipt(incomingSentIds);
+      }
+
+      // If active conversation, mark unread incoming messages as read
+      const incomingUnreadIds = results
+        .filter((item) => {
+          const sMatch = String(item.sender_id).match(/\d+/);
+          const isIncoming = myMatch && sMatch
+            ? myMatch[0] !== sMatch[0]
+            : String(item.sender_id) !== currentMyId;
+          return isIncoming && item.status !== 'read';
+        })
+        .map((item) => item.id);
+
+      if (convId === activeConversationIdRef.current && incomingUnreadIds.length > 0) {
+        webSocketService.sendReadReceipt(targetId, incomingUnreadIds);
+      }
 
       setMessagesMap((prev) => {
         const existing = prev[convId] || [];
@@ -400,10 +522,12 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => {
       unsubStatus();
       unsubNewMessage();
+      unsubMessageStatus();
       unsubHistory();
       unsubPresence();
     };
   }, [mapBackendMessage]);
+
 
 
   // Load existing direct conversations from backend
@@ -445,22 +569,37 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     if (id) {
-      chatService.markAsRead(id).then(() => {
-        setConversations((prev) =>
-          prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
-        );
-      });
+      setConversations((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
+      );
 
       const conv = conversations.find((c) => c.id === id);
       if (conv && conv.type === 'direct') {
         const targetId = getTargetUserIdFromConversation(currentUser.id, conv.participantIds);
         if (targetId) {
+          // Send read receipt for this conversation's unread messages
+          const existingMsgs = messagesMap[id] || [];
+          const currentMyId = String(currentUser.id);
+          const myMatch = currentMyId.match(/\d+/);
+          const unreadIds = existingMsgs
+            .filter((m) => {
+              const sMatch = String(m.senderId).match(/\d+/);
+              const isIncoming = myMatch && sMatch
+                ? myMatch[0] !== sMatch[0]
+                : String(m.senderId) !== currentMyId;
+              return isIncoming && m.status !== 'read';
+            })
+            .map((m) => m.id);
+
+          webSocketService.sendReadReceipt(targetId, unreadIds.length > 0 ? unreadIds : undefined);
+
           // Fetch latest history for this conversation
           webSocketService.fetchHistory(targetId, 1, 50);
         }
       }
     }
   };
+
 
   const backToChatListMobile = () => {
     setMobileShowChat(false);

@@ -75,6 +75,16 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             "user_id": self.user.id,
         })
 
+        # 7. Deliver any pending offline messages addressed to this user
+        pending_messages = await database_sync_to_async(
+            self.message_service.get_pending_sent_messages
+        )(self.user.id)
+        for msg in pending_messages:
+            await self.send_json({
+                "type": "message",
+                "data": msg,
+            })
+
     async def disconnect(self, close_code):
         if self.user_group:
             await self.channel_layer.group_discard(self.user_group, self.channel_name)
@@ -105,7 +115,6 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                         },
                     )
 
-
     async def receive_json(self, content, **kwargs):
         if not isinstance(content, dict):
             await self.send_json({
@@ -121,6 +130,10 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.handle_message(content)
         elif msg_type == "history":
             await self.handle_history(content)
+        elif msg_type in ("delivery_receipt", "delivery_ack"):
+            await self.handle_delivery_receipt(content)
+        elif msg_type in ("read_receipt", "read_ack"):
+            await self.handle_read_receipt(content)
         else:
             await self.send_json({
                 "type": "error",
@@ -192,13 +205,129 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             },
         )
 
-        # Broadcast to receiver's user group (if distinct from sender)
+        # Broadcast to receiver's user group (if distinct from sender and receiver is online)
         if receiver_id != self.user.id:
+            is_receiver_online = await database_sync_to_async(
+                self.presence_service.is_user_online
+            )(receiver_id)
+            if is_receiver_online:
+                await self.channel_layer.group_send(
+                    f"user_{receiver_id}",
+                    {
+                        "type": "chat.message",
+                        "data": message_data,
+                    },
+                )
+
+    async def handle_delivery_receipt(self, content: dict):
+        raw_msg_ids = content.get("message_ids")
+        if raw_msg_ids is None:
+            single_id = content.get("message_id")
+            raw_msg_ids = [single_id] if single_id is not None else []
+
+        if not isinstance(raw_msg_ids, list):
+            raw_msg_ids = [raw_msg_ids]
+
+        valid_ids = []
+        for mid in raw_msg_ids:
+            if mid is not None:
+                try:
+                    valid_ids.append(int(mid))
+                except (ValueError, TypeError):
+                    pass
+
+        if not valid_ids:
+            return
+
+        updated_msgs = await database_sync_to_async(
+            self.message_service.mark_messages_delivered
+        )(receiver_id=self.user.id, message_ids=valid_ids)
+
+        if not updated_msgs:
+            return
+
+        # Group by sender_id to notify each sender
+        senders_map = {}
+        for mid, sid in updated_msgs:
+            senders_map.setdefault(sid, []).append(mid)
+
+        for sender_id, mids in senders_map.items():
             await self.channel_layer.group_send(
-                f"user_{receiver_id}",
+                f"user_{sender_id}",
                 {
-                    "type": "chat.message",
-                    "data": message_data,
+                    "type": "message.status.event",
+                    "data": {
+                        "type": "message_status",
+                        "message_ids": mids,
+                        "status": "delivered",
+                        "conversation_user_id": self.user.id,
+                    },
+                },
+            )
+
+    async def handle_read_receipt(self, content: dict):
+        raw_target_id = (
+            content.get("conversation_user_id")
+            or content.get("target_user_id")
+            or content.get("sender_id")
+        )
+        if raw_target_id is None:
+            return
+
+        try:
+            target_user_id = int(raw_target_id)
+        except (ValueError, TypeError):
+            return
+
+        raw_msg_ids = content.get("message_ids")
+        msg_ids = None
+        if raw_msg_ids is not None:
+            if isinstance(raw_msg_ids, list):
+                msg_ids = []
+                for mid in raw_msg_ids:
+                    try:
+                        msg_ids.append(int(mid))
+                    except (ValueError, TypeError):
+                        pass
+            else:
+                try:
+                    msg_ids = [int(raw_msg_ids)]
+                except (ValueError, TypeError):
+                    pass
+
+        updated_ids = await database_sync_to_async(
+            self.message_service.mark_messages_read
+        )(
+            receiver_id=self.user.id,
+            sender_id=target_user_id,
+            message_ids=msg_ids,
+        )
+
+        if updated_ids:
+            # Notify sender of read status
+            await self.channel_layer.group_send(
+                f"user_{target_user_id}",
+                {
+                    "type": "message.status.event",
+                    "data": {
+                        "type": "message_status",
+                        "message_ids": updated_ids,
+                        "status": "read",
+                        "conversation_user_id": self.user.id,
+                    },
+                },
+            )
+            # Also notify receiver to sync all tabs
+            await self.channel_layer.group_send(
+                f"user_{self.user.id}",
+                {
+                    "type": "message.status.event",
+                    "data": {
+                        "type": "message_status",
+                        "message_ids": updated_ids,
+                        "status": "read",
+                        "conversation_user_id": target_user_id,
+                    },
                 },
             )
 
@@ -266,6 +395,10 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             "data": event["data"],
         })
 
+    async def message_status_event(self, event: dict):
+        await self.send_json(event["data"])
+
     async def presence_event(self, event: dict):
         await self.send_json(event["data"])
+
 

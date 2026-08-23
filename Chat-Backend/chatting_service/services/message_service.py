@@ -1,4 +1,5 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
+
 from django.contrib.auth import get_user_model
 from authentication_service.repository import UserRepository
 from chatting_service.repository import MessageRepository
@@ -131,6 +132,7 @@ class MessageService:
                     "sender_id": partner.last_message_sender_id,
                     "receiver_id": partner.last_message_receiver_id,
                     "content": partner.last_message_content,
+                    "status": partner.last_message_status or "sent",
                     "created_at": last_message_at_str,
                 } if partner.last_message_id else None,
                 "last_message_at": last_message_at_str,
@@ -141,6 +143,28 @@ class MessageService:
     def get_conversation_partner_ids(self, user_id: int) -> List[int]:
         return self.message_repository.get_conversation_partner_ids(user_id=user_id)
 
+    def mark_messages_delivered(self, receiver_id: int, message_ids: List[int]) -> List[Tuple[int, int]]:
+        return self.message_repository.mark_messages_delivered(
+            message_ids=message_ids,
+            receiver_id=receiver_id,
+        )
+
+    def mark_messages_read(
+        self,
+        receiver_id: int,
+        sender_id: int,
+        message_ids: Optional[List[int]] = None,
+    ) -> List[int]:
+        return self.message_repository.mark_messages_read(
+            receiver_id=receiver_id,
+            sender_id=sender_id,
+            message_ids=message_ids,
+        )
+
+    def get_pending_sent_messages(self, user_id: int) -> List[Dict[str, Any]]:
+        messages = self.message_repository.get_pending_sent_messages_for_user(user_id=user_id)
+        return [self.format_message(msg) for msg in messages]
+
     @staticmethod
     def format_message(message: Message) -> Dict[str, Any]:
         return {
@@ -148,7 +172,9 @@ class MessageService:
             "sender_id": message.sender_id,
             "receiver_id": message.receiver_id,
             "content": message.content,
+            "status": message.status,
             "created_at": message.created_at.isoformat().replace("+00:00", "Z"),
         }
+
 
 

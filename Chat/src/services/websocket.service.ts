@@ -146,10 +146,15 @@ class WebSocketService {
         this.emit('PRESENCE_CHANGE', event);
         break;
 
+      case 'message_status':
+        this.emit('MESSAGE_STATUS_UPDATE', event);
+        break;
+
       case 'error':
         console.error('[WebSocket] Server error:', event);
         this.emit('ERROR', event);
         break;
+
 
 
       default:
@@ -227,6 +232,73 @@ class WebSocketService {
     console.warn('[WebSocket] Cannot fetch history: Socket is not open.');
     return false;
   }
+
+  public sendDeliveryReceipt(messageIds: (string | number)[] | (string | number)): boolean {
+    const list = Array.isArray(messageIds) ? messageIds : [messageIds];
+    const validNumericIds = list
+      .map((id) => {
+        const match = String(id).match(/\d+/);
+        return match ? parseInt(match[0], 10) : null;
+      })
+      .filter((id): id is number => id !== null);
+
+    if (validNumericIds.length === 0) return false;
+
+    const payloadStr = JSON.stringify({
+      type: 'delivery_receipt',
+      message_ids: validNumericIds,
+    });
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(payloadStr);
+      return true;
+    }
+
+    if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
+      this.pendingQueue.push(payloadStr);
+      return true;
+    }
+
+    return false;
+  }
+
+  public sendReadReceipt(
+    conversationUserId: string | number,
+    messageIds?: (string | number)[]
+  ): boolean {
+    const numMatch = String(conversationUserId).match(/\d+/);
+    const cleanUserId = numMatch ? parseInt(numMatch[0], 10) : conversationUserId;
+    if (!cleanUserId) return false;
+
+    let validNumericIds: number[] | undefined = undefined;
+    if (messageIds && messageIds.length > 0) {
+      validNumericIds = messageIds
+        .map((id) => {
+          const match = String(id).match(/\d+/);
+          return match ? parseInt(match[0], 10) : null;
+        })
+        .filter((id): id is number => id !== null);
+    }
+
+    const payloadStr = JSON.stringify({
+      type: 'read_receipt',
+      conversation_user_id: cleanUserId,
+      ...(validNumericIds && validNumericIds.length > 0 ? { message_ids: validNumericIds } : {}),
+    });
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(payloadStr);
+      return true;
+    }
+
+    if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
+      this.pendingQueue.push(payloadStr);
+      return true;
+    }
+
+    return false;
+  }
+
 
   public disconnect(): void {
     this.intentionalDisconnect = true;

@@ -1,18 +1,24 @@
-from typing import Optional
+from typing import Optional, List, Tuple
 from django.contrib.auth import get_user_model
-from django.db.models import BigIntegerField, Case, F, OuterRef, Q, QuerySet, Subquery, When
-from chatting_service.models import Message
+from django.db.models import BigIntegerField, Case, CharField, F, OuterRef, Q, QuerySet, Subquery, When
+from chatting_service.models import Message, MessageStatus
 
 User = get_user_model()
 
 
 class MessageRepository:
     @staticmethod
-    def create_message(sender: User, receiver: User, content: str) -> Message:
+    def create_message(
+        sender: User,
+        receiver: User,
+        content: str,
+        status: str = MessageStatus.SENT,
+    ) -> Message:
         return Message.objects.create(
             sender=sender,
             receiver=receiver,
             content=content,
+            status=status,
         )
 
     @staticmethod
@@ -46,6 +52,69 @@ class MessageRepository:
             return None
 
     @staticmethod
+    def get_pending_sent_messages_for_user(user_id: int) -> QuerySet[Message]:
+        """
+        Retrieves all messages awaiting delivery to user_id (status is 'sent').
+        """
+        return (
+            Message.objects.filter(receiver_id=user_id, status=MessageStatus.SENT)
+            .select_related("sender", "receiver")
+            .order_by("created_at")
+        )
+
+    @staticmethod
+    def mark_messages_delivered(message_ids: List[int], receiver_id: int) -> List[Tuple[int, int]]:
+        """
+        Marks messages as delivered if their current status is 'sent' and receiver matches.
+        Returns a list of (message_id, sender_id) tuples for updated messages.
+        Prevents status regression (never downgrades 'read').
+        """
+        if not message_ids:
+            return []
+
+        # Find eligible messages
+        eligible_msgs = list(
+            Message.objects.filter(
+                id__in=message_ids,
+                receiver_id=receiver_id,
+                status=MessageStatus.SENT,
+            ).values_list("id", "sender_id")
+        )
+
+        if not eligible_msgs:
+            return []
+
+        ids_to_update = [msg[0] for msg in eligible_msgs]
+        Message.objects.filter(id__in=ids_to_update).update(status=MessageStatus.DELIVERED)
+
+        return eligible_msgs
+
+    @staticmethod
+    def mark_messages_read(
+        receiver_id: int,
+        sender_id: int,
+        message_ids: Optional[List[int]] = None,
+    ) -> List[int]:
+        """
+        Marks messages sent by sender_id to receiver_id as 'read'.
+        Returns list of updated message IDs.
+        Prevents regression and only touches messages not already 'read'.
+        """
+        qs = Message.objects.filter(
+            receiver_id=receiver_id,
+            sender_id=sender_id,
+        ).exclude(status=MessageStatus.READ)
+
+        if message_ids is not None:
+            qs = qs.filter(id__in=message_ids)
+
+        ids_to_update = list(qs.values_list("id", flat=True))
+        if ids_to_update:
+            Message.objects.filter(id__in=ids_to_update).update(status=MessageStatus.READ)
+
+        return ids_to_update
+
+    @staticmethod
     def get_user_conversations(user_id: int) -> QuerySet:
         partner_id_expr = Case(
             When(sender_id=user_id, then=F("receiver_id")),
@@ -69,6 +138,7 @@ class MessageRepository:
             .annotate(
                 last_message_id=Subquery(latest_message_subquery.values("id")[:1]),
                 last_message_content=Subquery(latest_message_subquery.values("content")[:1]),
+                last_message_status=Subquery(latest_message_subquery.values("status")[:1]),
                 last_message_created_at=Subquery(latest_message_subquery.values("created_at")[:1]),
                 last_message_sender_id=Subquery(latest_message_subquery.values("sender_id")[:1]),
                 last_message_receiver_id=Subquery(latest_message_subquery.values("receiver_id")[:1]),
@@ -89,5 +159,6 @@ class MessageRepository:
             .values_list("partner_id", flat=True)
             .distinct()
         )
+
 
 

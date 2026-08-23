@@ -161,15 +161,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           {isOutgoing && (
             <span className="inline-flex">
               {message.status === 'read' ? (
-                <CheckCheck className="w-3.5 h-3.5 text-cyan-300" />
+                <CheckCheck className="w-3.5 h-3.5 text-emerald-400 font-bold" />
               ) : message.status === 'delivered' ? (
-                <CheckCheck className="w-3.5 h-3.5" />
+                <CheckCheck className="w-3.5 h-3.5 text-white" />
               ) : (
-                <Check className="w-3.5 h-3.5" />
+                <Check className="w-3.5 h-3.5 text-white" />
               )}
             </span>
           )}
         </div>
+
 
         {/* Message Action Bar on Hover */}
         {showActions && !message.isDeleted && (

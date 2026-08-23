@@ -1,6 +1,6 @@
 from datetime import timedelta
 from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.utils import timezone
 from channels.testing import WebsocketCommunicator
 from rest_framework.test import APIClient
@@ -12,6 +12,7 @@ from chatting_service.repository import MessageRepository
 from chatting_service.services import MessageService, PresenceService
 
 User = get_user_model()
+
 
 
 @override_settings(
@@ -194,6 +195,65 @@ class ChatServiceUnitTests(TestCase):
         self.assertEqual(convs_after[0]["user"]["status"], "offline")
         self.assertIsNotNone(convs_after[0]["user"]["last_seen"])
 
+    def test_receipts_service_mark_delivered_and_read(self):
+
+        msg = self.repository.create_message(self.user1, self.user2, "Receipt test message")
+        self.assertEqual(msg.status, "sent")
+
+        # 1. Delivery acknowledgement
+        updated_delivered = self.service.mark_messages_delivered(self.user2.id, [msg.id])
+        self.assertEqual(len(updated_delivered), 1)
+        self.assertEqual(updated_delivered[0], (msg.id, self.user1.id))
+
+        msg.refresh_from_db()
+        self.assertEqual(msg.status, "delivered")
+
+        # 2. Read acknowledgement
+        updated_read = self.service.mark_messages_read(self.user2.id, self.user1.id, [msg.id])
+        self.assertEqual(updated_read, [msg.id])
+
+        msg.refresh_from_db()
+        self.assertEqual(msg.status, "read")
+
+    def test_receipts_service_never_regresses_status(self):
+        msg = self.repository.create_message(self.user1, self.user2, "No regression")
+        # Mark as read
+        self.service.mark_messages_read(self.user2.id, self.user1.id, [msg.id])
+        msg.refresh_from_db()
+        self.assertEqual(msg.status, "read")
+
+        # Attempting to mark as delivered must NOT regress to delivered
+        updated_delivered = self.service.mark_messages_delivered(self.user2.id, [msg.id])
+        self.assertEqual(len(updated_delivered), 0)
+        msg.refresh_from_db()
+        self.assertEqual(msg.status, "read")
+
+    def test_receipts_service_security_only_receiver_can_mark(self):
+        msg = self.repository.create_message(self.user1, self.user2, "Security test")
+
+        # Sender (user1) attempts to mark as delivered -> must fail
+        updated = self.service.mark_messages_delivered(self.user1.id, [msg.id])
+        self.assertEqual(len(updated), 0)
+
+        # Third party (user3) attempts to mark as read -> must fail
+        updated_read = self.service.mark_messages_read(self.user3.id, self.user1.id, [msg.id])
+        self.assertEqual(len(updated_read), 0)
+
+        msg.refresh_from_db()
+        self.assertEqual(msg.status, "sent")
+
+    def test_get_pending_sent_messages(self):
+        self.repository.create_message(self.user1, self.user2, "Pending 1")
+        self.repository.create_message(self.user1, self.user2, "Pending 2")
+        msg3 = self.repository.create_message(self.user1, self.user2, "Already delivered")
+        self.service.mark_messages_delivered(self.user2.id, [msg3.id])
+
+        pending = self.service.get_pending_sent_messages(self.user2.id)
+        self.assertEqual(len(pending), 2)
+        self.assertEqual(pending[0]["content"], "Pending 1")
+        self.assertEqual(pending[1]["content"], "Pending 2")
+
+
 
 
 
@@ -201,7 +261,7 @@ class ChatServiceUnitTests(TestCase):
     PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"],
     CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}},
 )
-class ChatWebSocketTests(TestCase):
+class ChatWebSocketTests(TransactionTestCase):
     def setUp(self):
         self.user_a = User.objects.create_user(
             email="usera@example.com",
@@ -235,7 +295,6 @@ class ChatWebSocketTests(TestCase):
         self.token_b = str(AccessToken.for_user(self.user_b))
         self.token_c = str(AccessToken.for_user(self.user_c))
 
-
     async def get_communicator(self, target_id: int, token: str = None):
         if token is not None:
             path = f"/ws/chat/{target_id}/?token={token}"
@@ -249,8 +308,10 @@ class ChatWebSocketTests(TestCase):
         connected, _ = await communicator.connect()
         self.assertTrue(connected)
         response = await communicator.receive_json_from()
-        self.assertEqual(response, {"type": "connection", "message": "Connected successfully."})
+        self.assertEqual(response["type"], "connection")
+        self.assertEqual(response["message"], "Connected successfully.")
         await communicator.disconnect()
+
 
     async def test_auth_missing_jwt(self):
         communicator = await self.get_communicator(self.user_b.id)
@@ -533,4 +594,71 @@ class ChatWebSocketTests(TestCase):
         self.assertEqual(resp["data"]["results"][0]["content"], "Persistent History Test")
 
         await comm.disconnect()
+
+    async def test_receipts_full_flow_offline_online_read(self):
+        # 1. User A is online, User B is offline
+        comm_a = WebsocketCommunicator(application, f"/ws/chat/?token={self.token_a}")
+        connected_a, _ = await comm_a.connect()
+        self.assertTrue(connected_a)
+        await comm_a.receive_json_from()  # connection event
+
+        # User A sends a message to offline User B
+        await comm_a.send_json_to({
+            "type": "message",
+            "receiver_id": self.user_b.id,
+            "content": "Hello B while offline",
+        })
+
+        event_a_sent = await comm_a.receive_json_from()
+        self.assertEqual(event_a_sent["type"], "message")
+        self.assertEqual(event_a_sent["data"]["status"], "sent")
+        msg_id = event_a_sent["data"]["id"]
+
+        # 2. User B comes online
+        comm_b = WebsocketCommunicator(application, f"/ws/chat/?token={self.token_b}")
+        connected_b, _ = await comm_b.connect()
+        self.assertTrue(connected_b)
+        await comm_b.receive_json_from()  # connection event
+
+        # User B automatically receives the pending offline message on connect!
+        event_b_received = await comm_b.receive_json_from()
+        self.assertEqual(event_b_received["type"], "message")
+        self.assertEqual(event_b_received["data"]["id"], msg_id)
+        self.assertEqual(event_b_received["data"]["content"], "Hello B while offline")
+
+        # User B coming online triggers presence update to User A
+        presence_event_a = await comm_a.receive_json_from()
+        self.assertEqual(presence_event_a["type"], "presence")
+        self.assertEqual(presence_event_a["user_id"], self.user_b.id)
+        self.assertEqual(presence_event_a["status"], "online")
+
+        # 3. User B sends delivery acknowledgement
+        await comm_b.send_json_to({
+            "type": "delivery_receipt",
+            "message_ids": [msg_id],
+        })
+
+        # User A receives message_status delivered!
+        status_event_a1 = await comm_a.receive_json_from()
+        self.assertEqual(status_event_a1["type"], "message_status")
+        self.assertEqual(status_event_a1["status"], "delivered")
+        self.assertIn(msg_id, status_event_a1["message_ids"])
+
+
+        # 4. User B opens conversation and sends read receipt
+        await comm_b.send_json_to({
+            "type": "read_receipt",
+            "conversation_user_id": self.user_a.id,
+            "message_ids": [msg_id],
+        })
+
+        # User A receives message_status read!
+        status_event_a2 = await comm_a.receive_json_from()
+        self.assertEqual(status_event_a2["type"], "message_status")
+        self.assertEqual(status_event_a2["status"], "read")
+        self.assertIn(msg_id, status_event_a2["message_ids"])
+
+        await comm_a.disconnect()
+        await comm_b.disconnect()
+
 

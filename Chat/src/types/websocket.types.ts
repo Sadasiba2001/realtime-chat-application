@@ -5,6 +5,7 @@ export interface BackendMessagePayload {
   sender_id: number | string;
   receiver_id: number | string;
   content: string;
+  status?: MessageStatus;
   created_at: string;
 }
 
@@ -15,7 +16,13 @@ export interface BackendHistoryData {
   results: BackendMessagePayload[];
 }
 
-export type WSServerMessageType = 'connection' | 'message' | 'history' | 'presence' | 'error';
+export type WSServerMessageType =
+  | 'connection'
+  | 'message'
+  | 'history'
+  | 'presence'
+  | 'message_status'
+  | 'error';
 
 export interface WSConnectionEvent {
   type: 'connection';
@@ -41,6 +48,15 @@ export interface WSPresenceEvent {
   last_seen?: string;
 }
 
+export interface WSMessageStatusEvent {
+  type: 'message_status';
+  message_id?: number | string;
+  message_ids?: (number | string)[];
+  status: 'sent' | 'delivered' | 'read';
+  conversation_user_id?: number | string;
+  receiver_id?: number | string;
+}
+
 export interface WSErrorEvent {
   type: 'error';
   code: string;
@@ -52,8 +68,8 @@ export type WSServerEvent =
   | WSMessageEvent
   | WSHistoryEvent
   | WSPresenceEvent
+  | WSMessageStatusEvent
   | WSErrorEvent;
-
 
 export interface WSClientSendMessage {
   type: 'message';
@@ -68,7 +84,24 @@ export interface WSClientFetchHistory {
   page_size?: number;
 }
 
-export type WSClientAction = WSClientSendMessage | WSClientFetchHistory;
+export interface WSClientDeliveryReceipt {
+  type: 'delivery_receipt';
+  message_ids?: (number | string)[];
+  message_id?: number | string;
+}
+
+export interface WSClientReadReceipt {
+  type: 'read_receipt';
+  conversation_user_id?: number | string;
+  target_user_id?: number | string;
+  message_ids?: (number | string)[];
+}
+
+export type WSClientAction =
+  | WSClientSendMessage
+  | WSClientFetchHistory
+  | WSClientDeliveryReceipt
+  | WSClientReadReceipt;
 
 export type WSSocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
@@ -76,6 +109,7 @@ export type WSEventType =
   | 'CONNECT'
   | 'DISCONNECT'
   | 'NEW_MESSAGE'
+  | 'MESSAGE_STATUS_UPDATE'
   | 'MESSAGE_DELIVERED'
   | 'MESSAGE_READ'
   | 'USER_TYPING'
@@ -83,6 +117,7 @@ export type WSEventType =
   | 'SOCKET_STATUS'
   | 'HISTORY_LOADED'
   | 'ERROR';
+
 
 export interface WSMessagePayload {
   conversationId: string;
