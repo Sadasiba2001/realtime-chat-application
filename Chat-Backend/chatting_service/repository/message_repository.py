@@ -1,6 +1,6 @@
 from typing import Optional
 from django.contrib.auth import get_user_model
-from django.db.models import Q, QuerySet
+from django.db.models import BigIntegerField, Case, F, OuterRef, Q, QuerySet, Subquery, When
 from chatting_service.models import Message
 
 User = get_user_model()
@@ -44,3 +44,35 @@ class MessageRepository:
             return Message.objects.select_related("sender", "receiver").get(id=message_id)
         except Message.DoesNotExist:
             return None
+
+    @staticmethod
+    def get_user_conversations(user_id: int) -> QuerySet:
+        partner_id_expr = Case(
+            When(sender_id=user_id, then=F("receiver_id")),
+            default=F("sender_id"),
+            output_field=BigIntegerField(),
+        )
+
+        partner_ids = (
+            Message.objects.filter(Q(sender_id=user_id) | Q(receiver_id=user_id))
+            .annotate(partner_id=partner_id_expr)
+            .values("partner_id")
+            .distinct()
+        )
+
+        latest_message_subquery = Message.objects.filter(
+            (Q(sender_id=user_id, receiver_id=OuterRef("pk")) | Q(sender_id=OuterRef("pk"), receiver_id=user_id))
+        ).order_by("-created_at", "-id")
+
+        return (
+            User.objects.filter(id__in=Subquery(partner_ids))
+            .annotate(
+                last_message_id=Subquery(latest_message_subquery.values("id")[:1]),
+                last_message_content=Subquery(latest_message_subquery.values("content")[:1]),
+                last_message_created_at=Subquery(latest_message_subquery.values("created_at")[:1]),
+                last_message_sender_id=Subquery(latest_message_subquery.values("sender_id")[:1]),
+                last_message_receiver_id=Subquery(latest_message_subquery.values("receiver_id")[:1]),
+            )
+            .order_by("-last_message_created_at")
+        )
+

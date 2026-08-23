@@ -258,25 +258,23 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
       });
 
-      // 2. Update conversation list and unread counts
+      // 2. Update conversation list and unread counts (and move conversation to top)
       setConversations((prev) => {
-        const exists = prev.some((c) => c.id === convId);
         const isCurrentActive = convId === activeConversationIdRef.current;
+        const existingConv = prev.find((c) => c.id === convId);
 
-        if (exists) {
-          return prev.map((c) =>
-            c.id === convId
-              ? {
-                  ...c,
-                  lastMessage: newMsg,
-                  unreadCount: isCurrentActive ? 0 : (c.unreadCount || 0) + (!isMyMessage ? 1 : 0),
-                  updatedAt: newMsg.createdAt || new Date().toISOString(),
-                }
-              : c
-          );
+        if (existingConv) {
+          const updatedConv: Conversation = {
+            ...existingConv,
+            lastMessage: newMsg,
+            unreadCount: isCurrentActive ? 0 : (existingConv.unreadCount || 0) + (!isMyMessage ? 1 : 0),
+            updatedAt: newMsg.createdAt || new Date().toISOString(),
+          };
+          const rest = prev.filter((c) => c.id !== convId);
+          return [updatedConv, ...rest];
         }
 
-        // If conversation not yet present in list, dynamically add it
+        // If conversation not yet present in list, dynamically add it to the top
         const knownOtherUser = allUsersRef.current.find((u) => {
           const uMatch = String(u.id).match(/\d+/);
           const oMatch = String(otherId).match(/\d+/);
@@ -363,71 +361,33 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, [mapBackendMessage]);
 
-  // Load registered users and direct conversations from backend
+  // Load existing direct conversations from backend
   useEffect(() => {
     const loadInitialData = async () => {
       try {
         const activeMyUser = currentUserRef.current;
-        const allUsers = await userService.getAllUsers();
-        allUsersRef.current = allUsers;
-
-        // Build direct conversations, excluding self-chats (by ID and email)
-        const realUsers = allUsers.filter((u) => {
-          const uId = String(u.id);
-          const myId = String(activeMyUser.id);
-          const storeId = storeUser ? String(storeUser.id) : null;
-          const myEmail = activeMyUser.email?.toLowerCase();
-          const storeEmail = storeUser?.email?.toLowerCase();
-          const uEmail = u.email?.toLowerCase();
-
-          if (uId === myId || (storeId && uId === storeId)) return false;
-          if (myEmail && uEmail && myEmail === uEmail) return false;
-          if (storeEmail && uEmail && storeEmail === uEmail) return false;
-          return true;
-        });
-
-        let initialConversations: Conversation[] = [];
-
-        if (realUsers.length > 0) {
-          initialConversations = realUsers.map((user) => ({
-            id: getDirectConversationId(activeMyUser.id, user.id),
-            type: 'direct',
-            participantIds: [String(activeMyUser.id), String(user.id)],
-            participants: [activeMyUser, user],
-            unreadCount: 0,
-            pinned: false,
-            muted: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }));
-
-          // Fetch message history for each real user
-          realUsers.forEach((user) => {
-            webSocketService.fetchHistory(user.id, 1, 50);
-          });
-        } else {
-          const fallbackConvs = await chatService.getConversations();
-          initialConversations = fallbackConvs;
-        }
-
+        const initialConversations = await chatService.getConversations(activeMyUser);
         setConversations(initialConversations);
 
-        // Auto select first conversation ONLY IF it has messages
-        const firstWithMessages = initialConversations.find((c) => !!c.lastMessage);
-        if (firstWithMessages && !activeConversationIdRef.current) {
-          setActiveConversationId(firstWithMessages.id);
-          const targetId = getTargetUserIdFromConversation(activeMyUser.id, firstWithMessages.participantIds);
+        // Auto select first conversation if it exists
+        if (initialConversations.length > 0 && !activeConversationIdRef.current) {
+          const firstConv = initialConversations[0];
+          setActiveConversationId(firstConv.id);
+          const targetId = getTargetUserIdFromConversation(activeMyUser.id, firstConv.participantIds);
           if (targetId) {
             webSocketService.fetchHistory(targetId, 1, 50);
           }
         }
       } catch (err) {
-        console.error('Failed to load initial chat data:', err);
+        console.error('Failed to load initial conversations:', err);
       }
     };
 
-    loadInitialData();
+    if (storeUser) {
+      loadInitialData();
+    }
   }, [storeUser]);
+
 
   // Fetch message history when switching conversations (without reconnecting WebSocket)
   const selectConversation = (id: string | null) => {

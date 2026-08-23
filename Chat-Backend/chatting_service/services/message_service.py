@@ -97,6 +97,38 @@ class MessageService:
             "results": results,
         }
 
+    def get_user_conversations(self, user_id: int) -> List[Dict[str, Any]]:
+        conversations_qs = self.message_repository.get_user_conversations(user_id=user_id)
+        results = []
+        for partner in conversations_qs:
+            last_message_at_str = (
+                partner.last_message_created_at.isoformat().replace("+00:00", "Z")
+                if partner.last_message_created_at
+                else None
+            )
+            results.append({
+                "user": {
+                    "id": partner.id,
+                    "name": partner.name or partner.username,
+                    "username": partner.username,
+                    "email": partner.email,
+                    "phone_number": partner.phone_number or "",
+                    "is_active": partner.is_active,
+                },
+                "user_id": partner.id,
+                "username": partner.username,
+                "last_message": {
+                    "id": partner.last_message_id,
+                    "sender_id": partner.last_message_sender_id,
+                    "receiver_id": partner.last_message_receiver_id,
+                    "content": partner.last_message_content,
+                    "created_at": last_message_at_str,
+                } if partner.last_message_id else None,
+                "last_message_at": last_message_at_str,
+                "unread_count": 0,
+            })
+        return results
+
     @staticmethod
     def format_message(message: Message) -> Dict[str, Any]:
         return {
@@ -106,3 +138,4 @@ class MessageService:
             "content": message.content,
             "created_at": message.created_at.isoformat().replace("+00:00", "Z"),
         }
+

@@ -6,4 +6,8 @@ export const API_ENDPOINTS = {
     SEARCH_USERS: '/api/v1/auth/users/search/',
     USERS: '/api/v1/auth/users/',
   },
+  CHAT: {
+    CONVERSATIONS: '/api/chat/conversations/',
+  },
 } as const;
+

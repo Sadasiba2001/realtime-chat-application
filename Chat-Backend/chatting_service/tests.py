@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from channels.testing import WebsocketCommunicator
+from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from config.asgi import application
@@ -31,6 +32,18 @@ class ChatServiceUnitTests(TestCase):
             name="User Two",
             password="Password@123",
         )
+        self.user3 = User.objects.create_user(
+            email="user3@example.com",
+            username="user3",
+            name="User Three",
+            password="Password@123",
+        )
+        self.user_no_chats = User.objects.create_user(
+            email="no_chats@example.com",
+            username="no_chats",
+            name="No Chats User",
+            password="Password@123",
+        )
         self.inactive_user = User.objects.create_user(
             email="inactive@example.com",
             username="inactive",
@@ -40,6 +53,7 @@ class ChatServiceUnitTests(TestCase):
         )
         self.service = MessageService()
         self.repository = MessageRepository()
+        self.client = APIClient()
 
     def test_create_and_get_messages_repository(self):
         msg1 = self.repository.create_message(self.user1, self.user2, "Hello from User 1")
@@ -93,6 +107,44 @@ class ChatServiceUnitTests(TestCase):
         history_page2 = self.service.get_conversation_messages(self.user1.id, self.user2.id, page=2, page_size=10)
         self.assertEqual(len(history_page2["results"]), 5)
         self.assertEqual(history_page2["page"], 2)
+
+    def test_get_user_conversations_repository_and_service(self):
+        # 1. user1 sends message to user2
+        self.repository.create_message(self.user1, self.user2, "Hey user2")
+        # 2. user3 sends message to user1 later
+        self.repository.create_message(self.user3, self.user1, "Hey user1 from user3")
+
+        # user1 should have conversations with user3 and user2, sorted by latest message
+        convs = self.service.get_user_conversations(self.user1.id)
+        self.assertEqual(len(convs), 2)
+        # user3 was latest
+        self.assertEqual(convs[0]["user"]["id"], self.user3.id)
+        self.assertEqual(convs[0]["last_message"]["content"], "Hey user1 from user3")
+        self.assertEqual(convs[1]["user"]["id"], self.user2.id)
+        self.assertEqual(convs[1]["last_message"]["content"], "Hey user2")
+
+        # user_no_chats should have 0 conversations
+        no_convs = self.service.get_user_conversations(self.user_no_chats.id)
+        self.assertEqual(len(no_convs), 0)
+
+    def test_get_conversations_api_authenticated(self):
+        self.repository.create_message(self.user1, self.user2, "Direct message to user 2")
+
+        token = str(AccessToken.for_user(self.user1))
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+        response = self.client.get("/api/chat/conversations/")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["status"])
+        self.assertEqual(len(data["data"]), 1)
+        self.assertEqual(data["data"][0]["user"]["id"], self.user2.id)
+        self.assertEqual(data["data"][0]["last_message"]["content"], "Direct message to user 2")
+
+    def test_get_conversations_api_unauthenticated(self):
+        response = self.client.get("/api/chat/conversations/")
+        self.assertEqual(response.status_code, 401)
+
 
 
 @override_settings(
