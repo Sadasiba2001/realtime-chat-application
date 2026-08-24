@@ -1,5 +1,5 @@
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.exceptions import NotFound
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
@@ -7,6 +7,7 @@ from rest_framework.response import Response
 
 from authentication_service.serializers import UserSearchResponseSerializer
 from authentication_service.services import UserService
+from authentication_service.throttles import SearchRateThrottle
 
 
 class UserSearchPagination(PageNumberPagination):
@@ -30,6 +31,7 @@ class UserSearchPagination(PageNumberPagination):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+@throttle_classes([SearchRateThrottle])
 def search_users(request):
     query = request.query_params.get("q")
     if not query or not query.strip():

@@ -110,27 +110,32 @@ class AuthService {
   async verifySession(): Promise<UserSession | null> {
     const token = storage.getAuthToken();
     const storedUser = useAuthStore.getState().user;
-    if (!token) return null;
-
-    if (storedUser) {
+    if (token && storedUser) {
       return storedUser;
     }
 
-    const jwtPayload = parseJwt(token);
-    if (jwtPayload && jwtPayload.user_id) {
-      const user: UserSession = {
-        id: String(jwtPayload.user_id),
-        name: String(jwtPayload.name || jwtPayload.username || `User ${jwtPayload.user_id}`),
-        username: String(jwtPayload.username || ''),
-        avatar: '',
-        email: String(jwtPayload.email || ''),
-        phone: '',
-        status: 'online',
-        about: 'Available',
-        token,
-      };
-      useAuthStore.getState().setAuth(user, { access: token, refresh: storage.getRefreshToken() || '' });
-      return user;
+    try {
+      const response = await apiClient.post('/api/v1/auth/token/refresh/');
+      const dataObj = response.data?.data || response.data;
+      const access = dataObj?.access;
+      if (access) {
+        const jwtPayload = parseJwt(access);
+        const user: UserSession = {
+          id: String(jwtPayload?.user_id || '0'),
+          name: String(jwtPayload?.name || jwtPayload?.username || `User ${jwtPayload?.user_id}`),
+          username: String(jwtPayload?.username || ''),
+          avatar: '',
+          email: String(jwtPayload?.email || ''),
+          phone: '',
+          status: 'online',
+          about: 'Available',
+          token: access,
+        };
+        useAuthStore.getState().setAuth(user, { access, refresh: null });
+        return user;
+      }
+    } catch (err) {
+      console.warn('Session restoration from cookie failed:', err);
     }
 
     return null;

@@ -49,7 +49,7 @@ class WebSocketService {
       }
     }
 
-    return `${baseUrl}/chat/?token=${encodeURIComponent(token)}`;
+    return `${baseUrl}/chat/`;
   }
 
   public connect(token: string): void {
@@ -58,7 +58,6 @@ class WebSocketService {
       return;
     }
 
-    // If already open with this token, do nothing
     if (this.socket && this.socket.readyState === WebSocket.OPEN && this.currentToken === token) {
       return;
     }
@@ -69,10 +68,10 @@ class WebSocketService {
     this.setStatus('connecting');
 
     const wsUrl = this.resolveWebSocketUrl(token);
-    console.log(`[WebSocket] Connecting to user-level socket... (${wsUrl.split('?')[0]})`);
+    console.log(`[WebSocket] Connecting to user-level socket... (${wsUrl})`);
 
     try {
-      this.socket = new WebSocket(wsUrl);
+      this.socket = new WebSocket(wsUrl, ['access_token', token]);
 
       this.socket.onopen = () => {
         console.log('[WebSocket] User-level WebSocket connected successfully.');
@@ -103,10 +102,12 @@ class WebSocketService {
         this.setStatus('disconnected');
         this.emit('DISCONNECT', { code: event.code, reason: event.reason });
 
-        // Auto-reconnect on unexpected disconnect (not auth 4001/4004)
+        // Auto-reconnect on unexpected disconnect (not auth 4001, duplicate 4002, conn limit 4003, or target error 4004)
         if (
           !this.intentionalDisconnect &&
           event.code !== 4001 &&
+          event.code !== 4002 &&
+          event.code !== 4003 &&
           event.code !== 4004 &&
           this.reconnectAttempts < this.maxReconnectAttempts &&
           this.currentToken

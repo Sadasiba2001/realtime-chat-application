@@ -4,17 +4,15 @@ const THEME_KEY = 'chat_theme_mode';
 
 export const storage = {
   getAuthToken: (): string | null => {
-    const tokens = useAuthStore.getState().tokens;
-    return tokens.access || localStorage.getItem('chat_auth_token');
+    return useAuthStore.getState().tokens.access;
   },
   getRefreshToken: (): string | null => {
-    const tokens = useAuthStore.getState().tokens;
-    return tokens.refresh || localStorage.getItem('chat_refresh_token');
+    return null;
   },
   setAuthTokens: (access: string, refresh: string): void => {
-    useAuthStore.getState().setTokens({ access, refresh });
-    localStorage.setItem('chat_auth_token', access);
-    localStorage.setItem('chat_refresh_token', refresh);
+    useAuthStore.getState().setTokens({ access, refresh: null });
+    localStorage.removeItem('chat_auth_token');
+    localStorage.removeItem('chat_refresh_token');
   },
   removeAuthToken: (): void => {
     useAuthStore.getState().clearAuth();

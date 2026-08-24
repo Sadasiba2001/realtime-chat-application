@@ -90,7 +90,7 @@ export const AuthPage: React.FC = () => {
           {/* Demo Hint Footer */}
           <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800/80 text-center">
             <p className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1">
-              <Sparkles className="w-3 h-3 text-amber-500" /> Single Sign-In mode active with mock session verification
+              <Sparkles className="w-3 h-3 text-emerald-500" /> Secure cookie-based session verification active
             </p>
           </div>
         </div>

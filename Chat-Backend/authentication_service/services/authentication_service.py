@@ -14,6 +14,7 @@ class AuthenticationService:
         refresh["email"] = user.email
         refresh["username"] = user.username
         refresh["role"] = user.role
+        refresh["pwd_hash"] = user.password[-12:] if user.password else ""
         return {
             "access": str(refresh.access_token),
             "refresh": str(refresh),

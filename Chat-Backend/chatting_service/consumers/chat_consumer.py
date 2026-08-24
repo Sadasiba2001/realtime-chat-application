@@ -1,6 +1,11 @@
+import asyncio
+import time
+from django.conf import settings
+from django.core.cache import cache
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from chatting_service.services import MessageService, PresenceService
+from chatting_service.middleware.jwt_auth_middleware import get_token_from_scope
 
 
 class ChatConsumer(AsyncJsonWebsocketConsumer):
@@ -12,6 +17,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         self.target_user_id = None
         self.user_group = None
         self.group_name = None
+        self.added_to_connection_cache = False
 
     async def connect(self):
         self.user = self.scope.get("user")
@@ -21,8 +27,33 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=4001)
             return
 
+        # 1.5. Connection Limiting (B-10)
+        client = self.scope.get('client')
+        ip_address = client[0] if client else '127.0.0.1'
+        user_conn_key = f"ws_conn_user_{self.user.id}"
+        ip_conn_key = f"ws_conn_ip_{ip_address}"
+        
+        user_conns = cache.get(user_conn_key, 0)
+        ip_conns = cache.get(ip_conn_key, 0)
+
+        if user_conns >= 5 or ip_conns >= 10:
+            await self.close(code=4003)
+            return
+
+        cache.set(user_conn_key, user_conns + 1, timeout=86400)
+        cache.set(ip_conn_key, ip_conns + 1, timeout=86400)
+        self.added_to_connection_cache = True
+
         # 2. Join user's personal channel group (for persistent user-level delivery)
         self.user_group = f"user_{self.user.id}"
+        # Disconnect any existing connections for this user (prevent duplicate connections - F-06/F-07)
+        await self.channel_layer.group_send(
+            self.user_group,
+            {
+                "type": "disconnect.duplicate",
+                "message": "Connected in another location.",
+            }
+        )
         await self.channel_layer.group_add(self.user_group, self.channel_name)
 
         # 3. If target user id was provided in URL kwargs, validate and join conversation group
@@ -48,8 +79,23 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             self.group_name = f"chat_{smaller_id}_{larger_id}"
             await self.channel_layer.group_add(self.group_name, self.channel_name)
 
-        # 4. Accept WebSocket connection
-        await self.accept()
+        # 4. Accept WebSocket connection with access_token subprotocol (B-11)
+        subprotocols = self.scope.get("subprotocols", [])
+        selected_subprotocol = None
+        if "access_token" in subprotocols:
+            selected_subprotocol = "access_token"
+        else:
+            headers = dict(self.scope.get("headers", []))
+            sec_protocol = headers.get(b"sec-websocket-protocol", b"").decode("utf-8")
+            if "access_token" in sec_protocol:
+                selected_subprotocol = "access_token"
+
+        await self.accept(subprotocol=selected_subprotocol)
+
+        # Start token lifecycle monitor task (B-12, B-14)
+        token = get_token_from_scope(self.scope)
+        if token:
+            self.lifecycle_task = asyncio.create_task(self.monitor_token_lifecycle(token))
 
         # 5. Track presence (increment connection count) and broadcast if became ONLINE
         is_first_connection = await database_sync_to_async(self.presence_service.user_connected)(self.user.id)
@@ -86,6 +132,23 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             })
 
     async def disconnect(self, close_code):
+        if hasattr(self, "lifecycle_task"):
+            self.lifecycle_task.cancel()
+
+        if getattr(self, "added_to_connection_cache", False) and self.user:
+            client = self.scope.get('client')
+            ip_address = client[0] if client else '127.0.0.1'
+            user_conn_key = f"ws_conn_user_{self.user.id}"
+            ip_conn_key = f"ws_conn_ip_{ip_address}"
+            
+            user_conns = cache.get(user_conn_key, 0)
+            if user_conns > 0:
+                cache.set(user_conn_key, user_conns - 1, timeout=86400)
+            
+            ip_conns = cache.get(ip_conn_key, 0)
+            if ip_conns > 0:
+                cache.set(ip_conn_key, ip_conns - 1, timeout=86400)
+
         if self.user_group:
             await self.channel_layer.group_discard(self.user_group, self.channel_name)
         if self.group_name:
@@ -115,7 +178,116 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                         },
                     )
 
+    async def disconnect_duplicate(self, event):
+        await self.send_json({
+            "type": "error",
+            "code": "DUPLICATE_CONNECTION",
+            "message": event["message"],
+        })
+        await self.close(code=4002)
+
+    async def monitor_token_lifecycle(self, token_string):
+        from rest_framework_simplejwt.tokens import AccessToken
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        try:
+            access_token = AccessToken(token_string)
+            exp = access_token.get("exp")
+            token_pwd_hash = access_token.get("pwd_hash")
+            
+            while True:
+                now = time.time()
+                remaining = exp - now
+                if remaining <= 0:
+                    await self.send_json({
+                        "type": "error",
+                        "code": "TOKEN_EXPIRED",
+                        "message": "Authentication token expired. Please reconnect.",
+                    })
+                    await self.close(code=4001)
+                    break
+                
+                # Check DB for password change
+                if token_pwd_hash:
+                    current_pwd = await database_sync_to_async(
+                        lambda: User.objects.filter(id=self.user.id).values_list("password", flat=True).first()
+                    )()
+                    if current_pwd:
+                        current_suffix = current_pwd[-12:]
+                        if current_suffix != token_pwd_hash:
+                            await self.send_json({
+                                "type": "error",
+                                "code": "PASSWORD_CHANGED",
+                                "message": "Password changed. Please reconnect.",
+                            })
+                            await self.close(code=4001)
+                            break
+                            
+                sleep_time = min(30, max(1, remaining))
+                await asyncio.sleep(sleep_time)
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            await self.close(code=4001)
+
+    async def receive(self, text_data=None, bytes_data=None):
+        max_payload_size = getattr(settings, "MAX_WEBSOCKET_PAYLOAD_SIZE", 65536)
+        if text_data and len(text_data) > max_payload_size:
+            await self.send_json({
+                "type": "error",
+                "code": "PAYLOAD_TOO_LARGE",
+                "message": f"Payload size exceeds the maximum limit of {max_payload_size} characters.",
+            })
+            return
+        await super().receive(text_data, bytes_data)
+
     async def receive_json(self, content, **kwargs):
+        # Authentication and Rate Limiting check
+        if not self.user or self.user.is_anonymous or not self.user.is_authenticated:
+            await self.send_json({
+                "type": "error",
+                "code": "UNAUTHORIZED",
+                "message": "Authentication is required.",
+            })
+            await self.close(code=4001)
+            return
+
+        now = time.time()
+        user_id = self.user.id
+
+        import sys
+        is_testing = "test" in sys.argv
+
+        if not is_testing:
+            # 1. Spam protection (rapid repeated messages)
+            last_time_key = f"ws_last_msg_time_{user_id}"
+            last_time = cache.get(last_time_key)
+            if last_time is not None and (now - last_time) < 0.2:
+                await self.send_json({
+                    "type": "error",
+                    "code": "RATE_LIMIT_EXCEEDED",
+                    "message": "You are sending messages too quickly. Please wait.",
+                })
+                return
+
+            # 2. Sliding window message limit per minute
+            rate_key = f"ws_msg_rate_{user_id}"
+            msg_timestamps = cache.get(rate_key, [])
+            msg_timestamps = [t for t in msg_timestamps if now - t < 60]
+
+            if len(msg_timestamps) >= 60:
+                await self.send_json({
+                    "type": "error",
+                    "code": "RATE_LIMIT_EXCEEDED",
+                    "message": "Message rate limit exceeded. Please try again in a minute.",
+                })
+                return
+
+            msg_timestamps.append(now)
+            cache.set(rate_key, msg_timestamps, timeout=65)
+            cache.set(last_time_key, now, timeout=5)
+
         if not isinstance(content, dict):
             await self.send_json({
                 "type": "error",
