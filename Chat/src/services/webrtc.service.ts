@@ -7,12 +7,18 @@ export type ErrorCallback = (error: Error) => void;
 const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun3.l.google.com:19302' },
+  { urls: 'stun:stun4.l.google.com:19302' },
+  { urls: 'stun:stun.cloudflare.com:3478' },
 ];
 
 export class WebRTCService {
   private peerConnection: RTCPeerConnection | null = null;
   private localStream: MediaStream | null = null;
   private remoteAudioElement: HTMLAudioElement | null = null;
+  private audioContext: AudioContext | null = null;
+  private audioSourceNode: MediaStreamAudioSourceNode | null = null;
   private iceCandidateQueue: RTCIceCandidateInit[] = [];
   private onIceCandidateCallback: IceCandidateCallback | null = null;
   private onConnectionStateCallback: ConnectionStateCallback | null = null;
@@ -23,7 +29,7 @@ export class WebRTCService {
       const response = await apiClient.get('/api/v1/voice/ice-servers/');
       const data = response.data;
       if (data && Array.isArray(data.ice_servers) && data.ice_servers.length > 0) {
-        return data.ice_servers;
+        return [...data.ice_servers, ...DEFAULT_ICE_SERVERS];
       }
     } catch (err) {
       console.warn('[WebRTC] Could not fetch ICE servers from backend, using defaults:', err);
@@ -31,8 +37,40 @@ export class WebRTCService {
     return DEFAULT_ICE_SERVERS;
   }
 
+  public prepareAudioOutput(): void {
+    try {
+      if (!this.audioContext || this.audioContext.state === 'closed') {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          this.audioContext = new AudioCtx();
+        }
+      }
+      if (this.audioContext && this.audioContext.state === 'suspended') {
+        this.audioContext.resume();
+      }
+
+      if (!this.remoteAudioElement) {
+        let existing = document.getElementById('webrtc-remote-audio') as HTMLAudioElement;
+        if (!existing) {
+          existing = document.createElement('audio');
+          existing.id = 'webrtc-remote-audio';
+          existing.autoplay = true;
+          existing.setAttribute('playsinline', 'true');
+          existing.setAttribute('autoplay', 'true');
+          existing.style.display = 'none';
+          document.body.appendChild(existing);
+        }
+        this.remoteAudioElement = existing;
+      }
+      this.remoteAudioElement.muted = false;
+      this.remoteAudioElement.volume = 1.0;
+    } catch (e) {
+      console.warn('[WebRTC] Error preparing audio output:', e);
+    }
+  }
+
   public async getLocalAudioStream(): Promise<MediaStream> {
-    if (this.localStream) {
+    if (this.localStream && this.localStream.active && this.localStream.getAudioTracks().some((t) => t.readyState === 'live')) {
       return this.localStream;
     }
 
@@ -67,17 +105,20 @@ export class WebRTCService {
     onConnectionStateChange: ConnectionStateCallback,
     onError: ErrorCallback
   ): Promise<RTCPeerConnection> {
-    this.cleanup();
+    // Clean only peer connection without erasing incoming queued ICE candidates
+    this.closePeerConnectionOnly();
 
     this.onIceCandidateCallback = onIceCandidate;
     this.onConnectionStateCallback = onConnectionStateChange;
     this.onErrorCallback = onError;
 
+    this.prepareAudioOutput();
+
     const iceServers = await this.fetchIceServers();
 
     const pc = new RTCPeerConnection({
       iceServers,
-      iceCandidatePoolSize: 2,
+      iceCandidatePoolSize: 4,
     });
 
     this.peerConnection = pc;
@@ -85,12 +126,13 @@ export class WebRTCService {
     // Add local audio track
     const localStream = await this.getLocalAudioStream();
     localStream.getAudioTracks().forEach((track) => {
+      track.enabled = true;
       pc.addTrack(track, localStream);
     });
 
     // Handle remote tracks
     pc.ontrack = (event: RTCTrackEvent) => {
-      console.log('[WebRTC] Received remote track:', event.track.kind);
+      console.log('[WebRTC] Received remote track:', event.track.kind, event.streams);
       if (event.streams && event.streams[0]) {
         this.attachRemoteStream(event.streams[0]);
       } else if (event.track) {
@@ -128,17 +170,38 @@ export class WebRTCService {
   }
 
   private attachRemoteStream(stream: MediaStream): void {
-    if (!this.remoteAudioElement) {
-      this.remoteAudioElement = new Audio();
-      this.remoteAudioElement.autoplay = true;
-      this.remoteAudioElement.style.display = 'none';
-      document.body.appendChild(this.remoteAudioElement);
+    this.prepareAudioOutput();
+
+    // 1. Route to HTMLAudioElement
+    if (this.remoteAudioElement) {
+      this.remoteAudioElement.srcObject = stream;
+      this.remoteAudioElement.muted = false;
+      this.remoteAudioElement.volume = 1.0;
+      const playPromise = this.remoteAudioElement.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('[WebRTC] HTMLAudioElement play caught error:', err);
+        });
+      }
     }
 
-    this.remoteAudioElement.srcObject = stream;
-    this.remoteAudioElement.play().catch((err) => {
-      console.warn('[WebRTC] Auto-play was prevented by browser policy:', err);
-    });
+    // 2. Also route through Web Audio API for guaranteed cross-browser speaker output
+    try {
+      if (this.audioContext && this.audioContext.state !== 'closed') {
+        if (this.audioContext.state === 'suspended') {
+          this.audioContext.resume();
+        }
+        if (this.audioSourceNode) {
+          try {
+            this.audioSourceNode.disconnect();
+          } catch (e) {}
+        }
+        this.audioSourceNode = this.audioContext.createMediaStreamSource(stream);
+        this.audioSourceNode.connect(this.audioContext.destination);
+      }
+    } catch (err) {
+      console.warn('[WebRTC] Web Audio node connection note:', err);
+    }
   }
 
   public async createOffer(): Promise<RTCSessionDescriptionInit> {
@@ -170,7 +233,9 @@ export class WebRTCService {
     await this.peerConnection.setRemoteDescription(sessionDesc);
     await this.processPendingIceCandidates();
 
-    const answer = await this.peerConnection.createAnswer();
+    const answer = await this.peerConnection.createAnswer({
+      offerToReceiveAudio: true,
+    });
     await this.peerConnection.setLocalDescription(answer);
     return answer;
   }
@@ -190,7 +255,7 @@ export class WebRTCService {
   }
 
   public async addIceCandidate(candidateInit: RTCIceCandidateInit): Promise<void> {
-    if (!candidateInit || !candidateInit.candidate) return;
+    if (!candidateInit) return;
 
     if (
       this.peerConnection &&
@@ -230,6 +295,17 @@ export class WebRTCService {
     }
   }
 
+  private closePeerConnectionOnly(): void {
+    if (this.peerConnection) {
+      try {
+        this.peerConnection.close();
+      } catch (e) {
+        // ignore
+      }
+      this.peerConnection = null;
+    }
+  }
+
   public cleanup(): void {
     if (this.localStream) {
       this.localStream.getTracks().forEach((track) => {
@@ -242,24 +318,29 @@ export class WebRTCService {
       this.localStream = null;
     }
 
-    if (this.peerConnection) {
+    this.closePeerConnectionOnly();
+
+    if (this.audioSourceNode) {
       try {
-        this.peerConnection.close();
-      } catch (e) {
-        // ignore
-      }
-      this.peerConnection = null;
+        this.audioSourceNode.disconnect();
+      } catch (e) {}
+      this.audioSourceNode = null;
+    }
+
+    if (this.audioContext && this.audioContext.state !== 'closed') {
+      try {
+        this.audioContext.close();
+      } catch (e) {}
+      this.audioContext = null;
     }
 
     if (this.remoteAudioElement) {
       try {
         this.remoteAudioElement.pause();
         this.remoteAudioElement.srcObject = null;
-        this.remoteAudioElement.remove();
       } catch (e) {
         // ignore
       }
-      this.remoteAudioElement = null;
     }
 
     this.iceCandidateQueue = [];

@@ -223,7 +223,15 @@ MAX_WEBSOCKET_PAYLOAD_SIZE = env.int("MAX_WEBSOCKET_PAYLOAD_SIZE", default=65536
 MAX_REQUEST_SIZE = env.int("MAX_REQUEST_SIZE", default=5242880) # 5 MB
 
 # WebRTC ICE Server Configuration (STUN / TURN)
-WEBRTC_STUN_SERVER = env("WEBRTC_STUN_SERVER", default="stun:stun.l.google.com:19302")
+WEBRTC_STUN_SERVER = env.list(
+    "WEBRTC_STUN_SERVER",
+    default=[
+        "stun:stun.l.google.com:19302",
+        "stun:stun1.l.google.com:19302",
+        "stun:stun2.l.google.com:19302",
+        "stun:stun.cloudflare.com:3478",
+    ],
+)
 WEBRTC_TURN_SERVER = env("WEBRTC_TURN_SERVER", default=None)
 WEBRTC_TURN_USERNAME = env("WEBRTC_TURN_USERNAME", default=None)
 WEBRTC_TURN_CREDENTIAL = env("WEBRTC_TURN_CREDENTIAL", default=None)
