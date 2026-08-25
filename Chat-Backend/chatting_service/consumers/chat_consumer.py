@@ -323,6 +323,15 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             })
             return
 
+        max_length = getattr(settings, "MAX_MESSAGE_LENGTH", 1000)
+        if len(raw_content.strip()) > max_length:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": f"Message exceeds maximum allowed length of {max_length} characters.",
+            })
+            return
+
         # If URL specified a target user ID, use it; otherwise use payload receiver_id
         if self.target_user_id is not None:
             receiver_id = self.target_user_id

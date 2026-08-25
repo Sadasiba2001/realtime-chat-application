@@ -81,6 +81,12 @@ class ChatServiceUnitTests(TestCase):
             self.service.send_message(self.user1, self.user2.id, "   ")
         self.assertIn("Message content cannot be empty.", str(ctx.exception))
 
+    def test_send_message_exceeds_max_length(self):
+        long_content = "A" * 1005
+        with self.assertRaises(ValueError) as ctx:
+            self.service.send_message(self.user1, self.user2.id, long_content)
+        self.assertIn("Message exceeds maximum allowed length", str(ctx.exception))
+
     def test_send_message_to_self(self):
         with self.assertRaises(ValueError) as ctx:
             self.service.send_message(self.user1, self.user1.id, "Self message")
@@ -295,12 +301,13 @@ class ChatWebSocketTests(TransactionTestCase):
         self.token_b = str(AccessToken.for_user(self.user_b))
         self.token_c = str(AccessToken.for_user(self.user_c))
 
-    async def get_communicator(self, target_id: int, token: str = None):
-        if token is not None:
-            path = f"/ws/chat/{target_id}/?token={token}"
-        else:
+    async def get_communicator(self, target_id: int = None, token: str = None):
+        if target_id is not None:
             path = f"/ws/chat/{target_id}/"
-        return WebsocketCommunicator(application, path)
+        else:
+            path = "/ws/chat/"
+        subprotocols = ["access_token", token] if token is not None else None
+        return WebsocketCommunicator(application, path, subprotocols=subprotocols)
 
     # 1. WebSocket Authentication Tests
     async def test_auth_valid_jwt(self):
@@ -312,6 +319,12 @@ class ChatWebSocketTests(TransactionTestCase):
         self.assertEqual(response["message"], "Connected successfully.")
         await communicator.disconnect()
 
+    async def test_auth_query_string_token_rejected(self):
+        # Passing ?token= without subprotocol must be rejected with code 4001 (B-11)
+        communicator = WebsocketCommunicator(application, f"/ws/chat/?token={self.token_a}")
+        connected, close_code = await communicator.connect()
+        self.assertFalse(connected)
+        self.assertEqual(close_code, 4001)
 
     async def test_auth_missing_jwt(self):
         communicator = await self.get_communicator(self.user_b.id)
@@ -523,19 +536,19 @@ class ChatWebSocketTests(TransactionTestCase):
     # 6. User-Level Persistent WebSocket Tests
     async def test_user_level_socket_connect_and_messaging(self):
         # Connect User A to user-level socket
-        comm_a = WebsocketCommunicator(application, f"/ws/chat/?token={self.token_a}")
+        comm_a = WebsocketCommunicator(application, "/ws/chat/", subprotocols=["access_token", self.token_a])
         connected_a, _ = await comm_a.connect()
         self.assertTrue(connected_a)
         await comm_a.receive_json_from()  # connection event
 
         # Connect User B to user-level socket (not tied to any specific chat)
-        comm_b = WebsocketCommunicator(application, f"/ws/chat/?token={self.token_b}")
+        comm_b = WebsocketCommunicator(application, "/ws/chat/", subprotocols=["access_token", self.token_b])
         connected_b, _ = await comm_b.connect()
         self.assertTrue(connected_b)
         await comm_b.receive_json_from()  # connection event
 
         # Connect User C to user-level socket
-        comm_c = WebsocketCommunicator(application, f"/ws/chat/?token={self.token_c}")
+        comm_c = WebsocketCommunicator(application, "/ws/chat/", subprotocols=["access_token", self.token_c])
         connected_c, _ = await comm_c.connect()
         self.assertTrue(connected_c)
         await comm_c.receive_json_from()  # connection event
@@ -568,6 +581,20 @@ class ChatWebSocketTests(TransactionTestCase):
         await comm_b.disconnect()
         await comm_c.disconnect()
 
+    async def test_send_oversized_message_rejected(self):
+        comm = await self.get_communicator(self.user_b.id, self.token_a)
+        await comm.connect()
+        await comm.receive_json_from()  # connection event
+
+        long_content = "X" * 1005
+        await comm.send_json_to({"type": "message", "content": long_content})
+        err = await comm.receive_json_from()
+        self.assertEqual(err["type"], "error")
+        self.assertEqual(err["code"], "INVALID_MESSAGE")
+        self.assertIn("Message exceeds maximum allowed length", err["message"])
+
+        await comm.disconnect()
+
     async def test_user_level_history_retrieval(self):
         await Message.objects.acreate(
             sender=self.user_a,
@@ -575,7 +602,7 @@ class ChatWebSocketTests(TransactionTestCase):
             content="Persistent History Test",
         )
 
-        comm = WebsocketCommunicator(application, f"/ws/chat/?token={self.token_a}")
+        comm = WebsocketCommunicator(application, "/ws/chat/", subprotocols=["access_token", self.token_a])
         connected, _ = await comm.connect()
         self.assertTrue(connected)
         await comm.receive_json_from()
@@ -597,7 +624,7 @@ class ChatWebSocketTests(TransactionTestCase):
 
     async def test_receipts_full_flow_offline_online_read(self):
         # 1. User A is online, User B is offline
-        comm_a = WebsocketCommunicator(application, f"/ws/chat/?token={self.token_a}")
+        comm_a = WebsocketCommunicator(application, "/ws/chat/", subprotocols=["access_token", self.token_a])
         connected_a, _ = await comm_a.connect()
         self.assertTrue(connected_a)
         await comm_a.receive_json_from()  # connection event
@@ -615,7 +642,7 @@ class ChatWebSocketTests(TransactionTestCase):
         msg_id = event_a_sent["data"]["id"]
 
         # 2. User B comes online
-        comm_b = WebsocketCommunicator(application, f"/ws/chat/?token={self.token_b}")
+        comm_b = WebsocketCommunicator(application, "/ws/chat/", subprotocols=["access_token", self.token_b])
         connected_b, _ = await comm_b.connect()
         self.assertTrue(connected_b)
         await comm_b.receive_json_from()  # connection event

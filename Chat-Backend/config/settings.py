@@ -17,10 +17,7 @@ SECRET_KEY = env('SECRET_KEY', default=None)
 DEBUG = env.bool('DEBUG', default=True)
 
 if not SECRET_KEY:
-    if not DEBUG:
-        raise ImproperlyConfigured("The SECRET_KEY setting must not be empty in production.")
-    else:
-        SECRET_KEY = 'django-insecure-q$+zmli6&_1&rr9_*t8l4vg-ag3l)*fuz!f3uv**bmf2bibe+5'
+    raise ImproperlyConfigured("The SECRET_KEY setting must not be empty. Set the SECRET_KEY environment variable.")
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '[::1]'] if DEBUG else [])
 
@@ -163,10 +160,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 JWT_SECRET_KEY = env("JWT_SECRET_KEY", default=None)
 if not JWT_SECRET_KEY:
-    if not DEBUG:
-        raise ImproperlyConfigured("The JWT_SECRET_KEY setting must not be empty in production.")
-    else:
-        JWT_SECRET_KEY = "django-insecure-jwt-secret-key-for-development-purposes-only"
+    raise ImproperlyConfigured("The JWT_SECRET_KEY setting must not be empty. Set the JWT_SECRET_KEY environment variable.")
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

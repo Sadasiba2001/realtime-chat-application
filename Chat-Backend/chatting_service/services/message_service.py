@@ -1,5 +1,6 @@
 from typing import Optional, List, Dict, Any, Tuple
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from authentication_service.repository import UserRepository
 from chatting_service.repository import MessageRepository
@@ -47,6 +48,10 @@ class MessageService:
             raise ValueError("Message content cannot be empty.")
 
         cleaned_content = content.strip()
+        max_length = getattr(settings, "MAX_MESSAGE_LENGTH", 1000)
+        if len(cleaned_content) > max_length:
+            raise ValueError(f"Message exceeds maximum allowed length of {max_length} characters.")
+
         receiver = self.validate_target_user(receiver_id, sender.id)
 
         message = self.message_repository.create_message(
