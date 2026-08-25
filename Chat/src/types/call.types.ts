@@ -26,6 +26,7 @@ export interface CallSession {
   isMuted: boolean;
   durationSec: number;
   statusMessage?: string;
+  isAudioBlocked?: boolean;
   error?: string;
 }
 

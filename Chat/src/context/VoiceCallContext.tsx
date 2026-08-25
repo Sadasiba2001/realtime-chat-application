@@ -24,6 +24,7 @@ interface VoiceCallContextType {
   cancelCall: () => void;
   endCall: () => void;
   toggleMute: () => void;
+  enableAudio: () => Promise<boolean>;
 }
 
 export const VoiceCallContext = createContext<VoiceCallContextType | undefined>(undefined);
@@ -126,7 +127,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
     }, delayMs);
   }, []);
 
-  // Duration Timer
+  // Duration Timer (counts ONLY when state is 'connected')
   useEffect(() => {
     if (callSession?.state === 'connected') {
       if (!timerRef.current) {
@@ -151,9 +152,9 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
   // Handle incoming signaling events from WebSocket
   useEffect(() => {
     const unsubOffer = webSocketService.on<WSVoiceCallOfferData>('VOICE_CALL_OFFER', (data) => {
-      console.log('[VoiceCall] Received call offer:', data);
+      console.log('[SIGNALING] Received call offer from user:', data.caller_id, 'call_id:', data.call_id);
       if (callSession && ['calling', 'ringing', 'connecting', 'connected'].includes(callSession.state)) {
-        // Send busy response
+        console.log('[SIGNALING] Busy: already in active call session, sending call_busy');
         webSocketService.sendSignaling({
           type: 'call_busy',
           call_id: data.call_id,
@@ -180,22 +181,23 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
         isMuted: false,
         durationSec: 0,
         statusMessage: 'Incoming call...',
+        isAudioBlocked: false,
       });
       ringtone.playIncoming();
     });
 
     const unsubAnswer = webSocketService.on<WSVoiceCallAnswerData>('VOICE_CALL_ANSWER', async (data) => {
-      console.log('[VoiceCall] Received call answer:', data);
+      console.log('[SIGNALING] Received call answer for call_id:', data.call_id);
       ringtone.stop();
       try {
-        await webrtcService.handleAnswer(data.sdp);
         setCallSession((prev) =>
           prev && prev.callId === data.call_id
-            ? { ...prev, state: 'connected', statusMessage: 'Connected' }
+            ? { ...prev, state: 'connecting', statusMessage: 'Connecting...' }
             : prev
         );
+        await webrtcService.handleAnswer(data.sdp);
       } catch (err: any) {
-        console.error('[VoiceCall] Failed to handle answer SDP:', err);
+        console.error('[WEBRTC] Failed to handle answer SDP:', err);
         setCallSession((prev) =>
           prev ? { ...prev, state: 'failed', error: err.message, statusMessage: 'Connection failed' } : null
         );
@@ -210,7 +212,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
     });
 
     const unsubReject = webSocketService.on<WSVoiceCallRejectData>('VOICE_CALL_REJECT', (data) => {
-      console.log('[VoiceCall] Received call reject:', data);
+      console.log('[SIGNALING] Received call reject for call_id:', data.call_id);
       setCallSession((prev) =>
         prev && prev.callId === data.call_id
           ? { ...prev, state: 'rejected', statusMessage: 'Call declined' }
@@ -220,7 +222,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
     });
 
     const unsubCancel = webSocketService.on<WSVoiceCallCancelData>('VOICE_CALL_CANCEL', (data) => {
-      console.log('[VoiceCall] Received call cancel:', data);
+      console.log('[SIGNALING] Received call cancel for call_id:', data.call_id);
       setCallSession((prev) =>
         prev && prev.callId === data.call_id
           ? { ...prev, state: 'cancelled', statusMessage: 'Call cancelled' }
@@ -230,7 +232,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
     });
 
     const unsubBusy = webSocketService.on<WSVoiceCallBusyData>('VOICE_CALL_BUSY', (data) => {
-      console.log('[VoiceCall] Received call busy:', data);
+      console.log('[SIGNALING] Received call busy for call_id:', data.call_id);
       setCallSession((prev) =>
         prev
           ? { ...prev, state: 'busy', statusMessage: data.message || 'User is busy on another call' }
@@ -240,7 +242,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
     });
 
     const unsubEnd = webSocketService.on<WSVoiceCallEndData>('VOICE_CALL_END', (data) => {
-      console.log('[VoiceCall] Received call end:', data);
+      console.log('[SIGNALING] Received call end for call_id:', data.call_id);
       setCallSession((prev) =>
         prev && prev.callId === data.call_id
           ? { ...prev, state: 'ended', statusMessage: 'Call ended' }
@@ -268,6 +270,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
       if (cleanupTimerRef.current) clearTimeout(cleanupTimerRef.current);
 
       const callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('[CALL] Starting outgoing voice call to:', receiver.name, 'id:', receiver.id, 'callId:', callId);
 
       setCallSession({
         callId,
@@ -277,11 +280,11 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
         isMuted: false,
         durationSec: 0,
         statusMessage: 'Calling...',
+        isAudioBlocked: false,
       });
       ringtone.playOutgoing();
 
       try {
-        // Clean number from receiver ID
         const match = String(receiver.id).match(/\d+/);
         const numericReceiverId = match ? parseInt(match[0], 10) : receiver.id;
 
@@ -294,6 +297,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
             });
           },
           (state) => {
+            console.log('[WEBRTC] Caller received connection state update:', state);
             if (state === 'connected') {
               ringtone.stop();
               setCallSession((prev) =>
@@ -310,8 +314,11 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
               cleanCallAfterDelay(2500);
             }
           },
+          (isBlocked) => {
+            setCallSession((prev) => (prev ? { ...prev, isAudioBlocked: isBlocked } : null));
+          },
           (err) => {
-            console.error('[VoiceCall] Peer connection error:', err);
+            console.error('[WEBRTC] Peer connection error:', err);
             setCallSession((prev) =>
               prev && prev.callId === callId
                 ? { ...prev, state: 'failed', error: err.message, statusMessage: err.message }
@@ -330,7 +337,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
           sdp: offer,
         });
       } catch (err: any) {
-        console.error('[VoiceCall] Failed to initiate call:', err);
+        console.error('[CALL] Failed to initiate call:', err);
         ringtone.stop();
         setCallSession((prev) =>
           prev
@@ -348,6 +355,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
     if (!callSession || callSession.isCaller || !pendingOfferSdpRef.current) return;
     ringtone.stop();
 
+    console.log('[CALL] Accepting incoming call for callId:', callSession.callId);
     setCallSession((prev) => (prev ? { ...prev, state: 'connecting', statusMessage: 'Connecting...' } : null));
 
     try {
@@ -360,6 +368,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
           });
         },
         (state) => {
+          console.log('[WEBRTC] Receiver received connection state update:', state);
           if (state === 'connected') {
             setCallSession((prev) =>
               prev ? { ...prev, state: 'connected', statusMessage: 'Connected' } : null
@@ -371,8 +380,11 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
             cleanCallAfterDelay(2500);
           }
         },
+        (isBlocked) => {
+          setCallSession((prev) => (prev ? { ...prev, isAudioBlocked: isBlocked } : null));
+        },
         (err) => {
-          console.error('[VoiceCall] Error during call acceptance:', err);
+          console.error('[WEBRTC] Error during call acceptance:', err);
           setCallSession((prev) =>
             prev ? { ...prev, state: 'failed', error: err.message, statusMessage: err.message } : null
           );
@@ -388,9 +400,9 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
         sdp: answer,
       });
 
-      setCallSession((prev) => (prev ? { ...prev, state: 'connected', statusMessage: 'Connected' } : null));
+      // Note: State remains 'connecting' until connectionState becomes 'connected'
     } catch (err: any) {
-      console.error('[VoiceCall] Failed to accept call:', err);
+      console.error('[CALL] Failed to accept call:', err);
       setCallSession((prev) =>
         prev ? { ...prev, state: 'failed', error: err.message, statusMessage: err.message } : null
       );
@@ -402,6 +414,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
   const rejectCall = useCallback(() => {
     if (!callSession) return;
     ringtone.stop();
+    console.log('[CALL] Rejecting call for callId:', callSession.callId);
     webSocketService.sendSignaling({
       type: 'call_reject',
       call_id: callSession.callId,
@@ -414,6 +427,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
   const cancelCall = useCallback(() => {
     if (!callSession) return;
     ringtone.stop();
+    console.log('[CALL] Cancelling outgoing call for callId:', callSession.callId);
     webSocketService.sendSignaling({
       type: 'call_cancel',
       call_id: callSession.callId,
@@ -426,6 +440,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
   const endCall = useCallback(() => {
     if (!callSession) return;
     ringtone.stop();
+    console.log('[CALL] Ending active call for callId:', callSession.callId);
     webSocketService.sendSignaling({
       type: 'call_end',
       call_id: callSession.callId,
@@ -444,6 +459,15 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
     });
   }, []);
 
+  // User gesture enable audio fallback
+  const enableAudio = useCallback(async () => {
+    const success = await webrtcService.playRemoteAudio();
+    if (success) {
+      setCallSession((prev) => (prev ? { ...prev, isAudioBlocked: false } : null));
+    }
+    return success;
+  }, []);
+
   return (
     <VoiceCallContext.Provider
       value={{
@@ -454,6 +478,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
         cancelCall,
         endCall,
         toggleMute,
+        enableAudio,
       }}
     >
       {children}

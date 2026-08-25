@@ -1,14 +1,14 @@
 import React from 'react';
-import { Phone, PhoneOff, Mic, MicOff, AlertCircle } from 'lucide-react';
+import { Phone, PhoneOff, Mic, MicOff, AlertCircle, Volume2 } from 'lucide-react';
 import { useVoiceCall } from '../../context/VoiceCallContext';
 import { Avatar } from '../common/Avatar';
 
 export const VoiceCallModal: React.FC = () => {
-  const { callSession, acceptCall, rejectCall, cancelCall, endCall, toggleMute } = useVoiceCall();
+  const { callSession, acceptCall, rejectCall, cancelCall, endCall, toggleMute, enableAudio } = useVoiceCall();
 
   if (!callSession) return null;
 
-  const { counterparty, isCaller, state, isMuted, durationSec, statusMessage, error } = callSession;
+  const { counterparty, isCaller, state, isMuted, durationSec, statusMessage, error, isAudioBlocked } = callSession;
 
   const formatDuration = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -55,6 +55,17 @@ export const VoiceCallModal: React.FC = () => {
             >
               {error || statusMessage || 'Connecting...'}
             </p>
+          )}
+
+          {/* Autoplay Blocked User Fallback Banner */}
+          {isAudioBlocked && state === 'connected' && (
+            <button
+              onClick={() => enableAudio()}
+              className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-medium hover:bg-amber-500/30 transition-all animate-bounce"
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+              Tap to Enable Audio
+            </button>
           )}
         </div>
 
