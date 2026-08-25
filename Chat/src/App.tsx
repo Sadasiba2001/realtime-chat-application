@@ -13,7 +13,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <ChatProvider>
-          <div className="h-screen w-screen overflow-hidden bg-gray-100 dark:bg-[#0b141a] text-gray-900 dark:text-gray-100 font-sans antialiased">
+          <div className="h-screen w-screen overflow-y-auto bg-gray-100 dark:bg-[#0b141a] text-gray-900 dark:text-gray-100 font-sans antialiased">
             <AppRoutes />
 
             {/* Global Overlays & Modals */}

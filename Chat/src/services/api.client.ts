@@ -58,7 +58,12 @@ apiClient.interceptors.response.use(
         storage.removeAuthToken();
         useAuthStore.getState().clearAuth();
         webSocketService.disconnect();
-        if (typeof window !== 'undefined' && window.location.pathname !== '/auth') {
+        const isPublicRoute =
+          typeof window !== 'undefined' &&
+          (window.location.pathname === '/' ||
+            window.location.pathname === '/landing' ||
+            window.location.pathname === '/auth');
+        if (!isPublicRoute) {
           window.location.href = '/auth';
         }
         return Promise.reject(error);
@@ -104,7 +109,12 @@ apiClient.interceptors.response.use(
         storage.removeAuthToken();
         useAuthStore.getState().clearAuth();
         webSocketService.disconnect();
-        if (typeof window !== 'undefined' && window.location.pathname !== '/auth') {
+        const isPublicRoute =
+          typeof window !== 'undefined' &&
+          (window.location.pathname === '/' ||
+            window.location.pathname === '/landing' ||
+            window.location.pathname === '/auth');
+        if (!isPublicRoute) {
           window.location.href = '/auth';
         }
         return Promise.reject(refreshError);
