@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { MessageSquare, Lock, Loader2 } from 'lucide-react';
+import { MessageSquare, Lock, Loader2, Sparkles } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { MessageBubble } from './MessageBubble';
 import { formatDateDivider } from '../../utils/date.utils';
@@ -36,18 +36,19 @@ export const MessageArea: React.FC<MessageAreaProps> = ({
 
   if (!activeConversation) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-[#090d16] text-center select-none">
-        <div className="p-6 bg-sky-100/60 dark:bg-sky-950/40 rounded-full mb-4 shadow-xl">
-          <MessageSquare className="w-16 h-16 text-sky-600 dark:text-sky-400 stroke-[1.5]" />
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center select-none bg-[#eef2f6]/40 dark:bg-[#0b0f19]/40">
+        <div className="p-6 bg-gradient-to-tr from-violet-600/10 to-indigo-600/10 dark:from-violet-600/20 dark:to-indigo-600/20 rounded-3xl mb-4 shadow-xl border border-violet-500/15">
+          <MessageSquare className="w-14 h-14 text-violet-600 dark:text-violet-400 stroke-[1.5]" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
           SB Chat Web Pro
+          <Sparkles className="w-5 h-5 text-amber-400 fill-amber-400" />
         </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-sm">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-sm">
           Select a conversation from the sidebar or start a new chat to begin messaging.
         </p>
-        <div className="mt-8 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
-          <Lock className="w-3.5 h-3.5" /> End-to-end encrypted connection
+        <div className="mt-8 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 bg-white/70 dark:bg-slate-800/60 px-3.5 py-1.5 rounded-full border border-slate-200/60 dark:border-white/5 backdrop-blur-xs">
+          <Lock className="w-3.5 h-3.5 text-violet-500" /> End-to-end encrypted connection
         </div>
       </div>
     );
@@ -57,14 +58,13 @@ export const MessageArea: React.FC<MessageAreaProps> = ({
 
   return (
     <div
-      className={`flex-1 overflow-y-auto p-4 md:p-6 ${
-        theme === 'dark' ? 'chat-pattern-dark' : 'chat-pattern-light'
-      }`}
+      className={`flex-1 overflow-y-auto p-4 md:p-6 space-y-1 ${theme === 'dark' ? 'chat-pattern-dark' : 'chat-pattern-light'
+        }`}
     >
       {/* End-to-End Encryption Banner */}
       <div className="flex justify-center mb-4 select-none">
-        <div className="bg-amber-100/80 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[11px] font-medium px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-900/50 flex items-center gap-1.5 shadow-xs">
-          <Lock className="w-3 h-3" /> Messages are end-to-end encrypted. No one outside of this chat can read them.
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md text-slate-600 dark:text-slate-300 text-[11px] font-medium px-4 py-1.5 rounded-full border border-slate-200/80 dark:border-white/10 flex items-center gap-1.5 shadow-xs">
+          <Lock className="w-3 h-3 text-amber-500" /> Messages are end-to-end encrypted. No one outside of this chat can read them.
         </div>
       </div>
 
@@ -74,7 +74,7 @@ export const MessageArea: React.FC<MessageAreaProps> = ({
           <button
             onClick={() => loadMoreHistory()}
             disabled={isLoadingHistory}
-            className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline bg-white/80 dark:bg-[#0f172a]/80 px-3.5 py-1.5 rounded-full shadow-xs border border-gray-200/60 dark:border-gray-800/80 flex items-center gap-1.5 transition-all"
+            className="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-4 py-1.5 rounded-full shadow-xs border border-slate-200/80 dark:border-white/10 flex items-center gap-1.5 transition-all"
           >
             {isLoadingHistory ? (
               <>
@@ -101,7 +101,7 @@ export const MessageArea: React.FC<MessageAreaProps> = ({
           <React.Fragment key={msg.id}>
             {showDateDivider && (
               <div className="flex justify-center my-4 select-none">
-                <span className="text-[11px] font-bold tracking-wider text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-[#0f172a]/80 px-3 py-1 rounded-full shadow-xs uppercase">
+                <span className="text-[11px] font-bold tracking-wider text-slate-500 dark:text-slate-400 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-3.5 py-1 rounded-full shadow-xs border border-slate-200/60 dark:border-white/10 uppercase">
                   {formatDateDivider(msg.createdAt)}
                 </span>
               </div>
@@ -130,3 +130,4 @@ export const MessageArea: React.FC<MessageAreaProps> = ({
     </div>
   );
 };
+

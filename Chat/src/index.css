@@ -2,48 +2,53 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-
 @layer base {
   :root {
-    --bg-primary: #f0f7ff;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #e0f2fe;
-    --bg-chat: #f0f4f8;
+    --bg-canvas: #eef2f6;
+    --bg-island: #ffffff;
+    --bg-island-secondary: #f8fafc;
+    --bg-chat-canvas: #eef2f6;
     --bg-bubble-incoming: #ffffff;
-    --bg-bubble-outgoing: #dbeafe;
-    --border-color: #e2e8f0;
+    --bg-bubble-outgoing: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+    --border-island: rgba(226, 232, 240, 0.8);
+    --border-island-subtle: rgba(241, 245, 249, 0.9);
     --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #64748b;
-    --accent-blue: #0284c7;
-    --accent-indigo: #1d4ed8;
-    --accent-hover: #0369a1;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --accent-primary: #7c3aed;
+    --accent-secondary: #6366f1;
+    --accent-hover: #6d28d9;
+    --pill-active-bg: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
   }
 
   .dark {
-    --bg-primary: #090d16;
-    --bg-secondary: #0f172a;
-    --bg-tertiary: #1e293b;
-    --bg-chat: #090d16;
-    --bg-bubble-incoming: #1e293b;
-    --bg-bubble-outgoing: #1e40af;
-    --border-color: #1e293b;
+    --bg-canvas: #0b0f19;
+    --bg-island: #111827;
+    --bg-island-secondary: #1a2234;
+    --bg-chat-canvas: #0b0f19;
+    --bg-bubble-incoming: #1a2234;
+    --bg-bubble-outgoing: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+    --border-island: rgba(255, 255, 255, 0.08);
+    --border-island-subtle: rgba(255, 255, 255, 0.04);
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
-    --accent-blue: #38bdf8;
-    --accent-indigo: #3b82f6;
-    --accent-hover: #0284c7;
+    --accent-primary: #8b5cf6;
+    --accent-secondary: #6366f1;
+    --accent-hover: #7c3aed;
+    --pill-active-bg: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
   }
 
-  html, body, #root {
+  html,
+  body,
+  #root {
     margin: 0;
     padding: 0;
     width: 100%;
     height: 100%;
     overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-primary);
+    background-color: var(--bg-canvas);
     color: var(--text-primary);
     box-sizing: border-box;
   }
@@ -51,8 +56,8 @@
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -60,43 +65,61 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.3);
-  border-radius: 3px;
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.5);
+  background: rgba(148, 163, 184, 0.45);
 }
 
-/* Dense repeating emoji wallpaper background pattern */
+/* Modern Telegram-style subtle wallpaper pattern */
 .chat-pattern-light {
-  background-color: #f0f7ff;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cg opacity='0.20'%3E%3Ctext x='15' y='25' font-size='13'%3E💬%3C/text%3E%3Ctext x='80' y='22' font-size='12'%3E⭐%3C/text%3E%3Ctext x='140' y='28' font-size='13'%3E🎵%3C/text%3E%3Ctext x='200' y='24' font-size='12'%3E🚀%3C/text%3E%3Ctext x='45' y='65' font-size='12'%3E⚡%3C/text%3E%3Ctext x='110' y='60' font-size='13'%3E❤️%3C/text%3E%3Ctext x='175' y='65' font-size='12'%3E🎧%3C/text%3E%3Ctext x='220' y='70' font-size='13'%3E☕%3C/text%3E%3Ctext x='10' y='105' font-size='12'%3E✨%3C/text%3E%3Ctext x='75' y='110' font-size='13'%3E📱%3C/text%3E%3Ctext x='135' y='105' font-size='12'%3E🐱%3C/text%3E%3Ctext x='195' y='110' font-size='13'%3E🎨%3C/text%3E%3Ctext x='40' y='150' font-size='13'%3E🎮%3C/text%3E%3Ctext x='105' y='145' font-size='12'%3E💡%3C/text%3E%3Ctext x='165' y='150' font-size='13'%3E🌴%3C/text%3E%3Ctext x='215' y='145' font-size='12'%3E🐶%3C/text%3E%3Ctext x='15' y='190' font-size='12'%3E🍕%3C/text%3E%3Ctext x='70' y='195' font-size='13'%3E🏀%3C/text%3E%3Ctext x='130' y='190' font-size='12'%3E✈️%3C/text%3E%3Ctext x='185' y='195' font-size='13'%3E🔔%3C/text%3E%3Ctext x='45' y='230' font-size='13'%3E💎%3C/text%3E%3Ctext x='100' y='225' font-size='12'%3E🎯%3C/text%3E%3Ctext x='160' y='230' font-size='13'%3E🌟%3C/text%3E%3Ctext x='215' y='225' font-size='12'%3E🔥%3C/text%3E%3C/g%3E%3C/svg%3E");
+  background-color: #eef2f6;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg opacity='0.16'%3E%3Ctext x='20' y='30' font-size='14'%3E💬%3C/text%3E%3Ctext x='90' y='25' font-size='13'%3E⭐%3C/text%3E%3Ctext x='160' y='35' font-size='14'%3E🎵%3C/text%3E%3Ctext x='225' y='28' font-size='13'%3E🚀%3C/text%3E%3Ctext x='50' y='75' font-size='13'%3E⚡%3C/text%3E%3Ctext x='125' y='70' font-size='14'%3E❤️%3C/text%3E%3Ctext x='195' y='75' font-size='13'%3E🎧%3C/text%3E%3Ctext x='240' y='80' font-size='14'%3E☕%3C/text%3E%3Ctext x='15' y='120' font-size='13'%3E✨%3C/text%3E%3Ctext x='85' y='125' font-size='14'%3E📱%3C/text%3E%3Ctext x='155' y='120' font-size='13'%3E🐱%3C/text%3E%3Ctext x='215' y='125' font-size='14'%3E🎨%3C/text%3E%3Ctext x='45' y='170' font-size='14'%3E🎮%3C/text%3E%3Ctext x='115' y='165' font-size='13'%3E💡%3C/text%3E%3Ctext x='185' y='170' font-size='14'%3E🌴%3C/text%3E%3Ctext x='235' y='165' font-size='13'%3E🐶%3C/text%3E%3Ctext x='20' y='215' font-size='13'%3E🍕%3C/text%3E%3Ctext x='80' y='220' font-size='14'%3E🏀%3C/text%3E%3Ctext x='145' y='215' font-size='13'%3E✈️%3C/text%3E%3Ctext x='205' y='220' font-size='14'%3E🔔%3C/text%3E%3Ctext x='50' y='255' font-size='14'%3E💎%3C/text%3E%3Ctext x='110' y='250' font-size='13'%3E🎯%3C/text%3E%3Ctext x='175' y='255' font-size='14'%3E🌟%3C/text%3E%3Ctext x='235' y='250' font-size='13'%3E🔥%3C/text%3E%3C/g%3E%3C/svg%3E");
   background-repeat: repeat;
 }
 
 .chat-pattern-dark {
-  background-color: #090d16;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cg opacity='0.11'%3E%3Ctext x='15' y='25' font-size='13'%3E💬%3C/text%3E%3Ctext x='80' y='22' font-size='12'%3E⭐%3C/text%3E%3Ctext x='140' y='28' font-size='13'%3E🎵%3C/text%3E%3Ctext x='200' y='24' font-size='12'%3E🚀%3C/text%3E%3Ctext x='45' y='65' font-size='12'%3E⚡%3C/text%3E%3Ctext x='110' y='60' font-size='13'%3E❤️%3C/text%3E%3Ctext x='175' y='65' font-size='12'%3E🎧%3C/text%3E%3Ctext x='220' y='70' font-size='13'%3E☕%3C/text%3E%3Ctext x='10' y='105' font-size='12'%3E✨%3C/text%3E%3Ctext x='75' y='110' font-size='13'%3E📱%3C/text%3E%3Ctext x='135' y='105' font-size='12'%3E🐱%3C/text%3E%3Ctext x='195' y='110' font-size='13'%3E🎨%3C/text%3E%3Ctext x='40' y='150' font-size='13'%3E🎮%3C/text%3E%3Ctext x='105' y='145' font-size='12'%3E💡%3C/text%3E%3Ctext x='165' y='150' font-size='13'%3E🌴%3C/text%3E%3Ctext x='215' y='145' font-size='12'%3E🐶%3C/text%3E%3Ctext x='15' y='190' font-size='12'%3E🍕%3C/text%3E%3Ctext x='70' y='195' font-size='13'%3E🏀%3C/text%3E%3Ctext x='130' y='190' font-size='12'%3E✈️%3C/text%3E%3Ctext x='185' y='195' font-size='13'%3E🔔%3C/text%3E%3Ctext x='45' y='230' font-size='13'%3E💎%3C/text%3E%3Ctext x='100' y='225' font-size='12'%3E🎯%3C/text%3E%3Ctext x='160' y='230' font-size='13'%3E🌟%3C/text%3E%3Ctext x='215' y='225' font-size='12'%3E🔥%3C/text%3E%3C/g%3E%3C/svg%3E");
+  background-color: #0b0f19;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg opacity='0.08'%3E%3Ctext x='20' y='30' font-size='14'%3E💬%3C/text%3E%3Ctext x='90' y='25' font-size='13'%3E⭐%3C/text%3E%3Ctext x='160' y='35' font-size='14'%3E🎵%3C/text%3E%3Ctext x='225' y='28' font-size='13'%3E🚀%3C/text%3E%3Ctext x='50' y='75' font-size='13'%3E⚡%3C/text%3E%3Ctext x='125' y='70' font-size='14'%3E❤️%3C/text%3E%3Ctext x='195' y='75' font-size='13'%3E🎧%3C/text%3E%3Ctext x='240' y='80' font-size='14'%3E☕%3C/text%3E%3Ctext x='15' y='120' font-size='13'%3E✨%3C/text%3E%3Ctext x='85' y='125' font-size='14'%3E📱%3C/text%3E%3Ctext x='155' y='120' font-size='13'%3E🐱%3C/text%3E%3Ctext x='215' y='125' font-size='14'%3E🎨%3C/text%3E%3Ctext x='45' y='170' font-size='14'%3E🎮%3C/text%3E%3Ctext x='115' y='165' font-size='13'%3E💡%3C/text%3E%3Ctext x='185' y='170' font-size='14'%3E🌴%3C/text%3E%3Ctext x='235' y='165' font-size='13'%3E🐶%3C/text%3E%3Ctext x='20' y='215' font-size='13'%3E🍕%3C/text%3E%3Ctext x='80' y='220' font-size='14'%3E🏀%3C/text%3E%3Ctext x='145' y='215' font-size='13'%3E✈️%3C/text%3E%3Ctext x='205' y='220' font-size='14'%3E🔔%3C/text%3E%3Ctext x='50' y='255' font-size='14'%3E💎%3C/text%3E%3Ctext x='110' y='250' font-size='13'%3E🎯%3C/text%3E%3Ctext x='175' y='255' font-size='14'%3E🌟%3C/text%3E%3Ctext x='235' y='250' font-size='13'%3E🔥%3C/text%3E%3C/g%3E%3C/svg%3E");
   background-repeat: repeat;
 }
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes pulseRecording {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.15); opacity: 0.7; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.12);
+    opacity: 0.75;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.18s ease-out forwards;
+  animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-pulse-record {
-  animation: pulseRecording 1.5s infinite;
+  animation: pulseRecording 1.5s infinite ease-in-out;
 }

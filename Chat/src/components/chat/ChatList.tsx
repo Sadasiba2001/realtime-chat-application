@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Filter, MessageSquarePlus, Loader2 } from 'lucide-react';
+import { Search, Plus, Filter, MessageSquarePlus, Loader2, Edit3 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import type { FilterCategory } from '../../context/ChatContext';
 import { ChatItem } from './ChatItem';
@@ -98,17 +98,17 @@ export const ChatList: React.FC = () => {
   ];
 
   return (
-    <div className="w-full md:w-80 lg:w-96 flex flex-col h-full bg-white dark:bg-[#0f172a] border-r border-gray-200 dark:border-gray-800/80 flex-shrink-0 select-none">
+    <div className="w-full md:w-80 lg:w-[350px] flex flex-col h-full bg-white dark:bg-[#111827] rounded-none md:rounded-2xl border-0 md:border border-slate-200/80 dark:border-white/10 shadow-none md:shadow-2xl flex-shrink-0 select-none relative overflow-hidden transition-all">
       {/* Top Header */}
-      <div className="p-4 pb-2 border-b border-gray-100 dark:border-gray-800/50">
+      <div className="p-4 pb-2.5 border-b border-slate-100 dark:border-slate-800/60">
         <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
             Chats
           </h1>
           <div className="flex items-center gap-1">
             <button
               onClick={() => openModal('new_chat')}
-              className="p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors"
               title="New Chat"
             >
               <MessageSquarePlus className="w-5 h-5" />
@@ -116,18 +116,18 @@ export const ChatList: React.FC = () => {
           </div>
         </div>
 
-        {/* Search Input */}
+        {/* Telegram-style Search Input Pill */}
         <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search or start new chat..."
+            placeholder="Search chats or users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 text-sm bg-gray-100 dark:bg-slate-800/80 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 rounded-xl outline-hidden focus:ring-2 focus:ring-sky-500/50 transition-all"
+            className="w-full pl-10 pr-9 py-2 text-sm bg-slate-100/90 dark:bg-slate-800/70 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 rounded-full outline-hidden focus:ring-2 focus:ring-violet-500/40 focus:bg-white dark:focus:bg-slate-800 transition-all border border-transparent focus:border-violet-500/30"
           />
           {isSearching && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sky-500 animate-spin" />
+            <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-500 animate-spin" />
           )}
         </div>
 
@@ -137,11 +137,10 @@ export const ChatList: React.FC = () => {
             <button
               key={chip.id}
               onClick={() => setFilterCategory(chip.id)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
-                filterCategory === chip.id
-                  ? 'bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-800'
-                  : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700'
-              }`}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${filterCategory === chip.id
+                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-xs font-semibold'
+                  : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200/80 dark:hover:bg-slate-700/80'
+                }`}
             >
               {chip.label}
             </button>
@@ -150,24 +149,24 @@ export const ChatList: React.FC = () => {
       </div>
 
       {/* Conversation & User Search List Scroll Area */}
-      <div className="flex-1 overflow-y-auto divide-y divide-gray-50 dark:divide-gray-900/30">
+      <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {filteredConversations.length === 0 && availableSearchedUsers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 p-6 text-center text-gray-500 dark:text-gray-400">
+          <div className="flex flex-col items-center justify-center h-64 p-6 text-center text-slate-500 dark:text-slate-400">
             {isSearching ? (
               <>
-                <Loader2 className="w-8 h-8 mb-3 text-sky-500 animate-spin" />
+                <Loader2 className="w-8 h-8 mb-3 text-violet-500 animate-spin" />
                 <p className="text-sm font-medium">Searching users...</p>
               </>
             ) : (
               <>
-                <Filter className="w-10 h-10 mb-3 text-gray-300 dark:text-gray-600 stroke-[1.5]" />
+                <Filter className="w-10 h-10 mb-3 text-slate-300 dark:text-slate-600 stroke-[1.5]" />
                 <p className="text-sm font-medium">No conversations or users found</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                   Try searching by name, username, phone, or email.
                 </p>
                 <button
                   onClick={() => openModal('new_chat')}
-                  className="mt-4 px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl transition-colors flex items-center gap-1.5 shadow-md shadow-sky-600/20"
+                  className="mt-4 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-xl transition-all flex items-center gap-1.5 shadow-lg shadow-indigo-500/25 active:scale-95"
                 >
                   <Plus className="w-4 h-4" /> Start New Chat
                 </button>
@@ -178,9 +177,9 @@ export const ChatList: React.FC = () => {
           <>
             {/* Pinned Section Header */}
             {pinnedConversations.length > 0 && (
-              <div>
-                <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider bg-gray-50/70 dark:bg-[#0f172a]">
-                  Pinned Conversations
+              <div className="space-y-1">
+                <div className="px-3 py-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  Pinned
                 </div>
                 {pinnedConversations.map((c) => (
                   <ChatItem
@@ -195,10 +194,10 @@ export const ChatList: React.FC = () => {
 
             {/* Standard Conversations */}
             {unpinnedConversations.length > 0 && (
-              <div>
+              <div className="space-y-1">
                 {pinnedConversations.length > 0 && (
-                  <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider bg-gray-50/70 dark:bg-[#0f172a]">
-                    All Messages
+                  <div className="px-3 py-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    All Chats
                   </div>
                 )}
                 {unpinnedConversations.map((c) => (
@@ -214,23 +213,23 @@ export const ChatList: React.FC = () => {
 
             {/* Search API User Results */}
             {searchQuery.trim() && availableSearchedUsers.length > 0 && (
-              <div>
-                <div className="px-4 py-1.5 text-[11px] font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wider bg-sky-50/50 dark:bg-sky-950/30 flex items-center justify-between">
+              <div className="space-y-1 mt-2">
+                <div className="px-3 py-1.5 text-[11px] font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-wider bg-violet-50/50 dark:bg-violet-950/30 rounded-lg flex items-center justify-between">
                   <span>Users Found ({availableSearchedUsers.length})</span>
-                  <span className="text-[10px] text-gray-400 font-normal">Click to chat</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Click to chat</span>
                 </div>
                 {availableSearchedUsers.map((user) => (
                   <div
                     key={user.id}
                     onClick={() => createNewChat(user)}
-                    className="flex items-center gap-3 p-3 hover:bg-gray-100 dark:hover:bg-slate-800/80 cursor-pointer transition-colors"
+                    className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-slate-800/80 cursor-pointer transition-all active:scale-[0.99]"
                   >
                     <Avatar src={user.avatar} name={user.name} size="md" status={user.status} showStatus />
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                         {user.name}
                       </h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                         {user.username ? `@${user.username}` : user.email || user.phone || user.about}
                       </p>
                     </div>
@@ -241,6 +240,16 @@ export const ChatList: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Modern Floating Action Button (FAB) - Telegram Style */}
+      <button
+        onClick={() => openModal('new_chat')}
+        className="absolute bottom-4 right-4 w-12 h-12 rounded-full bg-gradient-to-tr from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white flex items-center justify-center shadow-xl shadow-indigo-500/35 hover:scale-105 active:scale-95 transition-all z-20"
+        title="Compose New Message"
+      >
+        <Edit3 className="w-5 h-5" />
+      </button>
     </div>
   );
 };
+

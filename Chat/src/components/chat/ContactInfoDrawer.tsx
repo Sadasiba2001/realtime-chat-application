@@ -1,7 +1,6 @@
 import React from 'react';
 import { X, Phone, Mail, Pin, VolumeX, ShieldAlert, ZoomIn } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
-
 import { Avatar } from '../common/Avatar';
 
 interface ContactInfoDrawerProps {
@@ -17,7 +16,7 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ onClose })
   const otherParticipant = isGroup
     ? null
     : activeConversation.participants.find((p) => p.id !== currentUser.id) ||
-      activeConversation.participants[0];
+    activeConversation.participants[0];
 
   const name = isGroup ? activeConversation.name || 'Group Chat' : otherParticipant?.name || 'Contact';
   const avatar = isGroup ? activeConversation.groupAvatar : otherParticipant?.avatar;
@@ -35,15 +34,15 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ onClose })
   };
 
   return (
-    <div className="w-80 h-full bg-white dark:bg-[#0f172a] border-l border-gray-200 dark:border-gray-800/80 flex flex-col z-20 animate-fade-in select-none">
+    <div className="w-80 h-full bg-white dark:bg-[#111827] border-l border-slate-200/80 dark:border-white/10 flex flex-col z-30 animate-fade-in select-none shadow-2xl">
       {/* Header */}
-      <div className="h-16 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-slate-900/40">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+      <div className="h-16 px-5 flex items-center justify-between border-b border-slate-100 dark:border-slate-800/60 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-md">
+        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
           {isGroup ? 'Group Info' : 'Contact Info'}
         </h3>
         <button
           onClick={onClose}
-          className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded-full"
+          className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -66,14 +65,14 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ onClose })
             )}
           </div>
 
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-3">{name}</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-3">{name}</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {isGroup ? `${activeConversation.participants.length} Participants` : otherParticipant?.phone}
           </p>
           {hasCustomAvatar && (
             <button
               onClick={handleOpenPhoto}
-              className="mt-2 text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1"
+              className="mt-2 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1"
             >
               <ZoomIn className="w-3.5 h-3.5" /> View Photo Fullscreen
             </button>
@@ -82,43 +81,43 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ onClose })
 
         {/* Bio / About */}
         {!isGroup && otherParticipant?.about && (
-          <div className="p-4 bg-gray-50 dark:bg-slate-900/60 rounded-2xl border border-gray-100 dark:border-gray-800">
-            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block mb-1">
+          <div className="p-4 bg-slate-50 dark:bg-[#1a2234] rounded-2xl border border-slate-200/60 dark:border-white/5 shadow-xs">
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
               About
             </span>
-            <p className="text-sm text-gray-800 dark:text-gray-200">{otherParticipant.about}</p>
+            <p className="text-sm text-slate-800 dark:text-slate-200">{otherParticipant.about}</p>
           </div>
         )}
 
         {/* Group Description */}
         {isGroup && activeConversation.description && (
-          <div className="p-4 bg-gray-50 dark:bg-slate-900/60 rounded-2xl border border-gray-100 dark:border-gray-800">
-            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block mb-1">
+          <div className="p-4 bg-slate-50 dark:bg-[#1a2234] rounded-2xl border border-slate-200/60 dark:border-white/5 shadow-xs">
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
               Group Description
             </span>
-            <p className="text-sm text-gray-800 dark:text-gray-200">{activeConversation.description}</p>
+            <p className="text-sm text-slate-800 dark:text-slate-200">{activeConversation.description}</p>
           </div>
         )}
 
         {/* Contact Info Items */}
         {!isGroup && otherParticipant && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-900/40 rounded-xl">
-              <Phone className="w-4 h-4 text-sky-500" />
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-[#1a2234] rounded-2xl border border-slate-200/60 dark:border-white/5">
+              <Phone className="w-4 h-4 text-violet-500" />
               <div>
-                <p className="text-[11px] text-gray-400">Phone</p>
-                <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
+                <p className="text-[11px] text-slate-400">Phone</p>
+                <p className="text-xs font-medium text-slate-800 dark:text-slate-200">
                   {otherParticipant.phone || 'Not provided'}
                 </p>
               </div>
             </div>
 
             {otherParticipant.email && (
-              <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-900/40 rounded-xl">
-                <Mail className="w-4 h-4 text-emerald-500" />
+              <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-[#1a2234] rounded-2xl border border-slate-200/60 dark:border-white/5">
+                <Mail className="w-4 h-4 text-indigo-500" />
                 <div>
-                  <p className="text-[11px] text-gray-400">Email</p>
-                  <p className="text-xs font-medium text-gray-800 dark:text-gray-200">{otherParticipant.email}</p>
+                  <p className="text-[11px] text-slate-400">Email</p>
+                  <p className="text-xs font-medium text-slate-800 dark:text-slate-200">{otherParticipant.email}</p>
                 </div>
               </div>
             )}
@@ -126,20 +125,20 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ onClose })
         )}
 
         {/* Action Toggles */}
-        <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+        <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
           <button
             onClick={() => togglePin(activeConversation.id)}
-            className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-900/50 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-sm text-gray-800 dark:text-gray-200"
+            className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-[#1a2234] hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-2xl transition-colors text-sm text-slate-800 dark:text-slate-200 border border-slate-200/60 dark:border-white/5"
           >
             <span className="flex items-center gap-2">
-              <Pin className="w-4 h-4 text-sky-500" /> Pin Chat
+              <Pin className="w-4 h-4 text-violet-500" /> Pin Chat
             </span>
-            <span className="text-xs font-bold text-sky-600">{activeConversation.pinned ? 'YES' : 'NO'}</span>
+            <span className="text-xs font-bold text-violet-600 dark:text-violet-400">{activeConversation.pinned ? 'YES' : 'NO'}</span>
           </button>
 
           <button
             onClick={() => toggleMute(activeConversation.id)}
-            className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-900/50 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-sm text-gray-800 dark:text-gray-200"
+            className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-[#1a2234] hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-2xl transition-colors text-sm text-slate-800 dark:text-slate-200 border border-slate-200/60 dark:border-white/5"
           >
             <span className="flex items-center gap-2">
               <VolumeX className="w-4 h-4 text-amber-500" /> Mute Notifications
@@ -149,7 +148,7 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ onClose })
 
           <button
             onClick={() => alert('Contact blocked.')}
-            className="w-full flex items-center gap-2 px-4 py-3 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors text-sm text-rose-600 dark:text-rose-400 font-semibold"
+            className="w-full flex items-center gap-2 px-4 py-3 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-2xl transition-colors text-sm text-rose-600 dark:text-rose-400 font-semibold border border-transparent hover:border-rose-200 dark:hover:border-rose-900/50"
           >
             <ShieldAlert className="w-4 h-4" /> Block Contact
           </button>
@@ -158,3 +157,4 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ onClose })
     </div>
   );
 };
+

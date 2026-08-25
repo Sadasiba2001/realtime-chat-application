@@ -20,26 +20,32 @@ export const ChatPage: React.FC = () => {
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
 
   return (
-    <div className="h-screen w-screen flex bg-gray-100 dark:bg-[#090d16] overflow-hidden">
-      {/* Left Navigation Sidebar */}
+    <div className="h-screen w-screen flex p-0 md:p-2.5 lg:p-3 gap-0 md:gap-2.5 lg:gap-3 bg-[#eef2f6] dark:bg-[#0b0f19] overflow-hidden select-none">
+      {/* Left Navigation Sidebar Island */}
       {(!isMobileView || !mobileShowChat) && <Sidebar />}
 
       {/* Conditional Active Tab Content */}
       {activeTab === 'status' ? (
-        <StatusView />
+        <div className="flex-1 flex overflow-hidden rounded-none md:rounded-2xl border-0 md:border border-slate-200/80 dark:border-white/10 shadow-none md:shadow-2xl bg-white dark:bg-[#111827]">
+          <StatusView />
+        </div>
       ) : activeTab === 'calls' ? (
-        <CallsView />
+        <div className="flex-1 flex overflow-hidden rounded-none md:rounded-2xl border-0 md:border border-slate-200/80 dark:border-white/10 shadow-none md:shadow-2xl bg-white dark:bg-[#111827]">
+          <CallsView />
+        </div>
       ) : activeTab === 'settings' ? (
-        <SettingsView />
+        <div className="flex-1 flex overflow-hidden rounded-none md:rounded-2xl border-0 md:border border-slate-200/80 dark:border-white/10 shadow-none md:shadow-2xl bg-white dark:bg-[#111827]">
+          <SettingsView />
+        </div>
       ) : (
         /* Default 'chats' Tab View */
         <>
-          {/* Chat List (Desktop always visible, hidden on Mobile when chat active) */}
+          {/* Chat List Island (Desktop always visible, hidden on Mobile when chat active) */}
           {(!isMobileView || !mobileShowChat) && <ChatList />}
 
-          {/* Main Chat Area (Mobile shows when chat active, Desktop always visible) */}
+          {/* Main Chat Area Island (Mobile shows when chat active, Desktop always visible) */}
           {(!isMobileView || mobileShowChat) && (
-            <div className="flex-1 flex flex-col h-full min-w-0 bg-white dark:bg-[#0f172a] relative">
+            <div className="flex-1 flex flex-col h-full min-w-0 bg-white dark:bg-[#111827] rounded-none md:rounded-2xl border-0 md:border border-slate-200/80 dark:border-white/10 shadow-none md:shadow-2xl relative overflow-hidden">
               {activeConversation ? (
                 <>
                   <ChatHeader
@@ -57,7 +63,7 @@ export const ChatPage: React.FC = () => {
                     />
                   )}
 
-                  <div className="flex-1 flex overflow-hidden">
+                  <div className="flex-1 flex overflow-hidden relative">
                     <div className="flex-1 flex flex-col min-w-0">
                       <MessageArea onToggleSearch={() => setShowInChatSearch(true)} />
                       <MessageComposer />
@@ -70,7 +76,7 @@ export const ChatPage: React.FC = () => {
                   </div>
                 </>
               ) : (
-                <MessageArea onToggleSearch={() => {}} />
+                <MessageArea onToggleSearch={() => { }} />
               )}
             </div>
           )}
@@ -79,3 +85,4 @@ export const ChatPage: React.FC = () => {
     </div>
   );
 };
+
