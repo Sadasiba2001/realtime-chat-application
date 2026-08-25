@@ -10,8 +10,8 @@ export interface AuthTokens {
 interface AuthState {
   user: UserSession | null;
   tokens: AuthTokens;
-  setAuth: (user: UserSession, tokens: { access: string; refresh: string }) => void;
-  setTokens: (tokens: { access: string; refresh: string }) => void;
+  setAuth: (user: UserSession, tokens: { access: string; refresh?: string | null }) => void;
+  setTokens: (tokens: { access: string; refresh?: string | null }) => void;
   clearAuth: () => void;
 }
 
@@ -23,8 +23,15 @@ export const useAuthStore = create<AuthState>()(
         access: null,
         refresh: null,
       },
-      setAuth: (user, tokens) => set({ user, tokens }),
-      setTokens: (tokens) => set({ tokens }),
+      setAuth: (user, tokens) =>
+        set({
+          user,
+          tokens: { access: tokens.access, refresh: tokens.refresh ?? null },
+        }),
+      setTokens: (tokens) =>
+        set({
+          tokens: { access: tokens.access, refresh: tokens.refresh ?? null },
+        }),
       clearAuth: () => set({ user: null, tokens: { access: null, refresh: null } }),
     }),
     {

@@ -16,7 +16,7 @@ class WebSocketService {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private intentionalDisconnect = false;
 
-  private resolveWebSocketUrl(token: string): string {
+  private resolveWebSocketUrl(): string {
     let rawWsUrl = (import.meta.env.VITE_WS_URL || '').trim();
     const rawBackendUrl = (import.meta.env.VITE_REMOTE_BACKEND_URL || '').trim();
 
@@ -67,7 +67,7 @@ class WebSocketService {
     this.currentToken = token;
     this.setStatus('connecting');
 
-    const wsUrl = this.resolveWebSocketUrl(token);
+    const wsUrl = this.resolveWebSocketUrl();
     console.log(`[WebSocket] Connecting to user-level socket... (${wsUrl})`);
 
     try {
