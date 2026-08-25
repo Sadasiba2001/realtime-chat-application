@@ -10,6 +10,7 @@ import {
   VolumeX,
 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
+import { useVoiceCall } from '../../context/VoiceCallContext';
 import { Avatar } from '../common/Avatar';
 import { formatLastSeen } from '../../utils/date.utils';
 
@@ -31,6 +32,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     isMobileView,
     backToChatListMobile,
   } = useChat();
+
+  const { startCall: startVoiceCall } = useVoiceCall();
 
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -102,7 +105,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         {/* Voice Call */}
         {otherParticipant && (
           <button
-            onClick={() => startCall(otherParticipant, 'audio')}
+            onClick={() => startVoiceCall(otherParticipant)}
             className="p-2.5 text-slate-500 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 rounded-full transition-all active:scale-95"
             title="Voice Call"
           >

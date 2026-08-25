@@ -155,17 +155,68 @@ class WebSocketService {
         this.emit('PROFILE_UPDATE', event);
         break;
 
+      case 'call_offer':
+        this.emit('VOICE_CALL_OFFER', event);
+        break;
+
+      case 'call_answer':
+        this.emit('VOICE_CALL_ANSWER', event);
+        break;
+
+      case 'ice_candidate':
+        this.emit('VOICE_ICE_CANDIDATE', event);
+        break;
+
+      case 'call_reject':
+        this.emit('VOICE_CALL_REJECT', event);
+        break;
+
+      case 'call_cancel':
+        this.emit('VOICE_CALL_CANCEL', event);
+        break;
+
+      case 'call_end':
+        this.emit('VOICE_CALL_END', event);
+        break;
+
+      case 'call_busy':
+        this.emit('VOICE_CALL_BUSY', event);
+        break;
+
+      case 'call_initiated':
+        this.emit('VOICE_CALL_INITIATED', event);
+        break;
+
+      case 'call_connected':
+        this.emit('VOICE_CALL_CONNECTED', event);
+        break;
+
       case 'error':
         console.error('[WebSocket] Server error:', event);
         this.emit('ERROR', event);
         break;
 
-
-
-
       default:
         console.warn('[WebSocket] Unknown event type:', event);
     }
+  }
+
+  public sendSignaling(payload: Record<string, unknown>): boolean {
+    if (!payload || !payload.type) return false;
+    const payloadStr = JSON.stringify(payload);
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(payloadStr);
+      return true;
+    }
+
+    if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
+      this.pendingQueue.push(payloadStr);
+      return true;
+    }
+
+    console.warn('[WebSocket] Cannot send signaling: Socket is not open.');
+    return false;
   }
 
   private pendingQueue: string[] = [];

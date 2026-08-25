@@ -306,6 +306,16 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.handle_delivery_receipt(content)
         elif msg_type in ("read_receipt", "read_ack"):
             await self.handle_read_receipt(content)
+        elif msg_type in (
+            "call_offer",
+            "call_answer",
+            "ice_candidate",
+            "call_reject",
+            "call_cancel",
+            "call_end",
+        ):
+            from voice_calling.services import VoiceCallService
+            await VoiceCallService.handle_signaling_event(self, content)
         else:
             await self.send_json({
                 "type": "error",
@@ -584,6 +594,10 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def user_profile_event(self, event: dict):
         await self.send_json(event["data"])
+
+    async def voice_call_event(self, event: dict):
+        await self.send_json(event["data"])
+
 
 
 

@@ -71,6 +71,8 @@ export interface WSErrorEvent {
   message: string;
 }
 
+import type { WSVoiceSignalingEvent } from './call.types';
+
 export type WSServerEvent =
   | WSConnectionEvent
   | WSMessageEvent
@@ -78,7 +80,8 @@ export type WSServerEvent =
   | WSPresenceEvent
   | WSMessageStatusEvent
   | WSProfileUpdateEvent
-  | WSErrorEvent;
+  | WSErrorEvent
+  | WSVoiceSignalingEvent;
 
 export interface WSClientSendMessage {
   type: 'message';
@@ -110,7 +113,8 @@ export type WSClientAction =
   | WSClientSendMessage
   | WSClientFetchHistory
   | WSClientDeliveryReceipt
-  | WSClientReadReceipt;
+  | WSClientReadReceipt
+  | Record<string, unknown>;
 
 export type WSSocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
@@ -126,7 +130,16 @@ export type WSEventType =
   | 'PROFILE_UPDATE'
   | 'SOCKET_STATUS'
   | 'HISTORY_LOADED'
-  | 'ERROR';
+  | 'ERROR'
+  | 'VOICE_CALL_OFFER'
+  | 'VOICE_CALL_ANSWER'
+  | 'VOICE_ICE_CANDIDATE'
+  | 'VOICE_CALL_REJECT'
+  | 'VOICE_CALL_CANCEL'
+  | 'VOICE_CALL_END'
+  | 'VOICE_CALL_BUSY'
+  | 'VOICE_CALL_INITIATED'
+  | 'VOICE_CALL_CONNECTED';
 
 
 
