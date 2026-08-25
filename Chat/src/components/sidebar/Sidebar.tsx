@@ -13,7 +13,7 @@ import { useAuth } from '../../hooks/useAuth';
 import type { ActiveTab } from '../../types/chat.types';
 import { Avatar } from '../common/Avatar';
 import { Tooltip } from '../common/Tooltip';
-import appLogo from '../../assets/photo_6073207430587290090_y-removebg-preview.png';
+import appLogo from '../../assets/logo.png';
 
 export const Sidebar: React.FC = () => {
   const {
@@ -59,11 +59,11 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-16 md:w-20 flex flex-col justify-between items-center py-4 bg-white dark:bg-[#111827] rounded-none md:rounded-2xl border-0 md:border border-slate-200/80 dark:border-white/10 shadow-none md:shadow-2xl flex-shrink-0 z-30 select-none transition-all">
+    <aside className="w-16 md:w-20 flex flex-col justify-between items-center py-4 bg-white dark:bg-[#171324] rounded-none md:rounded-2xl border-0 md:border border-slate-200/80 dark:border-white/10 shadow-none md:shadow-2xl flex-shrink-0 z-30 select-none transition-all">
       {/* Top Section: Standalone Logo & Navigation */}
       <div className="flex flex-col items-center gap-5 w-full">
         {/* Standalone App Logo */}
-        <div className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center cursor-pointer transition-transform hover:scale-105 active:scale-95">
+        <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center cursor-pointer transition-transform hover:scale-105 active:scale-95">
           <img src={appLogo} alt="SB Chat App Logo" className="w-full h-full object-contain drop-shadow-md" />
         </div>
 

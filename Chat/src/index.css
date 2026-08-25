@@ -4,39 +4,39 @@
 
 @layer base {
   :root {
-    --bg-canvas: #eef2f6;
+    --bg-canvas: #f5f3f9;
     --bg-island: #ffffff;
-    --bg-island-secondary: #f8fafc;
-    --bg-chat-canvas: #eef2f6;
+    --bg-island-secondary: #f8f6fc;
+    --bg-chat-canvas: #f5f3f9;
     --bg-bubble-incoming: #ffffff;
-    --bg-bubble-outgoing: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+    --bg-bubble-outgoing: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
     --border-island: rgba(226, 232, 240, 0.8);
     --border-island-subtle: rgba(241, 245, 249, 0.9);
-    --text-primary: #0f172a;
-    --text-secondary: #64748b;
-    --text-muted: #94a3b8;
-    --accent-primary: #7c3aed;
-    --accent-secondary: #6366f1;
-    --accent-hover: #6d28d9;
-    --pill-active-bg: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+    --text-primary: #181325;
+    --text-secondary: #645a75;
+    --text-muted: #948aa5;
+    --accent-primary: #9333ea;
+    --accent-secondary: #7c3aed;
+    --accent-hover: #7e22ce;
+    --pill-active-bg: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
   }
 
   .dark {
-    --bg-canvas: #0b0f19;
-    --bg-island: #111827;
-    --bg-island-secondary: #1a2234;
-    --bg-chat-canvas: #0b0f19;
-    --bg-bubble-incoming: #1a2234;
-    --bg-bubble-outgoing: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+    --bg-canvas: #0f0c1b;
+    --bg-island: #171324;
+    --bg-island-secondary: #201a30;
+    --bg-chat-canvas: #0f0c1b;
+    --bg-bubble-incoming: #201a30;
+    --bg-bubble-outgoing: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
     --border-island: rgba(255, 255, 255, 0.08);
     --border-island-subtle: rgba(255, 255, 255, 0.04);
     --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-    --accent-primary: #8b5cf6;
-    --accent-secondary: #6366f1;
-    --accent-hover: #7c3aed;
-    --pill-active-bg: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+    --text-secondary: #a79cb8;
+    --text-muted: #726685;
+    --accent-primary: #a855f7;
+    --accent-secondary: #8b5cf6;
+    --accent-hover: #9333ea;
+    --pill-active-bg: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
   }
 
   html,

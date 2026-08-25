@@ -54,7 +54,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Barsharani Barik"
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-[#1e293b] text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700 outline-hidden focus:ring-2 focus:ring-sky-500/50 transition-all"
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-[#201a30] text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700/60 outline-hidden focus:ring-2 focus:ring-purple-500/50 transition-all"
           />
         </div>
       </div>
@@ -72,7 +72,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Barsha2001"
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-[#1e293b] text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700 outline-hidden focus:ring-2 focus:ring-sky-500/50 transition-all"
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-[#201a30] text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700/60 outline-hidden focus:ring-2 focus:ring-purple-500/50 transition-all"
           />
         </div>
       </div>
@@ -90,7 +90,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="barsharni@gmail.com"
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-[#1e293b] text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700 outline-hidden focus:ring-2 focus:ring-sky-500/50 transition-all"
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-[#201a30] text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700/60 outline-hidden focus:ring-2 focus:ring-purple-500/50 transition-all"
           />
         </div>
       </div>
@@ -107,7 +107,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+919876543210"
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-[#1e293b] text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700 outline-hidden focus:ring-2 focus:ring-sky-500/50 transition-all"
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-[#201a30] text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700/60 outline-hidden focus:ring-2 focus:ring-purple-500/50 transition-all"
           />
         </div>
       </div>
@@ -125,7 +125,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Create password"
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-[#1e293b] text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700 outline-hidden focus:ring-2 focus:ring-sky-500/50 transition-all"
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-[#201a30] text-gray-900 dark:text-gray-100 rounded-xl border border-gray-200 dark:border-gray-700/60 outline-hidden focus:ring-2 focus:ring-purple-500/50 transition-all"
           />
         </div>
       </div>
@@ -134,7 +134,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full py-2 px-4 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-all shadow-md shadow-sky-600/30 flex items-center justify-center gap-2 text-xs mt-1.5 cursor-pointer"
+        className="w-full py-2 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl transition-all shadow-md shadow-purple-600/30 flex items-center justify-center gap-2 text-xs mt-1.5 cursor-pointer"
       >
         {isLoading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
