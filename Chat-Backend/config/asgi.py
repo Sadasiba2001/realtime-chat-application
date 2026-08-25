@@ -8,6 +8,7 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from chatting_service.middleware import JWTAuthMiddlewareStack
 import chatting_service.routing
 import voice_calling.routing
+import video_calling.routing
 
 application = ProtocolTypeRouter(
     {
@@ -16,6 +17,7 @@ application = ProtocolTypeRouter(
             URLRouter(
                 chatting_service.routing.websocket_urlpatterns
                 + voice_calling.routing.websocket_urlpatterns
+                + video_calling.routing.websocket_urlpatterns
             )
         ),
     }

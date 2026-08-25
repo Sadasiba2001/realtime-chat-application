@@ -8,5 +8,7 @@ urlpatterns = [
     path("api/v1/chat/", include("chatting_service.urls")),
     path("api/voice/", include("voice_calling.urls")),
     path("api/v1/voice/", include("voice_calling.urls")),
+    path("api/video/", include("video_calling.urls")),
+    path("api/v1/video/", include("video_calling.urls")),
 ]
 

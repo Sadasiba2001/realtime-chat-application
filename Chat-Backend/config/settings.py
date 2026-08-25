@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'authentication_service',
     'chatting_service',
     'voice_calling',
+    'video_calling',
 ]
 
 AUTH_USER_MODEL = 'authentication_service.User'

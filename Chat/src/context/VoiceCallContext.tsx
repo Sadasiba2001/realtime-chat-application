@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import type { User } from '../types/chat.types';
+import type { User, CallLog, CallStatus } from '../types/chat.types';
 import type {
   CallSession,
   WSVoiceCallOfferData,
@@ -18,6 +18,7 @@ import { useAuth } from './AuthContext';
 
 interface VoiceCallContextType {
   callSession: CallSession | null;
+  callLogs: CallLog[];
   startCall: (receiver: User) => Promise<void>;
   acceptCall: () => Promise<void>;
   rejectCall: () => void;
@@ -25,6 +26,7 @@ interface VoiceCallContextType {
   endCall: () => void;
   toggleMute: () => void;
   enableAudio: () => Promise<boolean>;
+  clearCallLogs: () => void;
 }
 
 export const VoiceCallContext = createContext<VoiceCallContextType | undefined>(undefined);
@@ -107,25 +109,112 @@ const ringtone = new RingtonePlayer();
 export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user: authUser } = useAuth();
   const [callSession, setCallSession] = useState<CallSession | null>(null);
+  const [callLogs, setCallLogs] = useState<CallLog[]>(() => {
+    try {
+      const saved = localStorage.getItem('chat_call_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
   const pendingOfferSdpRef = useRef<RTCSessionDescriptionInit | string | null>(null);
   const timerRef = useRef<any>(null);
   const cleanupTimerRef = useRef<any>(null);
 
-  const cleanCallAfterDelay = useCallback((delayMs: number = 2000) => {
-    ringtone.stop();
-    if (cleanupTimerRef.current) {
-      clearTimeout(cleanupTimerRef.current);
+  // Load user specific call logs
+  useEffect(() => {
+    if (authUser) {
+      try {
+        const userKey = `chat_call_history_${authUser.id}`;
+        const saved = localStorage.getItem(userKey) || localStorage.getItem('chat_call_history');
+        if (saved) {
+          setCallLogs(JSON.parse(saved));
+        }
+      } catch (e) {}
     }
-    cleanupTimerRef.current = setTimeout(() => {
-      webrtcService.cleanup();
-      setCallSession(null);
-      pendingOfferSdpRef.current = null;
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
+  }, [authUser]);
+
+  const recordCallLog = useCallback(
+    (session: CallSession) => {
+      let status: CallStatus = 'ended';
+      if (session.isCaller) {
+        status = 'outgoing';
+      } else {
+        if (session.durationSec > 0 || session.state === 'connected' || session.state === 'ended') {
+          status = 'incoming';
+        } else {
+          status = 'missed';
+        }
       }
-    }, delayMs);
-  }, []);
+
+      const formatLogDuration = (secs: number) => {
+        if (secs <= 0) return undefined;
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        return m > 0 ? `${m}m ${s}s` : `${s}s`;
+      };
+
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const newLog: CallLog = {
+        id: `call_log_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        contactId: String(session.counterparty.id),
+        contact: session.counterparty,
+        type: 'audio',
+        status,
+        timestamp: timeStr,
+        duration: formatLogDuration(session.durationSec),
+      };
+
+      setCallLogs((prev) => {
+        const updated = [newLog, ...prev].slice(0, 100);
+        try {
+          const key = authUser ? `chat_call_history_${authUser.id}` : 'chat_call_history';
+          localStorage.setItem(key, JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    [authUser]
+  );
+
+  const cleanCallAfterDelay = useCallback(
+    (delayMs: number = 2000) => {
+      ringtone.stop();
+      if (cleanupTimerRef.current) {
+        clearTimeout(cleanupTimerRef.current);
+      }
+
+      setCallSession((current) => {
+        if (current && current.counterparty) {
+          recordCallLog(current);
+        }
+        return current;
+      });
+
+      cleanupTimerRef.current = setTimeout(() => {
+        webrtcService.cleanup();
+        setCallSession(null);
+        pendingOfferSdpRef.current = null;
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      }, delayMs);
+    },
+    [recordCallLog]
+  );
+
+  const clearCallLogs = useCallback(() => {
+    setCallLogs([]);
+    try {
+      const key = authUser ? `chat_call_history_${authUser.id}` : 'chat_call_history';
+      localStorage.removeItem(key);
+      localStorage.removeItem('chat_call_history');
+    } catch (e) {}
+  }, [authUser]);
 
   // Duration Timer (counts ONLY when state is 'connected')
   useEffect(() => {
@@ -399,8 +488,6 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
         call_id: callSession.callId,
         sdp: answer,
       });
-
-      // Note: State remains 'connecting' until connectionState becomes 'connected'
     } catch (err: any) {
       console.error('[CALL] Failed to accept call:', err);
       setCallSession((prev) =>
@@ -472,6 +559,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
     <VoiceCallContext.Provider
       value={{
         callSession,
+        callLogs,
         startCall,
         acceptCall,
         rejectCall,
@@ -479,6 +567,7 @@ export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children 
         endCall,
         toggleMute,
         enableAudio,
+        clearCallLogs,
       }}
     >
       {children}

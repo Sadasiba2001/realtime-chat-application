@@ -191,6 +191,42 @@ class WebSocketService {
         this.emit('VOICE_CALL_CONNECTED', event);
         break;
 
+      case 'video_call_offer':
+        this.emit('VIDEO_CALL_OFFER', event);
+        break;
+
+      case 'video_call_answer':
+        this.emit('VIDEO_CALL_ANSWER', event);
+        break;
+
+      case 'video_ice_candidate':
+        this.emit('VIDEO_ICE_CANDIDATE', event);
+        break;
+
+      case 'video_call_reject':
+        this.emit('VIDEO_CALL_REJECT', event);
+        break;
+
+      case 'video_call_cancel':
+        this.emit('VIDEO_CALL_CANCEL', event);
+        break;
+
+      case 'video_call_end':
+        this.emit('VIDEO_CALL_END', event);
+        break;
+
+      case 'video_call_busy':
+        this.emit('VIDEO_CALL_BUSY', event);
+        break;
+
+      case 'video_call_initiated':
+        this.emit('VIDEO_CALL_INITIATED', event);
+        break;
+
+      case 'video_call_connected':
+        this.emit('VIDEO_CALL_CONNECTED', event);
+        break;
+
       case 'error':
         console.error('[WebSocket] Server error:', event);
         this.emit('ERROR', event);

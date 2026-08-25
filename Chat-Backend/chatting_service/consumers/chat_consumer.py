@@ -263,7 +263,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
         msg_type = content.get("type")
 
-        # WebRTC voice signaling messages bypass the chat message rate limiter
+        # WebRTC voice & video signaling messages bypass the chat message rate limiter
         VOICE_SIGNALING_TYPES = (
             "call_offer",
             "call_answer",
@@ -274,9 +274,24 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             "call_busy",
         )
 
+        VIDEO_SIGNALING_TYPES = (
+            "video_call_offer",
+            "video_call_answer",
+            "video_ice_candidate",
+            "video_call_reject",
+            "video_call_cancel",
+            "video_call_end",
+            "video_call_busy",
+        )
+
         if msg_type in VOICE_SIGNALING_TYPES:
             from voice_calling.services import VoiceCallService
             await VoiceCallService.handle_signaling_event(self, content)
+            return
+
+        if msg_type in VIDEO_SIGNALING_TYPES:
+            from video_calling.services import VideoCallService
+            await VideoCallService.handle_signaling_event(self, content)
             return
 
         now = time.time()
@@ -603,6 +618,10 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def voice_call_event(self, event: dict):
         await self.send_json(event["data"])
+
+    async def video_call_event(self, event: dict):
+        await self.send_json(event["data"])
+
 
 
 

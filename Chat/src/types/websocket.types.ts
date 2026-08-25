@@ -72,6 +72,39 @@ export interface WSErrorEvent {
 }
 
 import type { WSVoiceSignalingEvent } from './call.types';
+import type {
+  WSVideoCallOfferData,
+  WSVideoCallAnswerData,
+  WSVideoIceCandidateData,
+  WSVideoCallRejectData,
+  WSVideoCallCancelData,
+  WSVideoCallEndData,
+  WSVideoCallBusyData,
+} from './video-call.types';
+
+export interface WSVideoCallInitiatedEvent {
+  type: 'video_call_initiated';
+  call_id: string;
+  receiver_id: number | string;
+  status: string;
+}
+
+export interface WSVideoCallConnectedEvent {
+  type: 'video_call_connected';
+  call_id: string;
+  status: string;
+}
+
+export type WSVideoSignalingEvent =
+  | WSVideoCallOfferData
+  | WSVideoCallAnswerData
+  | WSVideoIceCandidateData
+  | WSVideoCallRejectData
+  | WSVideoCallCancelData
+  | WSVideoCallEndData
+  | WSVideoCallBusyData
+  | WSVideoCallInitiatedEvent
+  | WSVideoCallConnectedEvent;
 
 export type WSServerEvent =
   | WSConnectionEvent
@@ -81,7 +114,8 @@ export type WSServerEvent =
   | WSMessageStatusEvent
   | WSProfileUpdateEvent
   | WSErrorEvent
-  | WSVoiceSignalingEvent;
+  | WSVoiceSignalingEvent
+  | WSVideoSignalingEvent;
 
 export interface WSClientSendMessage {
   type: 'message';
@@ -139,7 +173,16 @@ export type WSEventType =
   | 'VOICE_CALL_END'
   | 'VOICE_CALL_BUSY'
   | 'VOICE_CALL_INITIATED'
-  | 'VOICE_CALL_CONNECTED';
+  | 'VOICE_CALL_CONNECTED'
+  | 'VIDEO_CALL_OFFER'
+  | 'VIDEO_CALL_ANSWER'
+  | 'VIDEO_ICE_CANDIDATE'
+  | 'VIDEO_CALL_REJECT'
+  | 'VIDEO_CALL_CANCEL'
+  | 'VIDEO_CALL_END'
+  | 'VIDEO_CALL_BUSY'
+  | 'VIDEO_CALL_INITIATED'
+  | 'VIDEO_CALL_CONNECTED';
 
 
 
