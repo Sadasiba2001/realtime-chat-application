@@ -253,6 +253,32 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=4001)
             return
 
+        if not isinstance(content, dict):
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Payload must be a JSON object.",
+            })
+            return
+
+        msg_type = content.get("type")
+
+        # WebRTC voice signaling messages bypass the chat message rate limiter
+        VOICE_SIGNALING_TYPES = (
+            "call_offer",
+            "call_answer",
+            "ice_candidate",
+            "call_reject",
+            "call_cancel",
+            "call_end",
+            "call_busy",
+        )
+
+        if msg_type in VOICE_SIGNALING_TYPES:
+            from voice_calling.services import VoiceCallService
+            await VoiceCallService.handle_signaling_event(self, content)
+            return
+
         now = time.time()
         user_id = self.user.id
 
@@ -288,16 +314,6 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             cache.set(rate_key, msg_timestamps, timeout=65)
             cache.set(last_time_key, now, timeout=5)
 
-        if not isinstance(content, dict):
-            await self.send_json({
-                "type": "error",
-                "code": "INVALID_MESSAGE",
-                "message": "Payload must be a JSON object.",
-            })
-            return
-
-        msg_type = content.get("type")
-
         if msg_type == "message":
             await self.handle_message(content)
         elif msg_type == "history":
@@ -306,16 +322,6 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.handle_delivery_receipt(content)
         elif msg_type in ("read_receipt", "read_ack"):
             await self.handle_read_receipt(content)
-        elif msg_type in (
-            "call_offer",
-            "call_answer",
-            "ice_candidate",
-            "call_reject",
-            "call_cancel",
-            "call_end",
-        ):
-            from voice_calling.services import VoiceCallService
-            await VoiceCallService.handle_signaling_event(self, content)
         else:
             await self.send_json({
                 "type": "error",

@@ -183,6 +183,18 @@ export class WebRTCService {
       console.warn('[ICE] Candidate error:', event.errorCode, event.errorText, event.url);
     };
 
+    // Handle signaling state changes
+    pc.onsignalingstatechange = () => {
+      if (!this.peerConnection) return;
+      console.log('[WEBRTC] Signaling state changed:', this.peerConnection.signalingState);
+    };
+
+    // Handle ICE gathering state changes
+    pc.onicegatheringstatechange = () => {
+      if (!this.peerConnection) return;
+      console.log('[ICE] Gathering state changed:', this.peerConnection.iceGatheringState);
+    };
+
     // Handle WebRTC connection state
     pc.onconnectionstatechange = () => {
       if (!this.peerConnection) return;
@@ -230,10 +242,10 @@ export class WebRTCService {
     audio.muted = false;
     audio.volume = 1.0;
 
-    console.log('[AUDIO] Attaching remote stream to HTMLAudioElement');
+    console.log('[AUDIO] Attaching remote stream to HTMLAudioElement (muted:', audio.muted, 'volume:', audio.volume, ')');
     try {
       await audio.play();
-      console.log('[AUDIO] Remote audio playback started successfully');
+      console.log('[AUDIO] Remote audio playback started successfully via HTMLAudioElement');
       if (this.onAutoplayBlockedCallback) {
         this.onAutoplayBlockedCallback(false);
       }
@@ -275,7 +287,7 @@ export class WebRTCService {
 
     console.log('[SIGNALING] Setting local description (Offer)...');
     await this.peerConnection.setLocalDescription(offer);
-    console.log('[SIGNALING] Local description set:', this.peerConnection.localDescription?.type);
+    console.log('[SIGNALING] Local description set:', this.peerConnection.localDescription?.type, 'signalingState:', this.peerConnection.signalingState);
     return offer;
   }
 
@@ -293,7 +305,7 @@ export class WebRTCService {
 
     console.log('[SIGNALING] Setting remote description (Offer)...');
     await this.peerConnection.setRemoteDescription(sessionDesc);
-    console.log('[SIGNALING] Remote description set successfully:', this.peerConnection.remoteDescription?.type);
+    console.log('[SIGNALING] Remote description set successfully:', this.peerConnection.remoteDescription?.type, 'signalingState:', this.peerConnection.signalingState);
 
     await this.drainPendingIceCandidates();
 
@@ -304,7 +316,7 @@ export class WebRTCService {
 
     console.log('[SIGNALING] Setting local description (Answer)...');
     await this.peerConnection.setLocalDescription(answer);
-    console.log('[SIGNALING] Local description set:', this.peerConnection.localDescription?.type);
+    console.log('[SIGNALING] Local description set:', this.peerConnection.localDescription?.type, 'signalingState:', this.peerConnection.signalingState);
     return answer;
   }
 
@@ -320,7 +332,7 @@ export class WebRTCService {
 
     console.log('[SIGNALING] Setting remote description (Answer)...');
     await this.peerConnection.setRemoteDescription(sessionDesc);
-    console.log('[SIGNALING] Remote description set successfully:', this.peerConnection.remoteDescription?.type);
+    console.log('[SIGNALING] Remote description set successfully:', this.peerConnection.remoteDescription?.type, 'signalingState:', this.peerConnection.signalingState);
 
     await this.drainPendingIceCandidates();
   }
@@ -335,12 +347,12 @@ export class WebRTCService {
     ) {
       try {
         await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidateInit));
-        console.log('[ICE] Remote candidate added');
+        console.log('[ICE] Remote candidate added successfully');
       } catch (err) {
-        console.error('[ICE] Error adding candidate:', err);
+        console.error('[ICE] Error adding remote candidate:', err);
       }
     } else {
-      console.log('[ICE] Queuing remote candidate (remote description not set yet)');
+      console.log('[ICE] Queuing remote candidate (waiting for remote description)');
       this.pendingCandidates.push(candidateInit);
     }
   }
@@ -374,19 +386,30 @@ export class WebRTCService {
   private startStatsLogging(): void {
     this.stopStatsLogging();
     this.statsInterval = setInterval(async () => {
-      if (!this.peerConnection || this.peerConnection.connectionState !== 'connected') {
-        return;
-      }
+      if (!this.peerConnection) return;
       try {
         const stats = await this.peerConnection.getStats();
         stats.forEach((report) => {
           if (report.type === 'inbound-rtp' && report.kind === 'audio') {
-            console.log('[AUDIO] Incoming RTP audio stats:', {
+            console.log('[AUDIO] Inbound RTP Audio Stats:', {
               packetsReceived: report.packetsReceived,
               packetsLost: report.packetsLost,
               bytesReceived: report.bytesReceived,
               jitter: report.jitter,
-              audioLevel: (report as any).audioLevel,
+            });
+          }
+          if (report.type === 'outbound-rtp' && report.kind === 'audio') {
+            console.log('[AUDIO] Outbound RTP Audio Stats:', {
+              packetsSent: report.packetsSent,
+              bytesSent: report.bytesSent,
+            });
+          }
+          if (report.type === 'candidate-pair' && (report as any).state === 'succeeded') {
+            console.log('[ICE] Active Candidate Pair:', {
+              state: (report as any).state,
+              currentRoundTripTime: (report as any).currentRoundTripTime,
+              bytesSent: report.bytesSent,
+              bytesReceived: report.bytesReceived,
             });
           }
         });
