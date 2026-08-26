@@ -19,7 +19,14 @@ DEBUG = env.bool('DEBUG', default=True)
 if not SECRET_KEY:
     raise ImproperlyConfigured("The SECRET_KEY setting must not be empty. Set the SECRET_KEY environment variable.")
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '[::1]', "footwork-vessel-guide.ngrok-free.dev"] if DEBUG else [])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
+    'localhost', 
+    '127.0.0.1', 
+    '[::1]', 
+    "footwork-vessel-guide.ngrok-free.dev",
+    'sbchatwebpro.online',
+    'www.sbchatwebpro.online',
+    ] if DEBUG else [])
 
 
 
