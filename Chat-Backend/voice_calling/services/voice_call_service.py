@@ -57,6 +57,8 @@ class VoiceCallService:
             await cls.handle_call_cancel(consumer, content)
         elif event_type == "call_end":
             await cls.handle_call_end(consumer, content)
+        elif event_type == "call_busy":
+            await cls.handle_call_busy(consumer, content)
         else:
             await consumer.send_json({
                 "type": "error",
@@ -485,3 +487,36 @@ class VoiceCallService:
             "type": "call_ended",
             "call_id": call_id,
         })
+
+    @classmethod
+    async def handle_call_busy(cls, consumer, content: Dict[str, Any]):
+        user = consumer.user
+        call_id = content.get("call_id")
+
+        if not call_id:
+            return
+
+        call = CallStateService.get_call(call_id)
+        if not call:
+            return
+
+        caller_id = call.get("caller_id")
+        receiver_id = call.get("receiver_id")
+
+        if user.id != receiver_id:
+            return
+
+        CallStateService.terminate_call(call_id, CallState.BUSY)
+
+        await consumer.channel_layer.group_send(
+            f"user_{caller_id}",
+            {
+                "type": "voice.call.event",
+                "data": {
+                    "type": "call_busy",
+                    "call_id": call_id,
+                    "user_id": user.id,
+                    "message": "User is busy on another call.",
+                }
+            }
+        )

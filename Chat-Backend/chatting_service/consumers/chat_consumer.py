@@ -156,6 +156,58 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
         # Track presence (decrement connection count) and broadcast if became OFFLINE
         if self.user and self.user.is_authenticated:
+            # Cleanup any active voice/video call session for this user
+            try:
+                from voice_calling.services import CallStateService, CallState
+                active_voice_call_id = CallStateService.get_user_active_call_id(self.user.id)
+                if active_voice_call_id:
+                    call = CallStateService.get_call(active_voice_call_id)
+                    CallStateService.terminate_call(active_voice_call_id, CallState.ENDED)
+                    if call:
+                        caller_id = call.get("caller_id")
+                        receiver_id = call.get("receiver_id")
+                        counterparty_id = receiver_id if self.user.id == caller_id else caller_id
+                        if counterparty_id:
+                            await self.channel_layer.group_send(
+                                f"user_{counterparty_id}",
+                                {
+                                    "type": "voice.call.event",
+                                    "data": {
+                                        "type": "call_end",
+                                        "call_id": active_voice_call_id,
+                                        "ended_by": self.user.id,
+                                    },
+                                },
+                            )
+            except Exception:
+                pass
+
+            try:
+                from video_calling.services import VideoCallStateService
+                active_video_call_id = VideoCallStateService.get_user_active_call(self.user.id)
+                if active_video_call_id:
+                    v_call = VideoCallStateService.get_call(active_video_call_id)
+                    VideoCallStateService.end_call(active_video_call_id)
+                    if v_call:
+                        v_caller_id = v_call.get("caller_id")
+                        v_receiver_id = v_call.get("receiver_id")
+                        v_counterparty_id = v_receiver_id if self.user.id == v_caller_id else v_caller_id
+                        if v_counterparty_id:
+                            await self.channel_layer.group_send(
+                                f"user_{v_counterparty_id}",
+                                {
+                                    "type": "video.call.event",
+                                    "data": {
+                                        "type": "video_call_end",
+                                        "call_id": active_video_call_id,
+                                        "sender_id": self.user.id,
+                                        "reason": "Peer disconnected",
+                                    },
+                                },
+                            )
+            except Exception:
+                pass
+
             is_last_connection, last_seen_iso = await database_sync_to_async(
                 self.presence_service.user_disconnected
             )(self.user.id)

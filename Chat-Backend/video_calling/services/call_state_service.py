@@ -69,17 +69,7 @@ class VideoCallStateService:
 
     @classmethod
     def is_user_busy(cls, user_id: int) -> bool:
-        call_id = cache.get(f"{cls.USER_LOCK_PREFIX}{user_id}")
-        if not call_id:
-            return False
-
-        call = cls.get_call(call_id)
-        if not call or call.get("state") in VideoCallState.TERMINAL_STATES:
-            # Stale lock cleanup
-            cache.delete(f"{cls.USER_LOCK_PREFIX}{user_id}")
-            return False
-
-        return True
+        return cls.get_user_active_call(user_id) is not None
 
     @classmethod
     def get_user_active_call(cls, user_id: int) -> Optional[str]:
@@ -89,6 +79,14 @@ class VideoCallStateService:
 
         call = cls.get_call(call_id)
         if not call or call.get("state") in VideoCallState.TERMINAL_STATES:
+            cache.delete(f"{cls.USER_LOCK_PREFIX}{user_id}")
+            return None
+
+        # Check ringing/calling timeout (unaccepted call expires after RINGING_TTL seconds)
+        now = time.time()
+        created_at = call.get("created_at", now)
+        if call.get("state") in (VideoCallState.CALLING, VideoCallState.RINGING, VideoCallState.CONNECTING) and (now - created_at) > cls.RINGING_TTL:
+            cls.update_call_state(call_id, VideoCallState.CANCELLED)
             cache.delete(f"{cls.USER_LOCK_PREFIX}{user_id}")
             return None
 

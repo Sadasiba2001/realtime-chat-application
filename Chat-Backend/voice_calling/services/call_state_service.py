@@ -50,11 +50,32 @@ class CallStateService:
         if not call or call.get("state") in CallState.TERMINAL_STATES:
             cache.delete(cls._user_call_key(user_id))
             return None
+
+        # Check ringing/calling timeout (unaccepted call expires after RINGING_TIMEOUT seconds)
+        now = time.time()
+        created_at = call.get("created_at", now)
+        if call.get("state") in (CallState.CALLING, CallState.RINGING, CallState.CONNECTING) and (now - created_at) > cls.RINGING_TIMEOUT:
+            cls.terminate_call(call_id, CallState.CANCELLED)
+            cache.delete(cls._user_call_key(user_id))
+            return None
+
         return call_id
 
     @classmethod
     def is_user_busy(cls, user_id: int) -> bool:
         return cls.get_user_active_call_id(user_id) is not None
+
+    @classmethod
+    def cleanup_user_calls(cls, user_id: int) -> Optional[str]:
+        """
+        Cleans up any active voice call session if the user disconnects abruptly.
+        Returns the call_id if an active call was ended, or None.
+        """
+        call_id = cls.get_user_active_call_id(user_id)
+        if call_id:
+            cls.terminate_call(call_id, CallState.ENDED)
+            return call_id
+        return None
 
     @classmethod
     def create_call(cls, call_id: str, caller_id: int, receiver_id: int) -> Optional[Dict[str, Any]]:
