@@ -22,6 +22,7 @@ export type WSServerMessageType =
   | 'history'
   | 'presence'
   | 'message_status'
+  | 'message_deleted'
   | 'error';
 
 export interface WSConnectionEvent {
@@ -106,12 +107,20 @@ export type WSVideoSignalingEvent =
   | WSVideoCallInitiatedEvent
   | WSVideoCallConnectedEvent;
 
+export interface WSMessageDeleteEvent {
+  type: 'message_deleted';
+  message_id: number | string;
+  delete_type: 'me' | 'everyone';
+  sender_id?: number | string;
+}
+
 export type WSServerEvent =
   | WSConnectionEvent
   | WSMessageEvent
   | WSHistoryEvent
   | WSPresenceEvent
   | WSMessageStatusEvent
+  | WSMessageDeleteEvent
   | WSProfileUpdateEvent
   | WSErrorEvent
   | WSVoiceSignalingEvent
@@ -159,6 +168,7 @@ export type WSEventType =
   | 'MESSAGE_STATUS_UPDATE'
   | 'MESSAGE_DELIVERED'
   | 'MESSAGE_READ'
+  | 'MESSAGE_DELETED'
   | 'USER_TYPING'
   | 'PRESENCE_CHANGE'
   | 'PROFILE_UPDATE'

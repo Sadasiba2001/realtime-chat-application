@@ -177,6 +177,9 @@ class MessageService:
         messages = self.message_repository.get_pending_sent_messages_for_user(user_id=user_id)
         return [self.format_message(msg) for msg in messages]
 
+    def delete_message_for_everyone(self, message_id: int, user_id: int) -> Optional[Dict[str, Any]]:
+        return self.message_repository.delete_message_for_everyone(message_id=message_id, user_id=user_id)
+
     @staticmethod
     def format_message(message: Message) -> Dict[str, Any]:
         return {

@@ -40,4 +40,44 @@ export const storage = {
       console.error('Failed to save messages map to storage:', e);
     }
   },
+  getDeletedForMe: (): string[] => {
+    try {
+      const raw = localStorage.getItem('chat_deleted_for_me');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  },
+  addDeletedForMe: (messageId: string): void => {
+    try {
+      const raw = localStorage.getItem('chat_deleted_for_me');
+      const list: string[] = raw ? JSON.parse(raw) : [];
+      if (!list.includes(messageId)) {
+        list.push(messageId);
+        localStorage.setItem('chat_deleted_for_me', JSON.stringify(list));
+      }
+    } catch (e) {
+      console.error('Failed to save deleted for me:', e);
+    }
+  },
+  getDeletedForEveryone: (): string[] => {
+    try {
+      const raw = localStorage.getItem('chat_deleted_for_everyone');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  },
+  addDeletedForEveryone: (messageId: string): void => {
+    try {
+      const raw = localStorage.getItem('chat_deleted_for_everyone');
+      const list: string[] = raw ? JSON.parse(raw) : [];
+      if (!list.includes(messageId)) {
+        list.push(messageId);
+        localStorage.setItem('chat_deleted_for_everyone', JSON.stringify(list));
+      }
+    } catch (e) {
+      console.error('Failed to save deleted for everyone:', e);
+    }
+  },
 };

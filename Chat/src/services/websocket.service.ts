@@ -151,6 +151,10 @@ class WebSocketService {
         this.emit('MESSAGE_STATUS_UPDATE', event);
         break;
 
+      case 'message_deleted':
+        this.emit('MESSAGE_DELETED', event);
+        break;
+
       case 'profile_update':
         this.emit('PROFILE_UPDATE', event);
         break;
@@ -385,6 +389,37 @@ class WebSocketService {
     }
 
     if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
+      this.pendingQueue.push(payloadStr);
+      return true;
+    }
+
+    return false;
+  }
+
+  public sendDeleteMessage(
+    targetUserId: string | number,
+    messageId: string | number,
+    deleteType: 'me' | 'everyone' = 'everyone'
+  ): boolean {
+    const numTarget = String(targetUserId).match(/\d+/);
+    const cleanTargetId = numTarget ? parseInt(numTarget[0], 10) : targetUserId;
+
+    const numMsg = String(messageId).match(/\d+/);
+    const cleanMsgId = numMsg ? parseInt(numMsg[0], 10) : messageId;
+
+    const payloadStr = JSON.stringify({
+      type: 'delete_message',
+      target_user_id: cleanTargetId,
+      message_id: cleanMsgId,
+      delete_type: deleteType,
+    });
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(payloadStr);
+      return true;
+    }
+
+    if (!this.socket || this.socket.readyState === WebSocket.CONNECTING) {
       this.pendingQueue.push(payloadStr);
       return true;
     }

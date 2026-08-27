@@ -52,6 +52,17 @@ class MessageRepository:
             return None
 
     @staticmethod
+    def delete_message_for_everyone(message_id: int, user_id: int) -> Optional[dict]:
+        try:
+            msg = Message.objects.get(id=message_id, sender_id=user_id)
+            msg.content = "This message was deleted"
+            msg.save(update_fields=["content"])
+            partner_id = msg.receiver_id if msg.sender_id == user_id else msg.sender_id
+            return {"message_id": msg.id, "partner_id": partner_id}
+        except Message.DoesNotExist:
+            return None
+
+    @staticmethod
     def get_pending_sent_messages_for_user(user_id: int) -> QuerySet[Message]:
         """
         Retrieves all messages awaiting delivery to user_id (status is 'sent').

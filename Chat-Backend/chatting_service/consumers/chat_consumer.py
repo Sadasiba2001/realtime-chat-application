@@ -389,6 +389,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.handle_delivery_receipt(content)
         elif msg_type in ("read_receipt", "read_ack"):
             await self.handle_read_receipt(content)
+        elif msg_type == "delete_message":
+            await self.handle_delete_message(content)
         else:
             await self.send_json({
                 "type": "error",
@@ -672,6 +674,50 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json(event["data"])
 
     async def video_call_event(self, event: dict):
+        await self.send_json(event["data"])
+
+    async def handle_delete_message(self, content: dict):
+        raw_msg_id = content.get("message_id")
+        delete_type = content.get("delete_type", "everyone")
+
+        if raw_msg_id is None:
+            return
+
+        try:
+            message_id = int(raw_msg_id)
+        except (TypeError, ValueError):
+            return
+
+        if delete_type == "everyone":
+            updated_info = await database_sync_to_async(
+                self.message_service.delete_message_for_everyone
+            )(message_id=message_id, user_id=self.user.id)
+
+            if updated_info:
+                partner_id = updated_info.get("partner_id")
+                event_data = {
+                    "type": "message_deleted",
+                    "message_id": message_id,
+                    "delete_type": "everyone",
+                    "sender_id": self.user.id,
+                }
+                await self.channel_layer.group_send(
+                    f"user_{self.user.id}",
+                    {
+                        "type": "message.delete.event",
+                        "data": event_data,
+                    },
+                )
+                if partner_id and partner_id != self.user.id:
+                    await self.channel_layer.group_send(
+                        f"user_{partner_id}",
+                        {
+                            "type": "message.delete.event",
+                            "data": event_data,
+                        },
+                    )
+
+    async def message_delete_event(self, event: dict):
         await self.send_json(event["data"])
 
 

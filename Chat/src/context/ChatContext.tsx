@@ -19,6 +19,7 @@ import type {
   BackendMessagePayload,
   WSHistoryEvent,
   WSMessageStatusEvent,
+  WSMessageDeleteEvent,
   WSProfileUpdateEvent,
   WSPresenceEvent,
   WSSocketStatus,
@@ -71,7 +72,7 @@ interface ChatContextType {
   setActiveTab: (tab: ActiveTab) => void;
   selectConversation: (id: string | null) => void;
   sendMessage: (text: string, attachments?: Attachment[]) => Promise<void>;
-  deleteMessage: (messageId: string) => Promise<void>;
+  deleteMessage: (messageId: string, deleteType?: 'me' | 'everyone') => Promise<void>;
   toggleStarMessage: (messageId: string) => Promise<void>;
   addReaction: (messageId: string, emoji: string) => Promise<void>;
   setReplyTo: (reply: ReplyPreview | null) => void;
@@ -599,10 +600,62 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
     });
 
+    const unsubDeleteMessage = webSocketService.on<WSMessageDeleteEvent>('MESSAGE_DELETED', (event) => {
+      console.log('[ChatContext] Real-time MESSAGE_DELETED event received:', event);
+      const msgIdStr = String(event.message_id);
+
+      if (event.delete_type === 'everyone') {
+        storage.addDeletedForEveryone(msgIdStr);
+
+        setMessagesMap((prev) => {
+          let anyChanged = false;
+          const nextState: Record<string, Message[]> = {};
+
+          for (const [cId, list] of Object.entries(prev)) {
+            let listChanged = false;
+            const updatedList = list.map((m) => {
+              const mStr = String(m.id);
+              const mMatch = mStr.match(/\d+/);
+              const targetMatch = msgIdStr.match(/\d+/);
+              const isMatch = mStr === msgIdStr || (mMatch && targetMatch && mMatch[0] === targetMatch[0]);
+
+              if (isMatch) {
+                listChanged = true;
+                anyChanged = true;
+                return { ...m, isDeleted: true, text: 'This message was deleted' };
+              }
+              return m;
+            });
+
+            nextState[cId] = listChanged ? updatedList : list;
+          }
+
+          return anyChanged ? nextState : prev;
+        });
+
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.lastMessage && String(c.lastMessage.id) === msgIdStr) {
+              return {
+                ...c,
+                lastMessage: {
+                  ...c.lastMessage,
+                  isDeleted: true,
+                  text: 'This message was deleted',
+                },
+              };
+            }
+            return c;
+          })
+        );
+      }
+    });
+
     return () => {
       unsubStatus();
       unsubNewMessage();
       unsubMessageStatus();
+      unsubDeleteMessage();
       unsubHistory();
       unsubPresence();
       unsubProfileUpdate();
@@ -787,14 +840,62 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const deleteMessage = async (messageId: string) => {
+  const deleteMessage = async (messageId: string, deleteType: 'me' | 'everyone' = 'everyone') => {
     if (!activeConversationId) return;
-    setMessagesMap((prev) => ({
-      ...prev,
-      [activeConversationId]: (prev[activeConversationId] || []).map((m) =>
-        m.id === messageId ? { ...m, isDeleted: true, text: 'This message was deleted' } : m
-      ),
-    }));
+
+    if (deleteType === 'me') {
+      storage.addDeletedForMe(messageId);
+    } else {
+      storage.addDeletedForEveryone(messageId);
+      const activeConv = conversations.find((c) => c.id === activeConversationId);
+      const targetUserId = activeConv
+        ? getTargetUserIdFromConversation(currentUser.id, activeConv.participantIds)
+        : null;
+      if (targetUserId) {
+        webSocketService.sendDeleteMessage(targetUserId, messageId, 'everyone');
+      }
+    }
+
+    setMessagesMap((prev) => {
+      const currentList = prev[activeConversationId] || [];
+      if (deleteType === 'me') {
+        return {
+          ...prev,
+          [activeConversationId]: currentList.filter((m) => m.id !== messageId),
+        };
+      } else {
+        return {
+          ...prev,
+          [activeConversationId]: currentList.map((m) =>
+            m.id === messageId ? { ...m, isDeleted: true, text: 'This message was deleted' } : m
+          ),
+        };
+      }
+    });
+
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== activeConversationId || !c.lastMessage) return c;
+        if (c.lastMessage.id === messageId) {
+          if (deleteType === 'me') {
+            const currentList = messagesMap[activeConversationId] || [];
+            const remaining = currentList.filter((m) => m.id !== messageId);
+            const newLastMsg = remaining.length > 0 ? remaining[remaining.length - 1] : undefined;
+            return { ...c, lastMessage: newLastMsg };
+          } else {
+            return {
+              ...c,
+              lastMessage: {
+                ...c.lastMessage,
+                isDeleted: true,
+                text: 'This message was deleted',
+              },
+            };
+          }
+        }
+        return c;
+      })
+    );
   };
 
   const toggleStarMessage = async (messageId: string) => {
