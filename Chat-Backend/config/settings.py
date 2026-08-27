@@ -19,7 +19,14 @@ DEBUG = env.bool('DEBUG', default=True)
 if not SECRET_KEY:
     raise ImproperlyConfigured("The SECRET_KEY setting must not be empty. Set the SECRET_KEY environment variable.")
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '[::1]'] if DEBUG else [])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
+    'localhost', 
+    '127.0.0.1', 
+    '[::1]', 
+    "footwork-vessel-guide.ngrok-free.dev",
+    'sbchatwebpro.online',
+    'www.sbchatwebpro.online',
+    ] if DEBUG else [])
 
 
 
@@ -38,6 +45,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'authentication_service',
     'chatting_service',
+    'voice_calling',
+    'video_calling',
 ]
 
 AUTH_USER_MODEL = 'authentication_service.User'
@@ -220,6 +229,20 @@ CLOUDINARY_URL = env('CLOUDINARY_URL', default='')
 MAX_MESSAGE_LENGTH = env.int("MAX_MESSAGE_LENGTH", default=1000)
 MAX_WEBSOCKET_PAYLOAD_SIZE = env.int("MAX_WEBSOCKET_PAYLOAD_SIZE", default=65536) # 64 KB
 MAX_REQUEST_SIZE = env.int("MAX_REQUEST_SIZE", default=5242880) # 5 MB
+
+# WebRTC ICE Server Configuration (STUN / TURN)
+WEBRTC_STUN_SERVER = env.list(
+    "WEBRTC_STUN_SERVER",
+    default=[
+        "stun:stun.l.google.com:19302",
+        "stun:stun1.l.google.com:19302",
+        "stun:stun2.l.google.com:19302",
+        "stun:stun.cloudflare.com:3478",
+    ],
+)
+WEBRTC_TURN_SERVER = env("WEBRTC_TURN_SERVER", default=None)
+WEBRTC_TURN_USERNAME = env("WEBRTC_TURN_USERNAME", default=None)
+WEBRTC_TURN_CREDENTIAL = env("WEBRTC_TURN_CREDENTIAL", default=None)
 
 # Django Production Security Settings
 if not DEBUG:

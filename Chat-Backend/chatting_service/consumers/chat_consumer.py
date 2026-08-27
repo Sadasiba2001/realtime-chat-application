@@ -156,6 +156,58 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
         # Track presence (decrement connection count) and broadcast if became OFFLINE
         if self.user and self.user.is_authenticated:
+            # Cleanup any active voice/video call session for this user
+            try:
+                from voice_calling.services import CallStateService, CallState
+                active_voice_call_id = CallStateService.get_user_active_call_id(self.user.id)
+                if active_voice_call_id:
+                    call = CallStateService.get_call(active_voice_call_id)
+                    CallStateService.terminate_call(active_voice_call_id, CallState.ENDED)
+                    if call:
+                        caller_id = call.get("caller_id")
+                        receiver_id = call.get("receiver_id")
+                        counterparty_id = receiver_id if self.user.id == caller_id else caller_id
+                        if counterparty_id:
+                            await self.channel_layer.group_send(
+                                f"user_{counterparty_id}",
+                                {
+                                    "type": "voice.call.event",
+                                    "data": {
+                                        "type": "call_end",
+                                        "call_id": active_voice_call_id,
+                                        "ended_by": self.user.id,
+                                    },
+                                },
+                            )
+            except Exception:
+                pass
+
+            try:
+                from video_calling.services import VideoCallStateService
+                active_video_call_id = VideoCallStateService.get_user_active_call(self.user.id)
+                if active_video_call_id:
+                    v_call = VideoCallStateService.get_call(active_video_call_id)
+                    VideoCallStateService.end_call(active_video_call_id)
+                    if v_call:
+                        v_caller_id = v_call.get("caller_id")
+                        v_receiver_id = v_call.get("receiver_id")
+                        v_counterparty_id = v_receiver_id if self.user.id == v_caller_id else v_caller_id
+                        if v_counterparty_id:
+                            await self.channel_layer.group_send(
+                                f"user_{v_counterparty_id}",
+                                {
+                                    "type": "video.call.event",
+                                    "data": {
+                                        "type": "video_call_end",
+                                        "call_id": active_video_call_id,
+                                        "sender_id": self.user.id,
+                                        "reason": "Peer disconnected",
+                                    },
+                                },
+                            )
+            except Exception:
+                pass
+
             is_last_connection, last_seen_iso = await database_sync_to_async(
                 self.presence_service.user_disconnected
             )(self.user.id)
@@ -253,6 +305,47 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=4001)
             return
 
+        if not isinstance(content, dict):
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Payload must be a JSON object.",
+            })
+            return
+
+        msg_type = content.get("type")
+
+        # WebRTC voice & video signaling messages bypass the chat message rate limiter
+        VOICE_SIGNALING_TYPES = (
+            "call_offer",
+            "call_answer",
+            "ice_candidate",
+            "call_reject",
+            "call_cancel",
+            "call_end",
+            "call_busy",
+        )
+
+        VIDEO_SIGNALING_TYPES = (
+            "video_call_offer",
+            "video_call_answer",
+            "video_ice_candidate",
+            "video_call_reject",
+            "video_call_cancel",
+            "video_call_end",
+            "video_call_busy",
+        )
+
+        if msg_type in VOICE_SIGNALING_TYPES:
+            from voice_calling.services import VoiceCallService
+            await VoiceCallService.handle_signaling_event(self, content)
+            return
+
+        if msg_type in VIDEO_SIGNALING_TYPES:
+            from video_calling.services import VideoCallService
+            await VideoCallService.handle_signaling_event(self, content)
+            return
+
         now = time.time()
         user_id = self.user.id
 
@@ -287,16 +380,6 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             msg_timestamps.append(now)
             cache.set(rate_key, msg_timestamps, timeout=65)
             cache.set(last_time_key, now, timeout=5)
-
-        if not isinstance(content, dict):
-            await self.send_json({
-                "type": "error",
-                "code": "INVALID_MESSAGE",
-                "message": "Payload must be a JSON object.",
-            })
-            return
-
-        msg_type = content.get("type")
 
         if msg_type == "message":
             await self.handle_message(content)
@@ -584,6 +667,14 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def user_profile_event(self, event: dict):
         await self.send_json(event["data"])
+
+    async def voice_call_event(self, event: dict):
+        await self.send_json(event["data"])
+
+    async def video_call_event(self, event: dict):
+        await self.send_json(event["data"])
+
+
 
 
 

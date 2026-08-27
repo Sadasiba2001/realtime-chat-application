@@ -71,6 +71,41 @@ export interface WSErrorEvent {
   message: string;
 }
 
+import type { WSVoiceSignalingEvent } from './call.types';
+import type {
+  WSVideoCallOfferData,
+  WSVideoCallAnswerData,
+  WSVideoIceCandidateData,
+  WSVideoCallRejectData,
+  WSVideoCallCancelData,
+  WSVideoCallEndData,
+  WSVideoCallBusyData,
+} from './video-call.types';
+
+export interface WSVideoCallInitiatedEvent {
+  type: 'video_call_initiated';
+  call_id: string;
+  receiver_id: number | string;
+  status: string;
+}
+
+export interface WSVideoCallConnectedEvent {
+  type: 'video_call_connected';
+  call_id: string;
+  status: string;
+}
+
+export type WSVideoSignalingEvent =
+  | WSVideoCallOfferData
+  | WSVideoCallAnswerData
+  | WSVideoIceCandidateData
+  | WSVideoCallRejectData
+  | WSVideoCallCancelData
+  | WSVideoCallEndData
+  | WSVideoCallBusyData
+  | WSVideoCallInitiatedEvent
+  | WSVideoCallConnectedEvent;
+
 export type WSServerEvent =
   | WSConnectionEvent
   | WSMessageEvent
@@ -78,7 +113,9 @@ export type WSServerEvent =
   | WSPresenceEvent
   | WSMessageStatusEvent
   | WSProfileUpdateEvent
-  | WSErrorEvent;
+  | WSErrorEvent
+  | WSVoiceSignalingEvent
+  | WSVideoSignalingEvent;
 
 export interface WSClientSendMessage {
   type: 'message';
@@ -110,7 +147,8 @@ export type WSClientAction =
   | WSClientSendMessage
   | WSClientFetchHistory
   | WSClientDeliveryReceipt
-  | WSClientReadReceipt;
+  | WSClientReadReceipt
+  | Record<string, unknown>;
 
 export type WSSocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
@@ -126,7 +164,25 @@ export type WSEventType =
   | 'PROFILE_UPDATE'
   | 'SOCKET_STATUS'
   | 'HISTORY_LOADED'
-  | 'ERROR';
+  | 'ERROR'
+  | 'VOICE_CALL_OFFER'
+  | 'VOICE_CALL_ANSWER'
+  | 'VOICE_ICE_CANDIDATE'
+  | 'VOICE_CALL_REJECT'
+  | 'VOICE_CALL_CANCEL'
+  | 'VOICE_CALL_END'
+  | 'VOICE_CALL_BUSY'
+  | 'VOICE_CALL_INITIATED'
+  | 'VOICE_CALL_CONNECTED'
+  | 'VIDEO_CALL_OFFER'
+  | 'VIDEO_CALL_ANSWER'
+  | 'VIDEO_ICE_CANDIDATE'
+  | 'VIDEO_CALL_REJECT'
+  | 'VIDEO_CALL_CANCEL'
+  | 'VIDEO_CALL_END'
+  | 'VIDEO_CALL_BUSY'
+  | 'VIDEO_CALL_INITIATED'
+  | 'VIDEO_CALL_CONNECTED';
 
 
 

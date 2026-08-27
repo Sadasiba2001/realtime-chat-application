@@ -1,8 +1,12 @@
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ChatProvider } from './context/ChatContext';
+import { VoiceCallProvider } from './context/VoiceCallContext';
+import { VideoCallProvider } from './context/VideoCallContext';
 import { AppRoutes } from './routes/AppRoutes';
 import { CallOverlay } from './components/common/CallOverlay';
+import { VoiceCallModal } from './components/calls/VoiceCallModal';
+import { VideoCallModal } from './components/calls/VideoCallModal';
 import { MediaViewer } from './components/common/MediaViewer';
 import { NewChatModal } from './components/modals/NewChatModal';
 import { ProfileModal } from './components/modals/ProfileModal';
@@ -13,16 +17,22 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <ChatProvider>
-          <div className="h-screen w-screen overflow-y-auto bg-gray-100 dark:bg-[#0b141a] text-gray-900 dark:text-gray-100 font-sans antialiased">
-            <AppRoutes />
+          <VoiceCallProvider>
+            <VideoCallProvider>
+              <div className="h-screen w-screen overflow-hidden bg-gray-100 dark:bg-[#0b141a] text-gray-900 dark:text-gray-100 font-sans antialiased">
+                <AppRoutes />
 
-            {/* Global Overlays & Modals */}
-            <CallOverlay />
-            <MediaViewer />
-            <NewChatModal />
-            <ProfileModal />
-            <SettingsModal />
-          </div>
+                {/* Global Overlays & Modals */}
+                <VoiceCallModal />
+                <VideoCallModal />
+                <CallOverlay />
+                <MediaViewer />
+                <NewChatModal />
+                <ProfileModal />
+                <SettingsModal />
+              </div>
+            </VideoCallProvider>
+          </VoiceCallProvider>
         </ChatProvider>
       </AuthProvider>
     </BrowserRouter>

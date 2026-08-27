@@ -1,0 +1,584 @@
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import type { ReactNode } from 'react';
+import type { User, CallLog, CallStatus } from '../types/chat.types';
+import type {
+  CallSession,
+  WSVoiceCallOfferData,
+  WSVoiceCallAnswerData,
+  WSVoiceIceCandidateData,
+  WSVoiceCallRejectData,
+  WSVoiceCallCancelData,
+  WSVoiceCallEndData,
+  WSVoiceCallBusyData,
+} from '../types/call.types';
+import { webrtcService } from '../services/webrtc.service';
+import { webSocketService } from '../services/websocket.service';
+import { useAuth } from './AuthContext';
+
+interface VoiceCallContextType {
+  callSession: CallSession | null;
+  callLogs: CallLog[];
+  startCall: (receiver: User) => Promise<void>;
+  acceptCall: () => Promise<void>;
+  rejectCall: () => void;
+  cancelCall: () => void;
+  endCall: () => void;
+  toggleMute: () => void;
+  enableAudio: () => Promise<boolean>;
+  clearCallLogs: () => void;
+}
+
+export const VoiceCallContext = createContext<VoiceCallContextType | undefined>(undefined);
+
+// Web Audio API Ringtone Generator (Zero external dependencies)
+class RingtonePlayer {
+  private audioCtx: AudioContext | null = null;
+  private intervalId: any = null;
+
+  private getAudioContext(): AudioContext {
+    if (!this.audioCtx || this.audioCtx.state === 'closed') {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      this.audioCtx = new AudioCtx();
+    }
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume();
+    }
+    return this.audioCtx;
+  }
+
+  public playOutgoing(): void {
+    this.stop();
+    const playBeep = () => {
+      try {
+        const ctx = this.getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 1.2);
+      } catch (e) {
+        // audio context blocked by browser
+      }
+    };
+    playBeep();
+    this.intervalId = setInterval(playBeep, 3500);
+  }
+
+  public playIncoming(): void {
+    this.stop();
+    const playChime = () => {
+      try {
+        const ctx = this.getAudioContext();
+        const now = ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.15);
+          gain.gain.setValueAtTime(0.12, now + i * 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.15 + 0.4);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.15);
+          osc.stop(now + i * 0.15 + 0.4);
+        });
+      } catch (e) {
+        // audio context blocked by browser
+      }
+    };
+    playChime();
+    this.intervalId = setInterval(playChime, 2500);
+  }
+
+  public stop(): void {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+  }
+}
+
+const ringtone = new RingtonePlayer();
+
+export const VoiceCallProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user: authUser } = useAuth();
+  const [callSession, setCallSession] = useState<CallSession | null>(null);
+  const [callLogs, setCallLogs] = useState<CallLog[]>(() => {
+    try {
+      const saved = localStorage.getItem('chat_call_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const pendingOfferSdpRef = useRef<RTCSessionDescriptionInit | string | null>(null);
+  const timerRef = useRef<any>(null);
+  const cleanupTimerRef = useRef<any>(null);
+
+  // Load user specific call logs
+  useEffect(() => {
+    if (authUser) {
+      try {
+        const userKey = `chat_call_history_${authUser.id}`;
+        const saved = localStorage.getItem(userKey) || localStorage.getItem('chat_call_history');
+        if (saved) {
+          setCallLogs(JSON.parse(saved));
+        }
+      } catch (e) {}
+    }
+  }, [authUser]);
+
+  const recordCallLog = useCallback(
+    (session: CallSession) => {
+      let status: CallStatus = 'ended';
+      if (session.isCaller) {
+        status = 'outgoing';
+      } else {
+        if (session.durationSec > 0 || session.state === 'connected' || session.state === 'ended') {
+          status = 'incoming';
+        } else {
+          status = 'missed';
+        }
+      }
+
+      const formatLogDuration = (secs: number) => {
+        if (secs <= 0) return undefined;
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        return m > 0 ? `${m}m ${s}s` : `${s}s`;
+      };
+
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const newLog: CallLog = {
+        id: `call_log_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        contactId: String(session.counterparty.id),
+        contact: session.counterparty,
+        type: 'audio',
+        status,
+        timestamp: timeStr,
+        duration: formatLogDuration(session.durationSec),
+      };
+
+      setCallLogs((prev) => {
+        const updated = [newLog, ...prev].slice(0, 100);
+        try {
+          const key = authUser ? `chat_call_history_${authUser.id}` : 'chat_call_history';
+          localStorage.setItem(key, JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+    },
+    [authUser]
+  );
+
+  const cleanCallAfterDelay = useCallback(
+    (delayMs: number = 2000) => {
+      ringtone.stop();
+      if (cleanupTimerRef.current) {
+        clearTimeout(cleanupTimerRef.current);
+      }
+
+      setCallSession((current) => {
+        if (current && current.counterparty) {
+          recordCallLog(current);
+        }
+        return current;
+      });
+
+      cleanupTimerRef.current = setTimeout(() => {
+        webrtcService.cleanup();
+        setCallSession(null);
+        pendingOfferSdpRef.current = null;
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      }, delayMs);
+    },
+    [recordCallLog]
+  );
+
+  const clearCallLogs = useCallback(() => {
+    setCallLogs([]);
+    try {
+      const key = authUser ? `chat_call_history_${authUser.id}` : 'chat_call_history';
+      localStorage.removeItem(key);
+      localStorage.removeItem('chat_call_history');
+    } catch (e) {}
+  }, [authUser]);
+
+  // Duration Timer (counts ONLY when state is 'connected')
+  useEffect(() => {
+    if (callSession?.state === 'connected') {
+      if (!timerRef.current) {
+        timerRef.current = setInterval(() => {
+          setCallSession((prev) => (prev ? { ...prev, durationSec: prev.durationSec + 1 } : null));
+        }, 1000);
+      }
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [callSession?.state]);
+
+  // Handle incoming signaling events from WebSocket
+  useEffect(() => {
+    const unsubOffer = webSocketService.on<WSVoiceCallOfferData>('VOICE_CALL_OFFER', (data) => {
+      console.log('[SIGNALING] Received call offer from user:', data.caller_id, 'call_id:', data.call_id);
+      if (callSession && ['calling', 'ringing', 'connecting', 'connected'].includes(callSession.state)) {
+        console.log('[SIGNALING] Busy: already in active call session, sending call_busy');
+        webSocketService.sendSignaling({
+          type: 'call_busy',
+          call_id: data.call_id,
+        });
+        return;
+      }
+
+      pendingOfferSdpRef.current = data.sdp;
+      const caller: User = {
+        id: String(data.caller_id),
+        name: data.caller_name || `User ${data.caller_id}`,
+        email: '',
+        avatar: data.caller_avatar || '',
+        status: 'online',
+        about: '',
+        phone: '',
+      };
+
+      setCallSession({
+        callId: data.call_id,
+        counterparty: caller,
+        isCaller: false,
+        state: 'ringing',
+        isMuted: false,
+        durationSec: 0,
+        statusMessage: 'Incoming call...',
+        isAudioBlocked: false,
+      });
+      ringtone.playIncoming();
+    });
+
+    const unsubAnswer = webSocketService.on<WSVoiceCallAnswerData>('VOICE_CALL_ANSWER', async (data) => {
+      console.log('[SIGNALING] Received call answer for call_id:', data.call_id);
+      ringtone.stop();
+      try {
+        setCallSession((prev) =>
+          prev && prev.callId === data.call_id
+            ? { ...prev, state: 'connecting', statusMessage: 'Connecting...' }
+            : prev
+        );
+        await webrtcService.handleAnswer(data.sdp);
+      } catch (err: any) {
+        console.error('[WEBRTC] Failed to handle answer SDP:', err);
+        setCallSession((prev) =>
+          prev ? { ...prev, state: 'failed', error: err.message, statusMessage: 'Connection failed' } : null
+        );
+        cleanCallAfterDelay(3000);
+      }
+    });
+
+    const unsubCandidate = webSocketService.on<WSVoiceIceCandidateData>('VOICE_ICE_CANDIDATE', async (data) => {
+      if (data.candidate) {
+        await webrtcService.addIceCandidate(data.candidate);
+      }
+    });
+
+    const unsubReject = webSocketService.on<WSVoiceCallRejectData>('VOICE_CALL_REJECT', (data) => {
+      console.log('[SIGNALING] Received call reject for call_id:', data.call_id);
+      setCallSession((prev) =>
+        prev && prev.callId === data.call_id
+          ? { ...prev, state: 'rejected', statusMessage: 'Call declined' }
+          : prev
+      );
+      cleanCallAfterDelay(2000);
+    });
+
+    const unsubCancel = webSocketService.on<WSVoiceCallCancelData>('VOICE_CALL_CANCEL', (data) => {
+      console.log('[SIGNALING] Received call cancel for call_id:', data.call_id);
+      setCallSession((prev) =>
+        prev && prev.callId === data.call_id
+          ? { ...prev, state: 'cancelled', statusMessage: 'Call cancelled' }
+          : prev
+      );
+      cleanCallAfterDelay(1500);
+    });
+
+    const unsubBusy = webSocketService.on<WSVoiceCallBusyData>('VOICE_CALL_BUSY', (data) => {
+      console.log('[SIGNALING] Received call busy for call_id:', data.call_id);
+      setCallSession((prev) =>
+        prev
+          ? { ...prev, state: 'busy', statusMessage: data.message || 'User is busy on another call' }
+          : prev
+      );
+      cleanCallAfterDelay(2500);
+    });
+
+    const unsubEnd = webSocketService.on<WSVoiceCallEndData>('VOICE_CALL_END', (data) => {
+      console.log('[SIGNALING] Received call end for call_id:', data.call_id);
+      setCallSession((prev) =>
+        prev && prev.callId === data.call_id
+          ? { ...prev, state: 'ended', statusMessage: 'Call ended' }
+          : prev
+      );
+      cleanCallAfterDelay(1500);
+    });
+
+    return () => {
+      unsubOffer();
+      unsubAnswer();
+      unsubCandidate();
+      unsubReject();
+      unsubCancel();
+      unsubBusy();
+      unsubEnd();
+    };
+  }, [callSession, cleanCallAfterDelay]);
+
+  // Start outgoing call
+  const startCall = useCallback(
+    async (receiver: User) => {
+      if (!authUser) return;
+      ringtone.stop();
+      if (cleanupTimerRef.current) clearTimeout(cleanupTimerRef.current);
+
+      const callId = `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('[CALL] Starting outgoing voice call to:', receiver.name, 'id:', receiver.id, 'callId:', callId);
+
+      setCallSession({
+        callId,
+        counterparty: receiver,
+        isCaller: true,
+        state: 'calling',
+        isMuted: false,
+        durationSec: 0,
+        statusMessage: 'Calling...',
+        isAudioBlocked: false,
+      });
+      ringtone.playOutgoing();
+
+      try {
+        const match = String(receiver.id).match(/\d+/);
+        const numericReceiverId = match ? parseInt(match[0], 10) : receiver.id;
+
+        await webrtcService.initializePeerConnection(
+          (candidate) => {
+            webSocketService.sendSignaling({
+              type: 'ice_candidate',
+              call_id: callId,
+              candidate,
+            });
+          },
+          (state) => {
+            console.log('[WEBRTC] Caller received connection state update:', state);
+            if (state === 'connected') {
+              ringtone.stop();
+              setCallSession((prev) =>
+                prev && prev.callId === callId
+                  ? { ...prev, state: 'connected', statusMessage: 'Connected' }
+                  : prev
+              );
+            } else if (state === 'failed' || state === 'disconnected') {
+              setCallSession((prev) =>
+                prev && prev.callId === callId
+                  ? { ...prev, state: 'failed', statusMessage: 'Connection failed' }
+                  : prev
+              );
+              cleanCallAfterDelay(2500);
+            }
+          },
+          (isBlocked) => {
+            setCallSession((prev) => (prev ? { ...prev, isAudioBlocked: isBlocked } : null));
+          },
+          (err) => {
+            console.error('[WEBRTC] Peer connection error:', err);
+            setCallSession((prev) =>
+              prev && prev.callId === callId
+                ? { ...prev, state: 'failed', error: err.message, statusMessage: err.message }
+                : prev
+            );
+            cleanCallAfterDelay(3000);
+          }
+        );
+
+        const offer = await webrtcService.createOffer();
+
+        webSocketService.sendSignaling({
+          type: 'call_offer',
+          call_id: callId,
+          receiver_id: numericReceiverId,
+          sdp: offer,
+        });
+      } catch (err: any) {
+        console.error('[CALL] Failed to initiate call:', err);
+        ringtone.stop();
+        setCallSession((prev) =>
+          prev
+            ? { ...prev, state: 'failed', error: err.message, statusMessage: err.message }
+            : null
+        );
+        cleanCallAfterDelay(3000);
+      }
+    },
+    [authUser, cleanCallAfterDelay]
+  );
+
+  // Accept incoming call
+  const acceptCall = useCallback(async () => {
+    if (!callSession || callSession.isCaller || !pendingOfferSdpRef.current) return;
+    ringtone.stop();
+
+    console.log('[CALL] Accepting incoming call for callId:', callSession.callId);
+    setCallSession((prev) => (prev ? { ...prev, state: 'connecting', statusMessage: 'Connecting...' } : null));
+
+    try {
+      await webrtcService.initializePeerConnection(
+        (candidate) => {
+          webSocketService.sendSignaling({
+            type: 'ice_candidate',
+            call_id: callSession.callId,
+            candidate,
+          });
+        },
+        (state) => {
+          console.log('[WEBRTC] Receiver received connection state update:', state);
+          if (state === 'connected') {
+            setCallSession((prev) =>
+              prev ? { ...prev, state: 'connected', statusMessage: 'Connected' } : null
+            );
+          } else if (state === 'failed' || state === 'disconnected') {
+            setCallSession((prev) =>
+              prev ? { ...prev, state: 'failed', statusMessage: 'Connection lost' } : null
+            );
+            cleanCallAfterDelay(2500);
+          }
+        },
+        (isBlocked) => {
+          setCallSession((prev) => (prev ? { ...prev, isAudioBlocked: isBlocked } : null));
+        },
+        (err) => {
+          console.error('[WEBRTC] Error during call acceptance:', err);
+          setCallSession((prev) =>
+            prev ? { ...prev, state: 'failed', error: err.message, statusMessage: err.message } : null
+          );
+          cleanCallAfterDelay(3000);
+        }
+      );
+
+      const answer = await webrtcService.handleOfferAndCreateAnswer(pendingOfferSdpRef.current);
+
+      webSocketService.sendSignaling({
+        type: 'call_answer',
+        call_id: callSession.callId,
+        sdp: answer,
+      });
+    } catch (err: any) {
+      console.error('[CALL] Failed to accept call:', err);
+      setCallSession((prev) =>
+        prev ? { ...prev, state: 'failed', error: err.message, statusMessage: err.message } : null
+      );
+      cleanCallAfterDelay(3000);
+    }
+  }, [callSession, cleanCallAfterDelay]);
+
+  // Reject incoming call
+  const rejectCall = useCallback(() => {
+    if (!callSession) return;
+    ringtone.stop();
+    console.log('[CALL] Rejecting call for callId:', callSession.callId);
+    webSocketService.sendSignaling({
+      type: 'call_reject',
+      call_id: callSession.callId,
+    });
+    setCallSession((prev) => (prev ? { ...prev, state: 'rejected', statusMessage: 'Call rejected' } : null));
+    cleanCallAfterDelay(500);
+  }, [callSession, cleanCallAfterDelay]);
+
+  // Cancel outgoing call
+  const cancelCall = useCallback(() => {
+    if (!callSession) return;
+    ringtone.stop();
+    console.log('[CALL] Cancelling outgoing call for callId:', callSession.callId);
+    webSocketService.sendSignaling({
+      type: 'call_cancel',
+      call_id: callSession.callId,
+    });
+    setCallSession((prev) => (prev ? { ...prev, state: 'cancelled', statusMessage: 'Call cancelled' } : null));
+    cleanCallAfterDelay(500);
+  }, [callSession, cleanCallAfterDelay]);
+
+  // End active call
+  const endCall = useCallback(() => {
+    if (!callSession) return;
+    ringtone.stop();
+    console.log('[CALL] Ending active call for callId:', callSession.callId);
+    webSocketService.sendSignaling({
+      type: 'call_end',
+      call_id: callSession.callId,
+    });
+    setCallSession((prev) => (prev ? { ...prev, state: 'ended', statusMessage: 'Call ended' } : null));
+    cleanCallAfterDelay(500);
+  }, [callSession, cleanCallAfterDelay]);
+
+  // Toggle microphone mute
+  const toggleMute = useCallback(() => {
+    setCallSession((prev) => {
+      if (!prev) return null;
+      const nextMuted = !prev.isMuted;
+      webrtcService.setMute(nextMuted);
+      return { ...prev, isMuted: nextMuted };
+    });
+  }, []);
+
+  // User gesture enable audio fallback
+  const enableAudio = useCallback(async () => {
+    const success = await webrtcService.playRemoteAudio();
+    if (success) {
+      setCallSession((prev) => (prev ? { ...prev, isAudioBlocked: false } : null));
+    }
+    return success;
+  }, []);
+
+  return (
+    <VoiceCallContext.Provider
+      value={{
+        callSession,
+        callLogs,
+        startCall,
+        acceptCall,
+        rejectCall,
+        cancelCall,
+        endCall,
+        toggleMute,
+        enableAudio,
+        clearCallLogs,
+      }}
+    >
+      {children}
+    </VoiceCallContext.Provider>
+  );
+};
+
+export const useVoiceCall = () => {
+  const context = useContext(VoiceCallContext);
+  if (!context) {
+    throw new Error('useVoiceCall must be used within a VoiceCallProvider');
+  }
+  return context;
+};
