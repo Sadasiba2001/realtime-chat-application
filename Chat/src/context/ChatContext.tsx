@@ -130,7 +130,19 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({});
+  const [messagesMapState, setMessagesMapState] = useState<Record<string, Message[]>>(() => storage.getMessagesMap<Message>());
+
+  const setMessagesMap: React.Dispatch<React.SetStateAction<Record<string, Message[]>>> = useCallback(
+    (action) => {
+      setMessagesMapState((prev) => {
+        const next = typeof action === 'function' ? action(prev) : action;
+        storage.setMessagesMap(next);
+        return next;
+      });
+    },
+    []
+  );
+  const messagesMap = messagesMapState;
   const [activeTab, setActiveTab] = useState<ActiveTab>('chats');
   const [theme, setTheme] = useState<ThemeMode>(() => storage.getTheme());
   const [searchQuery, setSearchQuery] = useState('');
@@ -231,6 +243,16 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const unsubStatus = webSocketService.on<WSSocketStatus>('SOCKET_STATUS', (status) => {
       console.log('[ChatContext] Persistent socket status:', status);
       setSocketStatus(status);
+
+      if (status === 'connected' && activeConversationIdRef.current) {
+        const activeConv = conversationsRef.current.find((c) => c.id === activeConversationIdRef.current);
+        if (activeConv && activeConv.type === 'direct') {
+          const targetId = getTargetUserIdFromConversation(currentUserRef.current.id, activeConv.participantIds);
+          if (targetId) {
+            webSocketService.fetchHistory(targetId, 1, 50);
+          }
+        }
+      }
     });
 
     const unsubNewMessage = webSocketService.on<BackendMessagePayload>('NEW_MESSAGE', (payload) => {

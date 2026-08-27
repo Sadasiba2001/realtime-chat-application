@@ -25,4 +25,19 @@ export const storage = {
   setTheme: (theme: 'light' | 'dark'): void => {
     localStorage.setItem(THEME_KEY, theme);
   },
+  getMessagesMap: <T = unknown>(): Record<string, T[]> => {
+    try {
+      const raw = localStorage.getItem('chat_messages_map_v1');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  },
+  setMessagesMap: <T = unknown>(map: Record<string, T[]>): void => {
+    try {
+      localStorage.setItem('chat_messages_map_v1', JSON.stringify(map));
+    } catch (e) {
+      console.error('Failed to save messages map to storage:', e);
+    }
+  },
 };

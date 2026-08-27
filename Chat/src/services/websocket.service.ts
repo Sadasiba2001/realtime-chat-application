@@ -288,8 +288,8 @@ class WebSocketService {
       return true;
     }
 
-    if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
-      console.log('[WebSocket] Socket connecting: Queuing message for transmission upon connect.');
+    if (!this.socket || this.socket.readyState === WebSocket.CONNECTING) {
+      console.log('[WebSocket] Socket connecting or initializing: Queuing message for transmission upon connect.');
       this.pendingQueue.push(payloadStr);
       return true;
     }
@@ -316,8 +316,8 @@ class WebSocketService {
       return true;
     }
 
-    if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
-      console.log('[WebSocket] Socket connecting: Queuing history request for transmission upon connect.');
+    if (!this.socket || this.socket.readyState === WebSocket.CONNECTING) {
+      console.log('[WebSocket] Socket connecting or initializing: Queuing history request for transmission upon connect.');
       this.pendingQueue.push(payloadStr);
       return true;
     }
