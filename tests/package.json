@@ -1,0 +1,25 @@
+{
+  "name": "chat-tests",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --config frontend/vitest.config.ts",
+    "test:watch": "vitest --config frontend/vitest.config.ts",
+    "test:coverage": "vitest run --coverage --config frontend/vitest.config.ts"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "happy-dom": "^20.11.12",
+    "jsdom": "^26.0.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0",
+    "vitest": "^3.0.7"
+  }
+}
