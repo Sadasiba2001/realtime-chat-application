@@ -91,6 +91,8 @@ interface ChatContextType {
   togglePin: (id: string) => Promise<void>;
   toggleArchive: (id: string) => Promise<void>;
   toggleMute: (id: string) => Promise<void>;
+  blockUser: (targetUserId: string) => Promise<void>;
+  unblockUser: (targetUserId: string) => Promise<void>;
   createNewChat: (contact: User) => Promise<void>;
   createNewGroup: (name: string, members: User[]) => Promise<void>;
   updateUserProfile: (updates: Partial<User>) => Promise<void>;
@@ -1280,6 +1282,30 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
   };
 
+  const blockUser = async (targetUserId: string) => {
+    await chatService.blockUser(targetUserId);
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id === targetUserId || c.participantIds.includes(targetUserId)) {
+          return { ...c, isBlocked: true };
+        }
+        return c;
+      })
+    );
+  };
+
+  const unblockUser = async (targetUserId: string) => {
+    await chatService.unblockUser(targetUserId);
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id === targetUserId || c.participantIds.includes(targetUserId)) {
+          return { ...c, isBlocked: false };
+        }
+        return c;
+      })
+    );
+  };
+
   const createNewChat = async (contact: User) => {
     const myIdStr = String(currentUser.id).trim();
     const contactIdStr = String(contact.id).trim();
@@ -1405,6 +1431,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         togglePin,
         toggleArchive,
         toggleMute,
+        blockUser,
+        unblockUser,
         createNewChat,
         createNewGroup,
         updateUserProfile,

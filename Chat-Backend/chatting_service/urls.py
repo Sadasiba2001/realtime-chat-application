@@ -12,6 +12,8 @@ from chatting_service.controller import (
     unarchive_chat_view,
     mute_chat_view,
     unmute_chat_view,
+    block_user_view,
+    unblock_user_view,
 )
 
 urlpatterns = [
@@ -22,6 +24,8 @@ urlpatterns = [
     path("conversations/<int:target_user_id>/unarchive/", unarchive_chat_view, name="unarchive_chat"),
     path("conversations/<int:target_user_id>/mute/", mute_chat_view, name="mute_chat"),
     path("conversations/<int:target_user_id>/unmute/", unmute_chat_view, name="unmute_chat"),
+    path("users/<int:target_user_id>/block/", block_user_view, name="block_user"),
+    path("users/<int:target_user_id>/unblock/", unblock_user_view, name="unblock_user"),
     path("messages/search/", search_messages_view, name="search_messages"),
     path("messages/<int:message_id>/edit/", edit_message_view, name="edit_message"),
     path("messages/<int:message_id>/delete/", delete_message_view, name="delete_message"),

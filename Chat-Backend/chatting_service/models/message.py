@@ -174,3 +174,25 @@ class UserChatMute(models.Model):
     def __str__(self):
         return f"User {self.user_id} muted chat with {self.partner_id} (always={self.is_always}, until={self.muted_until})"
 
+
+class UserBlock(models.Model):
+    blocker = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="blocks_initiated",
+    )
+    blocked = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="blocked_by_users",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "user_blocks"
+        unique_together = ("blocker", "blocked")
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"User {self.blocker_id} blocked User {self.blocked_id}"
+

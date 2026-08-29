@@ -442,3 +442,25 @@ def unmute_chat_view(request, target_user_id):
         return Response({"status": True, "message": "Chat unmuted successfully.", "data": {"is_muted": False}}, status=status.HTTP_200_OK)
     except ValueError as exc:
         return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def block_user_view(request, target_user_id):
+    try:
+        service = MessageService()
+        service.block_user(blocker=request.user, target_user_id=target_user_id)
+        return Response({"status": True, "message": "User blocked successfully.", "data": {"is_blocked": True}}, status=status.HTTP_200_OK)
+    except ValueError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def unblock_user_view(request, target_user_id):
+    try:
+        service = MessageService()
+        service.unblock_user(blocker=request.user, target_user_id=target_user_id)
+        return Response({"status": True, "message": "User unblocked successfully.", "data": {"is_blocked": False}}, status=status.HTTP_200_OK)
+    except ValueError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)

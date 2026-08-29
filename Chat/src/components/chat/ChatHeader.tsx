@@ -9,6 +9,7 @@ import {
   Pin,
   Archive,
   VolumeX,
+  ShieldAlert,
 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { useVoiceCall } from '../../context/VoiceCallContext';
@@ -31,6 +32,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     togglePin,
     toggleArchive,
     toggleMute,
+    blockUser,
+    unblockUser,
     openModal,
     isMobileView,
     backToChatListMobile,
@@ -202,6 +205,23 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 <Info className="w-4 h-4" />
                 View Contact Info
               </button>
+              {!isGroup && (
+                <button
+                  onClick={() => {
+                    const partnerId = activeConversation.participantIds.find((pid) => pid !== currentUser.id) || activeConversation.id;
+                    if (activeConversation.isBlocked) {
+                      unblockUser(partnerId);
+                    } else {
+                      blockUser(partnerId);
+                    }
+                    setShowDropdown(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 transition-colors border-t border-slate-100 dark:border-slate-800 font-medium"
+                >
+                  <ShieldAlert className="w-4 h-4" />
+                  {activeConversation.isBlocked ? 'Unblock User' : 'Block User'}
+                </button>
+              )}
             </div>
           )}
         </div>

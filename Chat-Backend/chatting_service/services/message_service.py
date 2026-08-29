@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from authentication_service.repository import UserRepository
 from chatting_service.repository import MessageRepository
-from chatting_service.models import Message, UserChatPin, UserChatArchive, UserChatMute
+from chatting_service.models import Message, UserChatPin, UserChatArchive, UserChatMute, UserBlock
 from chatting_service.services.presence_service import PresenceService
 
 User = get_user_model()
@@ -56,6 +56,9 @@ class MessageService:
             raise ValueError(f"Message exceeds maximum allowed length of {max_length} characters.")
 
         receiver = self.validate_target_user(receiver_id, sender.id)
+
+        if self.is_blocked_between(sender.id, receiver.id):
+            raise PermissionError("Messaging is restricted between these users.")
 
         message = self.message_repository.create_message(
             sender=sender,
@@ -125,6 +128,8 @@ class MessageService:
             .filter(Q(is_always=True) | Q(muted_until__gt=now))
             .values_list("partner_id", flat=True)
         )
+        my_blocked_partner_ids = set(UserBlock.objects.filter(blocker_id=user_id).values_list("blocked_id", flat=True))
+        partner_blocking_me_ids = set(UserBlock.objects.filter(blocked_id=user_id).values_list("blocker_id", flat=True))
         results = []
         for partner in conversations_qs:
             last_message_at_str = (
@@ -146,6 +151,8 @@ class MessageService:
                     "is_active": partner.is_active,
                     "status": presence["status"],
                     "last_seen": presence["last_seen"],
+                    "is_blocked": partner.id in my_blocked_partner_ids,
+                    "is_blocked_by_them": partner.id in partner_blocking_me_ids,
                 },
                 "user_id": partner.id,
                 "username": partner.username,
@@ -157,6 +164,8 @@ class MessageService:
                 "is_pinned": partner.id in pinned_partner_ids,
                 "is_archived": partner.id in archived_partner_ids,
                 "is_muted": partner.id in muted_partner_ids,
+                "is_blocked": partner.id in my_blocked_partner_ids,
+                "is_blocked_by_them": partner.id in partner_blocking_me_ids,
 
                 "last_message": {
                     "id": partner.last_message_id,
@@ -433,6 +442,27 @@ class MessageService:
 
     def unmute_chat(self, user: User, target_user_id: int) -> bool:
         UserChatMute.objects.filter(user=user, partner_id=target_user_id).delete()
+        return True
+
+    def is_blocked_between(self, user_a_id: int, user_b_id: int) -> bool:
+        return UserBlock.objects.filter(
+            (Q(blocker_id=user_a_id, blocked_id=user_b_id) | Q(blocker_id=user_b_id, blocked_id=user_a_id))
+        ).exists()
+
+    def is_user_blocked(self, blocker_id: int, blocked_id: int) -> bool:
+        return UserBlock.objects.filter(blocker_id=blocker_id, blocked_id=blocked_id).exists()
+
+    def block_user(self, blocker: User, target_user_id: int) -> bool:
+        target_user_id = int(target_user_id)
+        if blocker.id == target_user_id:
+            raise ValueError("You cannot block yourself.")
+        target_user = self.validate_target_user(target_user_id, blocker.id)
+        UserBlock.objects.get_or_create(blocker=blocker, blocked=target_user)
+        return True
+
+    def unblock_user(self, blocker: User, target_user_id: int) -> bool:
+        target_user_id = int(target_user_id)
+        UserBlock.objects.filter(blocker=blocker, blocked_id=target_user_id).delete()
         return True
 
 

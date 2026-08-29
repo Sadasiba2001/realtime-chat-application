@@ -11,6 +11,8 @@ from chatting_service.controller.chat_controller import (
     unarchive_chat_view,
     mute_chat_view,
     unmute_chat_view,
+    block_user_view,
+    unblock_user_view,
 )
 
 __all__ = [
@@ -26,4 +28,6 @@ __all__ = [
     "unarchive_chat_view",
     "mute_chat_view",
     "unmute_chat_view",
+    "block_user_view",
+    "unblock_user_view",
 ]

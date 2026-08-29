@@ -109,6 +109,8 @@ class ChatService {
             pinned: Boolean(item.is_pinned || item.pinned),
             archived: Boolean(item.is_archived || item.archived),
             muted: Boolean(item.is_muted || item.muted),
+            isBlocked: Boolean(item.is_blocked || item.user?.is_blocked),
+            isBlockedByThem: Boolean(item.is_blocked_by_them || item.user?.is_blocked_by_them),
             createdAt: item.last_message?.created_at || item.last_message_at || new Date().toISOString(),
             updatedAt: item.last_message?.created_at || item.last_message_at || new Date().toISOString(),
           };
@@ -235,6 +237,44 @@ class ChatService {
       }
     }
     return newMutedState;
+  }
+
+  async blockUser(targetUserId: string): Promise<boolean> {
+    const numericId = parseInt(targetUserId, 10);
+    this.conversations = this.conversations.map((c) => {
+      if (c.id === targetUserId || c.participantIds.includes(targetUserId)) {
+        return { ...c, isBlocked: true };
+      }
+      return c;
+    });
+
+    if (!isNaN(numericId)) {
+      try {
+        await apiClient.post(`/api/v1/chat/users/${numericId}/block/`);
+      } catch (err) {
+        console.error('[ChatService] Failed to persist block status on backend:', err);
+      }
+    }
+    return true;
+  }
+
+  async unblockUser(targetUserId: string): Promise<boolean> {
+    const numericId = parseInt(targetUserId, 10);
+    this.conversations = this.conversations.map((c) => {
+      if (c.id === targetUserId || c.participantIds.includes(targetUserId)) {
+        return { ...c, isBlocked: false };
+      }
+      return c;
+    });
+
+    if (!isNaN(numericId)) {
+      try {
+        await apiClient.delete(`/api/v1/chat/users/${numericId}/unblock/`);
+      } catch (err) {
+        console.error('[ChatService] Failed to persist unblock status on backend:', err);
+      }
+    }
+    return true;
   }
 
   async markAsRead(id: string): Promise<void> {

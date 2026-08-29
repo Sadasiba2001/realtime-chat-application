@@ -78,6 +78,8 @@ export interface Conversation {
   pinned: boolean;
   archived?: boolean;
   muted: boolean;
+  isBlocked?: boolean;
+  isBlockedByThem?: boolean;
   createdAt: string;
   updatedAt: string;
   groupAvatar?: string;
