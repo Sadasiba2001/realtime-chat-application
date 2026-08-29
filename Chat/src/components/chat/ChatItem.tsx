@@ -15,7 +15,7 @@ export const ChatItem: React.FC<ChatItemProps> = ({
   isSelected,
   onClick,
 }) => {
-  const { currentUser, togglePin, toggleArchive, toggleMute } = useChat();
+  const { currentUser, togglePin, toggleArchive, toggleMute, openModal } = useChat();
 
   const isGroup = conversation.type === 'group';
   const otherParticipant = isGroup
@@ -181,7 +181,11 @@ export const ChatItem: React.FC<ChatItemProps> = ({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            toggleMute(conversation.id);
+            if (conversation.muted) {
+              toggleMute(conversation.id);
+            } else {
+              openModal('mute_chat', conversation);
+            }
           }}
           className="p-1 text-slate-500 hover:text-amber-500 dark:text-slate-400 dark:hover:text-amber-400 rounded-lg transition-colors"
           title={conversation.muted ? 'Unmute' : 'Mute'}

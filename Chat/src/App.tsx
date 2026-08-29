@@ -11,6 +11,7 @@ import { MediaViewer } from './components/common/MediaViewer';
 import { NewChatModal } from './components/modals/NewChatModal';
 import { ProfileModal } from './components/modals/ProfileModal';
 import { SettingsModal } from './components/modals/SettingsModal';
+import { MuteModal } from './components/chat/MuteModal';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
                 <NewChatModal />
                 <ProfileModal />
                 <SettingsModal />
+                <MuteModal />
               </div>
             </VideoCallProvider>
           </VoiceCallProvider>

@@ -1,10 +1,13 @@
 from typing import Optional, List, Dict, Any, Tuple
 
+from datetime import timedelta
+from django.db.models import Q
+from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from authentication_service.repository import UserRepository
 from chatting_service.repository import MessageRepository
-from chatting_service.models import Message, UserChatPin, UserChatArchive
+from chatting_service.models import Message, UserChatPin, UserChatArchive, UserChatMute
 from chatting_service.services.presence_service import PresenceService
 
 User = get_user_model()
@@ -116,6 +119,12 @@ class MessageService:
         conversations_qs = self.message_repository.get_user_conversations(user_id=user_id)
         pinned_partner_ids = set(UserChatPin.objects.filter(user_id=user_id).values_list("partner_id", flat=True))
         archived_partner_ids = set(UserChatArchive.objects.filter(user_id=user_id).values_list("partner_id", flat=True))
+        now = timezone.now()
+        muted_partner_ids = set(
+            UserChatMute.objects.filter(user_id=user_id)
+            .filter(Q(is_always=True) | Q(muted_until__gt=now))
+            .values_list("partner_id", flat=True)
+        )
         results = []
         for partner in conversations_qs:
             last_message_at_str = (
@@ -147,6 +156,7 @@ class MessageService:
                 "last_seen": presence["last_seen"],
                 "is_pinned": partner.id in pinned_partner_ids,
                 "is_archived": partner.id in archived_partner_ids,
+                "is_muted": partner.id in muted_partner_ids,
 
                 "last_message": {
                     "id": partner.last_message_id,
@@ -388,6 +398,41 @@ class MessageService:
         if not created:
             arc_obj.delete()
             return False
+        return True
+
+    def is_chat_muted(self, user_id: int, partner_id: int) -> bool:
+        now = timezone.now()
+        return UserChatMute.objects.filter(user_id=user_id, partner_id=partner_id).filter(
+            Q(is_always=True) | Q(muted_until__gt=now)
+        ).exists()
+
+    def mute_chat(self, user: User, target_user_id: int, duration: str = "always") -> bool:
+        target_user = self.validate_target_user(target_user_id, user.id)
+        now = timezone.now()
+        muted_until = None
+        is_always = False
+
+        if duration == "1h":
+            muted_until = now + timedelta(hours=1)
+        elif duration == "8h":
+            muted_until = now + timedelta(hours=8)
+        elif duration == "1w":
+            muted_until = now + timedelta(days=7)
+        else:
+            is_always = True
+
+        UserChatMute.objects.update_or_create(
+            user=user,
+            partner=target_user,
+            defaults={
+                "muted_until": muted_until,
+                "is_always": is_always,
+            },
+        )
+        return True
+
+    def unmute_chat(self, user: User, target_user_id: int) -> bool:
+        UserChatMute.objects.filter(user=user, partner_id=target_user_id).delete()
         return True
 
 

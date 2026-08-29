@@ -108,7 +108,7 @@ class ChatService {
             lastMessage: lastMsg,
             pinned: Boolean(item.is_pinned || item.pinned),
             archived: Boolean(item.is_archived || item.archived),
-            muted: false,
+            muted: Boolean(item.is_muted || item.muted),
             createdAt: item.last_message?.created_at || item.last_message_at || new Date().toISOString(),
             updatedAt: item.last_message?.created_at || item.last_message_at || new Date().toISOString(),
           };
@@ -212,11 +212,29 @@ class ChatService {
     return newArchivedState;
   }
 
-  async toggleMuteConversation(id: string): Promise<boolean> {
-    this.conversations = this.conversations.map((c) =>
-      c.id === id ? { ...c, muted: !c.muted } : c
-    );
-    return simulateNetworkDelay(true);
+  async toggleMuteConversation(id: string, duration: string = 'always'): Promise<boolean> {
+    const numericId = parseInt(id, 10);
+    let newMutedState = false;
+    this.conversations = this.conversations.map((c) => {
+      if (c.id === id) {
+        newMutedState = !c.muted;
+        return { ...c, muted: newMutedState };
+      }
+      return c;
+    });
+
+    if (!isNaN(numericId)) {
+      try {
+        if (newMutedState) {
+          await apiClient.post(`/api/v1/chat/conversations/${numericId}/mute/`, { duration });
+        } else {
+          await apiClient.delete(`/api/v1/chat/conversations/${numericId}/unmute/`);
+        }
+      } catch (err) {
+        console.error('[ChatService] Failed to persist mute status on backend:', err);
+      }
+    }
+    return newMutedState;
   }
 
   async markAsRead(id: string): Promise<void> {

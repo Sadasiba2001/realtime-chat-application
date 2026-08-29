@@ -419,3 +419,26 @@ def unarchive_chat_view(request, target_user_id):
         return Response({"status": True, "message": "Chat unarchived successfully.", "data": {"is_archived": False}}, status=status.HTTP_200_OK)
     except ValueError as exc:
         return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def mute_chat_view(request, target_user_id):
+    try:
+        duration = request.data.get("duration", "always")
+        service = MessageService()
+        service.mute_chat(user=request.user, target_user_id=target_user_id, duration=duration)
+        return Response({"status": True, "message": "Chat muted successfully.", "data": {"is_muted": True, "duration": duration}}, status=status.HTTP_200_OK)
+    except ValueError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def unmute_chat_view(request, target_user_id):
+    try:
+        service = MessageService()
+        service.unmute_chat(user=request.user, target_user_id=target_user_id)
+        return Response({"status": True, "message": "Chat unmuted successfully.", "data": {"is_muted": False}}, status=status.HTTP_200_OK)
+    except ValueError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)

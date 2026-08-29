@@ -10,6 +10,8 @@ from chatting_service.controller import (
     unpin_chat_view,
     archive_chat_view,
     unarchive_chat_view,
+    mute_chat_view,
+    unmute_chat_view,
 )
 
 urlpatterns = [
@@ -18,6 +20,8 @@ urlpatterns = [
     path("conversations/<int:target_user_id>/unpin/", unpin_chat_view, name="unpin_chat"),
     path("conversations/<int:target_user_id>/archive/", archive_chat_view, name="archive_chat"),
     path("conversations/<int:target_user_id>/unarchive/", unarchive_chat_view, name="unarchive_chat"),
+    path("conversations/<int:target_user_id>/mute/", mute_chat_view, name="mute_chat"),
+    path("conversations/<int:target_user_id>/unmute/", unmute_chat_view, name="unmute_chat"),
     path("messages/search/", search_messages_view, name="search_messages"),
     path("messages/<int:message_id>/edit/", edit_message_view, name="edit_message"),
     path("messages/<int:message_id>/delete/", delete_message_view, name="delete_message"),

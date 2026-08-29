@@ -137,7 +137,13 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ onClose })
           </button>
 
           <button
-            onClick={() => toggleMute(activeConversation.id)}
+            onClick={() => {
+              if (activeConversation.muted) {
+                toggleMute(activeConversation.id);
+              } else {
+                openModal('mute_chat', activeConversation);
+              }
+            }}
             className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-[#1a2234] hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-2xl transition-colors text-sm text-slate-800 dark:text-slate-200 border border-slate-200/60 dark:border-white/5"
           >
             <span className="flex items-center gap-2">

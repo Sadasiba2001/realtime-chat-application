@@ -145,3 +145,32 @@ class UserChatArchive(models.Model):
     def __str__(self):
         return f"User {self.user_id} archived chat with {self.partner_id}"
 
+
+class UserChatMute(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="chat_mutes",
+    )
+    partner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="muted_by_users",
+    )
+    muted_until = models.DateTimeField(null=True, blank=True)
+    is_always = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "user_chat_mutes"
+        unique_together = ("user", "partner")
+
+    def is_active(self) -> bool:
+        from django.utils import timezone
+        if self.is_always:
+            return True
+        return bool(self.muted_until and self.muted_until > timezone.now())
+
+    def __str__(self):
+        return f"User {self.user_id} muted chat with {self.partner_id} (always={self.is_always}, until={self.muted_until})"
+
