@@ -431,6 +431,56 @@ class MessageService:
             "created_at": report.created_at.isoformat().replace("+00:00", "Z"),
         }
 
+    def report_message(self, reporter: User, message_id: int, reason: str, description: str = "") -> Dict[str, Any]:
+        message_id = int(message_id)
+
+        try:
+            target_message = Message.objects.select_related("sender", "receiver").get(id=message_id)
+        except Message.DoesNotExist:
+            raise Message.DoesNotExist(f"Message with ID {message_id} does not exist.")
+
+        # Privacy / Accessibility Check: Reporter must be a participant in the conversation
+        if target_message.sender_id != reporter.id and target_message.receiver_id != reporter.id:
+            raise PermissionError("You do not have permission to view or report this message.")
+
+        # Self-message report check
+        if target_message.sender_id == reporter.id:
+            raise ValueError("You cannot report your own message.")
+
+        valid_reasons = ["SPAM", "HARASSMENT", "ABUSE", "INAPPROPRIATE_CONTENT", "OTHER"]
+        upper_reason = str(reason).strip().upper()
+        if upper_reason not in valid_reasons:
+            raise ValueError(f"Invalid report reason. Allowed reasons: {', '.join(valid_reasons)}")
+
+        clean_description = str(description).strip() if description else ""
+        if len(clean_description) > 500:
+            raise ValueError("Description cannot exceed 500 characters.")
+
+        if upper_reason == "OTHER" and not clean_description:
+            raise ValueError("An explanation description is required when reason is 'Other'.")
+
+        report, created = UserReport.objects.update_or_create(
+            reporter=reporter,
+            reported_message=target_message,
+            status="PENDING",
+            defaults={
+                "reported_user": target_message.sender,
+                "reason": upper_reason,
+                "description": clean_description,
+            },
+        )
+
+        return {
+            "id": report.id,
+            "reporter_id": report.reporter_id,
+            "reported_user_id": report.reported_user_id,
+            "reported_message_id": report.reported_message_id,
+            "reason": report.reason,
+            "description": report.description,
+            "status": report.status,
+            "created_at": report.created_at.isoformat().replace("+00:00", "Z"),
+        }
+
     def toggle_pin_chat(self, user: User, target_user_id: int) -> bool:
         target_user = self.validate_target_user(target_user_id, user.id)
         pin_obj, created = UserChatPin.objects.get_or_create(user=user, partner=target_user)

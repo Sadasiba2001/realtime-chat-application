@@ -15,6 +15,7 @@ from chatting_service.controller import (
     block_user_view,
     unblock_user_view,
     report_user_view,
+    report_message_view,
 )
 
 urlpatterns = [
@@ -34,5 +35,6 @@ urlpatterns = [
     path("messages/<int:message_id>/for-me/", delete_message_view, name="delete_message_for_me"),
     path("messages/<int:message_id>/reactions/", toggle_reaction_view, name="toggle_reaction"),
     path("messages/<int:message_id>/forward/", forward_message_view, name="forward_message"),
+    path("messages/<int:message_id>/report/", report_message_view, name="report_message"),
     path("messages/<int:message_id>/", edit_message_view, name="edit_message_alt"),
 ]

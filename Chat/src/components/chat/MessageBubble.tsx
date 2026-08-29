@@ -12,6 +12,7 @@ import {
   Pencil,
   User as UserIcon,
   Share2,
+  Flag,
 } from 'lucide-react';
 import type { Message, User } from '../../types/chat.types';
 import { useChat } from '../../context/ChatContext';
@@ -285,6 +286,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 title="Edit"
               >
                 <Pencil className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {!isOutgoing && !message.isDeleted && (
+              <button
+                onClick={() => {
+                  openModal('report_message', {
+                    messageId: message.id,
+                    messageText: message.text,
+                    senderName: displayName,
+                  });
+                  setShowActions(false);
+                }}
+                className="p-1 text-slate-500 hover:text-amber-500 dark:text-slate-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                title="Report Message"
+              >
+                <Flag className="w-3.5 h-3.5" />
               </button>
             )}
             <div className="relative">

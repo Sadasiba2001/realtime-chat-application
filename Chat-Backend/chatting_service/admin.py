@@ -25,7 +25,7 @@ class MessageAdmin(admin.ModelAdmin):
 
 @admin.register(UserReport)
 class UserReportAdmin(admin.ModelAdmin):
-    list_display = ("id", "reporter", "reported_user", "reason", "status", "created_at")
+    list_display = ("id", "reporter", "reported_user", "reported_message", "reason", "status", "created_at")
     list_filter = ("reason", "status", "created_at")
     search_fields = (
         "reporter__email",
@@ -34,5 +34,6 @@ class UserReportAdmin(admin.ModelAdmin):
         "reported_user__username",
         "description",
     )
+    raw_id_fields = ("reported_message",)
     readonly_fields = ("created_at", "updated_at")
     ordering = ("-created_at",)

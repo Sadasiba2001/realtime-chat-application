@@ -289,6 +289,18 @@ class ChatService {
     return true;
   }
 
+  async reportMessage(messageId: string, reason: string, description: string = ''): Promise<boolean> {
+    const numericId = parseInt(messageId, 10);
+    if (isNaN(numericId)) {
+      throw new Error('Invalid message ID.');
+    }
+    await apiClient.post(`/api/v1/chat/messages/${numericId}/report/`, {
+      reason,
+      description,
+    });
+    return true;
+  }
+
   async markAsRead(id: string): Promise<void> {
     this.conversations = this.conversations.map((c) =>
       c.id === id ? { ...c, unreadCount: 0 } : c

@@ -8,6 +8,7 @@ from asgiref.sync import async_to_sync
 
 from django.contrib.auth import get_user_model
 from chatting_service.services import MessageService
+from chatting_service.models import Message
 from authentication_service.throttles import HistoryRateThrottle, SearchRateThrottle
 
 User = get_user_model()
@@ -488,5 +489,30 @@ def report_user_view(request, target_user_id):
         )
     except User.DoesNotExist as exc:
         return Response({"status": False, "message": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+    except ValueError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def report_message_view(request, message_id):
+    try:
+        reason = request.data.get("reason", "")
+        description = request.data.get("description", "")
+        service = MessageService()
+        report_data = service.report_message(
+            reporter=request.user,
+            message_id=message_id,
+            reason=reason,
+            description=description,
+        )
+        return Response(
+            {"status": True, "message": "Message reported successfully.", "data": report_data},
+            status=status.HTTP_201_CREATED,
+        )
+    except Message.DoesNotExist as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+    except PermissionError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_403_FORBIDDEN)
     except ValueError as exc:
         return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)

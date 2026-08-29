@@ -94,6 +94,7 @@ interface ChatContextType {
   blockUser: (targetUserId: string) => Promise<void>;
   unblockUser: (targetUserId: string) => Promise<void>;
   reportUser: (targetUserId: string, reason: string, description?: string) => Promise<void>;
+  reportMessage: (messageId: string, reason: string, description?: string) => Promise<void>;
   createNewChat: (contact: User) => Promise<void>;
   createNewGroup: (name: string, members: User[]) => Promise<void>;
   updateUserProfile: (updates: Partial<User>) => Promise<void>;
@@ -1316,6 +1317,15 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
+  const reportMessage = async (messageId: string, reason: string, description?: string) => {
+    await chatService.reportMessage(messageId, reason, description);
+    setActiveNotification({
+      id: `note_${Date.now()}`,
+      type: 'info',
+      message: 'Message reported successfully.',
+    });
+  };
+
   const createNewChat = async (contact: User) => {
     const myIdStr = String(currentUser.id).trim();
     const contactIdStr = String(contact.id).trim();
@@ -1444,6 +1454,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         blockUser,
         unblockUser,
         reportUser,
+        reportMessage,
         createNewChat,
         createNewGroup,
         updateUserProfile,

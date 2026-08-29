@@ -13,6 +13,7 @@ import { ProfileModal } from './components/modals/ProfileModal';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { MuteModal } from './components/chat/MuteModal';
 import { ReportModal } from './components/chat/ReportModal';
+import { ReportMessageModal } from './components/chat/ReportMessageModal';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
                 <SettingsModal />
                 <MuteModal />
                 <ReportModal />
+                <ReportMessageModal />
               </div>
             </VideoCallProvider>
           </VoiceCallProvider>

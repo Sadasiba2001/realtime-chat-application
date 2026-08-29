@@ -223,6 +223,13 @@ class UserReport(models.Model):
         on_delete=models.CASCADE,
         related_name="reports_received",
     )
+    reported_message = models.ForeignKey(
+        "Message",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="message_reports",
+    )
     reason = models.CharField(max_length=50, choices=REASON_CHOICES)
     description = models.TextField(blank=True, default="")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDING")
