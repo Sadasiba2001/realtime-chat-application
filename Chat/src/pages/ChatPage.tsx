@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useChat } from '../context/ChatContext';
 import { Sidebar } from '../components/sidebar/Sidebar';
 import { ChatList } from '../components/chat/ChatList';
@@ -13,12 +13,49 @@ import { SettingsView } from '../components/settings/SettingsView';
 import { NotificationToast } from '../components/common/NotificationToast';
 
 export const ChatPage: React.FC = () => {
-  const { activeConversation, isMobileView, mobileShowChat, activeTab, activeNotification, dismissNotification, selectConversation } = useChat();
+  const {
+    activeConversation,
+    activeMessages,
+    isMobileView,
+    mobileShowChat,
+    activeTab,
+    activeNotification,
+    dismissNotification,
+    selectConversation,
+    inChatSearchQuery,
+  } = useChat();
   const [showInChatSearch, setShowInChatSearch] = useState(false);
   const [showContactInfo, setShowContactInfo] = useState(false);
 
   // In-chat search match navigation
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+
+  const matchingMessageIds = useMemo(() => {
+    if (!inChatSearchQuery.trim()) return [];
+    const q = inChatSearchQuery.trim().toLowerCase();
+    return activeMessages
+      .filter((m) => !m.isDeleted && m.text.toLowerCase().includes(q))
+      .map((m) => m.id);
+  }, [activeMessages, inChatSearchQuery]);
+
+  useEffect(() => {
+    setCurrentMatchIndex(0);
+  }, [inChatSearchQuery]);
+
+  const handleNextMatch = () => {
+    if (matchingMessageIds.length === 0) return;
+    setCurrentMatchIndex((prev) => (prev + 1) % matchingMessageIds.length);
+  };
+
+  const handlePrevMatch = () => {
+    if (matchingMessageIds.length === 0) return;
+    setCurrentMatchIndex((prev) => (prev - 1 + matchingMessageIds.length) % matchingMessageIds.length);
+  };
+
+  const inChatSearchMatchId =
+    matchingMessageIds.length > 0
+      ? matchingMessageIds[Math.abs(currentMatchIndex) % matchingMessageIds.length]
+      : undefined;
 
   return (
     <div className="h-screen w-screen flex p-0 md:p-2.5 lg:p-3 gap-0 md:gap-2.5 lg:gap-3 bg-[#eef2f6] dark:bg-[#0b0f19] overflow-hidden select-none">
@@ -57,16 +94,16 @@ export const ChatPage: React.FC = () => {
                   {showInChatSearch && (
                     <InChatSearch
                       onClose={() => setShowInChatSearch(false)}
-                      matchCount={0}
-                      currentMatchIndex={currentMatchIndex}
-                      onNext={() => setCurrentMatchIndex((prev) => prev + 1)}
-                      onPrev={() => setCurrentMatchIndex((prev) => Math.max(0, prev - 1))}
+                      matchCount={matchingMessageIds.length}
+                      currentMatchIndex={matchingMessageIds.length > 0 ? Math.abs(currentMatchIndex) % matchingMessageIds.length : 0}
+                      onNext={handleNextMatch}
+                      onPrev={handlePrevMatch}
                     />
                   )}
 
                   <div className="flex-1 flex overflow-hidden relative">
                     <div className="flex-1 flex flex-col min-w-0">
-                      <MessageArea onToggleSearch={() => setShowInChatSearch(true)} />
+                      <MessageArea onToggleSearch={() => setShowInChatSearch(true)} inChatSearchMatchId={inChatSearchMatchId} />
                       <MessageComposer />
                     </div>
 

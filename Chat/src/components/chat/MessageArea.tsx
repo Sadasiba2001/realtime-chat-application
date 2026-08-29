@@ -34,6 +34,15 @@ export const MessageArea: React.FC<MessageAreaProps> = ({
     prevMessagesLengthRef.current = activeMessages.length;
   }, [activeMessages.length, activeConversation?.id]);
 
+  useEffect(() => {
+    if (inChatSearchMatchId) {
+      const targetEl = document.getElementById(`msg-${inChatSearchMatchId}`);
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [inChatSearchMatchId]);
+
   if (!activeConversation) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center select-none bg-[#eef2f6]/40 dark:bg-[#0b0f19]/40">

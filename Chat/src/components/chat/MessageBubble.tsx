@@ -45,7 +45,28 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     setReplyTo,
     setEditingMessage,
     openModal,
+    inChatSearchQuery,
   } = useChat();
+
+  const renderHighlightedText = (text: string, query?: string) => {
+    if (!query || !query.trim() || !text) return text;
+    const q = query.trim();
+    const escapedQuery = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
+
+    return parts.map((part, index) =>
+      part.toLowerCase() === q.toLowerCase() ? (
+        <mark
+          key={index}
+          className="bg-amber-300 dark:bg-amber-400 text-slate-950 rounded-xs px-0.5 font-bold shadow-xs"
+        >
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  };
 
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -65,7 +86,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       id={`msg-${message.id}`}
       className={`group relative flex flex-col my-1 max-w-[85%] sm:max-w-[70%] select-none ${
         isOutgoing ? 'ml-auto items-end' : 'mr-auto items-start'
-      } ${isMatch ? 'ring-2 ring-violet-400 rounded-2xl p-0.5' : ''}`}
+      } ${isMatch ? 'ring-4 ring-amber-400 dark:ring-amber-500 rounded-2xl shadow-xl scale-[1.02] transition-all' : ''}`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => {
         if (!showEmojiPicker && !showDeleteMenu) {
@@ -127,7 +148,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         {message.isDeleted ? (
           <p className="italic text-xs opacity-75">This message was deleted</p>
         ) : (
-          <p className="whitespace-pre-wrap break-words leading-relaxed">{message.text}</p>
+          <p className="whitespace-pre-wrap break-words leading-relaxed">
+            {renderHighlightedText(message.text, inChatSearchQuery)}
+          </p>
         )}
 
         {/* Attachments rendering */}

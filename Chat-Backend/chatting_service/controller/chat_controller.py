@@ -7,7 +7,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 from chatting_service.services import MessageService
-from authentication_service.throttles import HistoryRateThrottle
+from authentication_service.throttles import HistoryRateThrottle, SearchRateThrottle
 
 
 class ConversationPagination(PageNumberPagination):
@@ -350,3 +350,26 @@ def forward_message_view(request, message_id):
             {"status": False, "message": err_msg},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@throttle_classes([SearchRateThrottle])
+def search_messages_view(request):
+    query = request.query_params.get("q", "").strip()
+    if not query:
+        return Response(
+            {"status": False, "message": "Search query is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        page = int(request.query_params.get("page", 1))
+        page_size = int(request.query_params.get("page_size", 20))
+    except (ValueError, TypeError):
+        page = 1
+        page_size = 20
+
+    message_service = MessageService()
+    result = message_service.search_messages(user=request.user, query=query, page=page, page_size=page_size)
+    return Response({"status": True, "message": "Search successful.", "data": result}, status=status.HTTP_200_OK)

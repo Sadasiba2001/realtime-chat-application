@@ -326,5 +326,31 @@ class MessageService:
             "updated_at": message.updated_at.isoformat().replace("+00:00", "Z") if getattr(message, "updated_at", None) else None,
         }
 
+    def search_messages(self, user: User, query: str, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("Search query cannot be empty.")
+
+        cleaned_query = query.strip()
+        page = max(1, page)
+        page_size = min(max(1, page_size), self.MAX_PAGE_SIZE)
+        offset = (page - 1) * page_size
+
+        total_count, messages = self.message_repository.search_user_messages(
+            user_id=user.id,
+            query=cleaned_query,
+            offset=offset,
+            limit=page_size,
+        )
+
+        formatted = [self.format_message(msg) for msg in messages]
+
+        return {
+            "query": cleaned_query,
+            "count": total_count,
+            "page": page,
+            "page_size": page_size,
+            "results": formatted,
+        }
+
 
 

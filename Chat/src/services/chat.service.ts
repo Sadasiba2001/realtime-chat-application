@@ -189,6 +189,19 @@ class ChatService {
     );
     return simulateNetworkDelay(undefined);
   }
+
+  async searchMessages(query: string, page: number = 1, pageSize: number = 20) {
+    if (!query.trim()) return { count: 0, results: [] };
+    try {
+      const response = await apiClient.get(
+        `/api/v1/chat/messages/search/?q=${encodeURIComponent(query.trim())}&page=${page}&page_size=${pageSize}`
+      );
+      return response.data?.data || { count: 0, results: [] };
+    } catch (err) {
+      console.error('[ChatService] Error searching messages:', err);
+      return { count: 0, results: [] };
+    }
+  }
 }
 
 export const chatService = new ChatService();

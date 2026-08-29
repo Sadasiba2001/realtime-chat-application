@@ -291,5 +291,19 @@ class MessageRepository:
             .distinct()
         )
 
+    @staticmethod
+    def search_user_messages(user_id: int, query: str, offset: int = 0, limit: int = 50) -> Tuple[int, QuerySet[Message]]:
+        deleted_ids = UserMessageDeletion.objects.filter(user_id=user_id).values_list("message_id", flat=True)
+        qs = (
+            Message.objects.filter(
+                (Q(sender_id=user_id) | Q(receiver_id=user_id)) & Q(content__icontains=query)
+            )
+            .exclude(id__in=deleted_ids)
+            .select_related("sender", "receiver", "reply_to")
+            .order_by("-created_at")
+        )
+        total_count = qs.count()
+        return total_count, qs[offset : offset + limit]
+
 
 
