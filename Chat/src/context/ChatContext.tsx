@@ -642,19 +642,51 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         setConversations((prev) =>
           prev.map((c) => {
-            if (c.lastMessage && String(c.lastMessage.id) === msgIdStr) {
-              return {
-                ...c,
-                lastMessage: {
-                  ...c.lastMessage,
-                  isDeleted: true,
-                  text: 'This message was deleted',
-                },
-              };
+            if (c.lastMessage) {
+              const lmStr = String(c.lastMessage.id);
+              const lmMatch = lmStr.match(/\d+/);
+              const targetMatch = msgIdStr.match(/\d+/);
+              const isMatch = lmStr === msgIdStr || (lmMatch && targetMatch && lmMatch[0] === targetMatch[0]);
+              if (isMatch) {
+                return {
+                  ...c,
+                  lastMessage: {
+                    ...c.lastMessage,
+                    isDeleted: true,
+                    text: 'This message was deleted',
+                  },
+                };
+              }
             }
             return c;
           })
         );
+      } else if (event.delete_type === 'me') {
+        storage.addDeletedForMe(msgIdStr);
+
+        setMessagesMap((prev) => {
+          let anyChanged = false;
+          const nextState: Record<string, Message[]> = {};
+
+          for (const [cId, list] of Object.entries(prev)) {
+            const targetMatch = msgIdStr.match(/\d+/);
+            const filteredList = list.filter((m) => {
+              const mStr = String(m.id);
+              const mMatch = mStr.match(/\d+/);
+              const isMatch = mStr === msgIdStr || (mMatch && targetMatch && mMatch[0] === targetMatch[0]);
+              return !isMatch;
+            });
+
+            if (filteredList.length !== list.length) {
+              anyChanged = true;
+              nextState[cId] = filteredList;
+            } else {
+              nextState[cId] = list;
+            }
+          }
+
+          return anyChanged ? nextState : prev;
+        });
       }
     });
 
@@ -973,14 +1005,18 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const deleteMessage = async (messageId: string, deleteType: 'me' | 'everyone' = 'everyone') => {
     if (!activeConversationId) return;
 
+    const activeConv = conversations.find((c) => c.id === activeConversationId);
+    const targetUserId = activeConv
+      ? getTargetUserIdFromConversation(currentUser.id, activeConv.participantIds)
+      : null;
+
     if (deleteType === 'me') {
       storage.addDeletedForMe(messageId);
+      if (targetUserId) {
+        webSocketService.sendDeleteMessage(targetUserId, messageId, 'me');
+      }
     } else {
       storage.addDeletedForEveryone(messageId);
-      const activeConv = conversations.find((c) => c.id === activeConversationId);
-      const targetUserId = activeConv
-        ? getTargetUserIdFromConversation(currentUser.id, activeConv.participantIds)
-        : null;
       if (targetUserId) {
         webSocketService.sendDeleteMessage(targetUserId, messageId, 'everyone');
       }

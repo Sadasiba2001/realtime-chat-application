@@ -638,6 +638,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                 user2_id=target_user_id,
                 page=page,
                 page_size=page_size,
+                requesting_user_id=self.user.id,
             )
             await self.send_json({
                 "type": "history",
@@ -691,9 +692,24 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             return
 
         if delete_type == "everyone":
-            updated_info = await database_sync_to_async(
-                self.message_service.delete_message_for_everyone
-            )(message_id=message_id, user_id=self.user.id)
+            try:
+                updated_info = await database_sync_to_async(
+                    self.message_service.delete_message_for_everyone
+                )(message_id=message_id, user_id=self.user.id)
+            except PermissionError as exc:
+                await self.send_json({
+                    "type": "error",
+                    "code": "FORBIDDEN",
+                    "message": str(exc),
+                })
+                return
+            except ValueError as exc:
+                await self.send_json({
+                    "type": "error",
+                    "code": "INVALID_MESSAGE",
+                    "message": str(exc),
+                })
+                return
 
             if updated_info:
                 partner_id = updated_info.get("partner_id")
@@ -718,6 +734,40 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                             "data": event_data,
                         },
                     )
+        elif delete_type == "me":
+            try:
+                updated_info = await database_sync_to_async(
+                    self.message_service.delete_message_for_me
+                )(message_id=message_id, user_id=self.user.id)
+            except PermissionError as exc:
+                await self.send_json({
+                    "type": "error",
+                    "code": "FORBIDDEN",
+                    "message": str(exc),
+                })
+                return
+            except ValueError as exc:
+                await self.send_json({
+                    "type": "error",
+                    "code": "INVALID_MESSAGE",
+                    "message": str(exc),
+                })
+                return
+
+            if updated_info:
+                event_data = {
+                    "type": "message_deleted",
+                    "message_id": message_id,
+                    "delete_type": "me",
+                    "sender_id": self.user.id,
+                }
+                await self.channel_layer.group_send(
+                    f"user_{self.user.id}",
+                    {
+                        "type": "message.delete.event",
+                        "data": event_data,
+                    },
+                )
 
     async def message_delete_event(self, event: dict):
         await self.send_json(event["data"])

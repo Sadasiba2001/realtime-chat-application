@@ -121,3 +121,89 @@ def edit_message_view(request, message_id):
         },
         status=status.HTTP_200_OK,
     )
+
+
+@api_view(["DELETE", "POST"])
+@permission_classes([IsAuthenticated])
+def delete_message_view(request, message_id):
+    delete_type = request.data.get("delete_type") or request.query_params.get("delete_type") or "everyone"
+    message_service = MessageService()
+
+    try:
+        if delete_type == "me":
+            res = message_service.delete_message_for_me(message_id=message_id, user_id=request.user.id)
+            event_data = {
+                "type": "message_deleted",
+                "message_id": message_id,
+                "delete_type": "me",
+                "sender_id": request.user.id,
+            }
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                try:
+                    async_to_sync(channel_layer.group_send)(
+                        f"user_{request.user.id}",
+                        {
+                            "type": "message.delete.event",
+                            "data": event_data,
+                        },
+                    )
+                except Exception:
+                    pass
+            return Response(
+                {"status": True, "message": "Message deleted for me successfully.", "data": res},
+                status=status.HTTP_200_OK,
+            )
+        else:
+            res = message_service.delete_message_for_everyone(message_id=message_id, user_id=request.user.id)
+            partner_id = res.get("partner_id")
+            event_data = {
+                "type": "message_deleted",
+                "message_id": message_id,
+                "delete_type": "everyone",
+                "sender_id": request.user.id,
+            }
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                try:
+                    async_to_sync(channel_layer.group_send)(
+                        f"user_{request.user.id}",
+                        {
+                            "type": "message.delete.event",
+                            "data": event_data,
+                        },
+                    )
+                    if partner_id and partner_id != request.user.id:
+                        async_to_sync(channel_layer.group_send)(
+                            f"user_{partner_id}",
+                            {
+                                "type": "message.delete.event",
+                                "data": event_data,
+                            },
+                        )
+                except Exception:
+                    pass
+            return Response(
+                {"status": True, "message": "Message deleted for everyone successfully.", "data": res},
+                status=status.HTTP_200_OK,
+            )
+    except PermissionError as exc:
+        return Response(
+            {"status": False, "message": str(exc)},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    except ValueError as exc:
+        err_msg = str(exc)
+        if "not found" in err_msg.lower():
+            return Response(
+                {"status": False, "message": err_msg},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(
+            {"status": False, "message": err_msg},
+            status=status.HTTP_400_BAD_REQUEST,
+        )

@@ -1,7 +1,7 @@
 from typing import Optional, List, Tuple
 from django.contrib.auth import get_user_model
 from django.db.models import BigIntegerField, Case, CharField, F, OuterRef, Q, QuerySet, Subquery, When
-from chatting_service.models import Message, MessageStatus
+from chatting_service.models import Message, MessageStatus, UserMessageDeletion
 
 User = get_user_model()
 
@@ -27,22 +27,33 @@ class MessageRepository:
         user2_id: int,
         offset: int = 0,
         limit: int = 50,
+        requesting_user_id: Optional[int] = None,
     ) -> QuerySet[Message]:
+        qs = Message.objects.filter(
+            (Q(sender_id=user1_id) & Q(receiver_id=user2_id))
+            | (Q(sender_id=user2_id) & Q(receiver_id=user1_id))
+        )
+        filter_user_id = requesting_user_id if requesting_user_id is not None else user1_id
+        if filter_user_id:
+            deleted_ids = UserMessageDeletion.objects.filter(user_id=filter_user_id).values_list("message_id", flat=True)
+            qs = qs.exclude(id__in=deleted_ids)
+
         return (
-            Message.objects.filter(
-                (Q(sender_id=user1_id) & Q(receiver_id=user2_id))
-                | (Q(sender_id=user2_id) & Q(receiver_id=user1_id))
-            )
-            .select_related("sender", "receiver")
+            qs.select_related("sender", "receiver")
             .order_by("created_at")[offset : offset + limit]
         )
 
     @staticmethod
-    def get_messages_count_between_users(user1_id: int, user2_id: int) -> int:
-        return Message.objects.filter(
+    def get_messages_count_between_users(user1_id: int, user2_id: int, requesting_user_id: Optional[int] = None) -> int:
+        qs = Message.objects.filter(
             (Q(sender_id=user1_id) & Q(receiver_id=user2_id))
             | (Q(sender_id=user2_id) & Q(receiver_id=user1_id))
-        ).count()
+        )
+        filter_user_id = requesting_user_id if requesting_user_id is not None else user1_id
+        if filter_user_id:
+            deleted_ids = UserMessageDeletion.objects.filter(user_id=filter_user_id).values_list("message_id", flat=True)
+            qs = qs.exclude(id__in=deleted_ids)
+        return qs.count()
 
     @staticmethod
     def get_message_by_id(message_id: int) -> Optional[Message]:
@@ -57,7 +68,7 @@ class MessageRepository:
             msg = Message.objects.select_related("sender", "receiver").get(id=message_id)
             if msg.sender_id != user_id:
                 raise PermissionError("You do not have permission to edit this message.")
-            if msg.content == "This message was deleted":
+            if msg.is_deleted or msg.content == "This message was deleted":
                 raise ValueError("Cannot edit a deleted message.")
             if msg.content != new_content:
                 msg.content = new_content
@@ -70,11 +81,36 @@ class MessageRepository:
     @staticmethod
     def delete_message_for_everyone(message_id: int, user_id: int) -> Optional[dict]:
         try:
-            msg = Message.objects.get(id=message_id, sender_id=user_id)
+            msg = Message.objects.select_related("sender", "receiver").get(id=message_id)
+            if msg.sender_id != user_id:
+                raise PermissionError("You do not have permission to delete this message for everyone.")
             msg.content = "This message was deleted"
-            msg.save(update_fields=["content"])
+            msg.is_deleted = True
+            msg.save(update_fields=["content", "is_deleted", "updated_at"])
             partner_id = msg.receiver_id if msg.sender_id == user_id else msg.sender_id
-            return {"message_id": msg.id, "partner_id": partner_id}
+            return {
+                "message_id": msg.id,
+                "sender_id": msg.sender_id,
+                "receiver_id": msg.receiver_id,
+                "partner_id": partner_id,
+            }
+        except Message.DoesNotExist:
+            return None
+
+    @staticmethod
+    def delete_message_for_me(message_id: int, user_id: int) -> Optional[dict]:
+        try:
+            msg = Message.objects.select_related("sender", "receiver").get(id=message_id)
+            if msg.sender_id != user_id and msg.receiver_id != user_id:
+                raise PermissionError("You are not a participant in this conversation.")
+            UserMessageDeletion.objects.get_or_create(user_id=user_id, message_id=msg.id)
+            partner_id = msg.receiver_id if msg.sender_id == user_id else msg.sender_id
+            return {
+                "message_id": msg.id,
+                "sender_id": msg.sender_id,
+                "receiver_id": msg.receiver_id,
+                "partner_id": partner_id,
+            }
         except Message.DoesNotExist:
             return None
 

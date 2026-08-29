@@ -30,6 +30,7 @@ class Message(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_edited = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
 
     class Meta:
         db_table = "messages"
@@ -42,4 +43,25 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Message {self.id} [{self.status}] from {self.sender_id} to {self.receiver_id}: {self.content[:30]}"
+
+
+class UserMessageDeletion(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="message_deletions",
+    )
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name="user_deletions",
+    )
+    deleted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "user_message_deletions"
+        unique_together = ("user", "message")
+
+    def __str__(self):
+        return f"User {self.user_id} deleted message {self.message_id} for self"
 

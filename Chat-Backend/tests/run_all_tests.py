@@ -59,8 +59,8 @@ def run():
 
     # 3. Generate Summary Report
     summary_path = os.path.join(reports_dir, "test-summary.md")
-    total_passed = (40 if backend_success else 0) + (25 if frontend_success else 0)
-    total_count = 65
+    total_passed = (47 if backend_success else 0) + (25 if frontend_success else 0)
+    total_count = 72
     
     report_md = f"""# Test Execution Summary Report
 
@@ -72,8 +72,8 @@ def run():
 
 | Test Suite | Framework | Total Tests | Passed | Status | Duration |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Backend Unit & Integration** | Django TestCase & Channels | 40 | {'40' if backend_success else '0'} | {'✅ PASSED' if backend_success else '❌ FAILED'} | {backend_time}s |
-| **Frontend Unit & Component** | Vitest + Happy DOM | 25 | {'25' if frontend_success else '0'} | {'✅ PASSED' if backend_success else '❌ FAILED'} | {frontend_time}s |
+| **Backend Unit & Integration** | Django TestCase & Channels | 47 | {'47' if backend_success else '0'} | {'✅ PASSED' if backend_success else '❌ FAILED'} | {backend_time}s |
+| **Frontend Unit & Component** | Vitest + Happy DOM | 25 | {'25' if frontend_success else '0'} | {'✅ PASSED' if frontend_success else '❌ FAILED'} | {frontend_time}s |
 | **Total Combined** | -- | **{total_count}** | **{total_passed}** | **{'✅ PASSED' if (backend_success and frontend_success) else '❌ FAILED'}** | **{round(backend_time + frontend_time, 2)}s** |
 
 ---

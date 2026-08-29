@@ -68,6 +68,7 @@ class MessageService:
         user2_id: int,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
+        requesting_user_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         try:
             page = int(page)
@@ -85,9 +86,11 @@ class MessageService:
         except (ValueError, TypeError):
             page_size = self.DEFAULT_PAGE_SIZE
 
+        filter_user_id = requesting_user_id if requesting_user_id is not None else user1_id
         total_count = self.message_repository.get_messages_count_between_users(
             user1_id=user1_id,
             user2_id=user2_id,
+            requesting_user_id=filter_user_id,
         )
 
         offset = (page - 1) * page_size
@@ -96,6 +99,7 @@ class MessageService:
             user2_id=user2_id,
             offset=offset,
             limit=page_size,
+            requesting_user_id=filter_user_id,
         )
 
         results = [self.format_message(msg) for msg in messages]
@@ -177,8 +181,17 @@ class MessageService:
         messages = self.message_repository.get_pending_sent_messages_for_user(user_id=user_id)
         return [self.format_message(msg) for msg in messages]
 
-    def delete_message_for_everyone(self, message_id: int, user_id: int) -> Optional[Dict[str, Any]]:
-        return self.message_repository.delete_message_for_everyone(message_id=message_id, user_id=user_id)
+    def delete_message_for_everyone(self, message_id: int, user_id: int) -> Dict[str, Any]:
+        res = self.message_repository.delete_message_for_everyone(message_id=message_id, user_id=user_id)
+        if res is None:
+            raise ValueError("Message not found.")
+        return res
+
+    def delete_message_for_me(self, message_id: int, user_id: int) -> Dict[str, Any]:
+        res = self.message_repository.delete_message_for_me(message_id=message_id, user_id=user_id)
+        if res is None:
+            raise ValueError("Message not found.")
+        return res
 
     def edit_message(self, message_id: int, user_id: int, content: str) -> Dict[str, Any]:
         if not isinstance(content, str) or not content.strip():
@@ -208,6 +221,7 @@ class MessageService:
             "content": message.content,
             "status": message.status,
             "is_edited": getattr(message, "is_edited", False),
+            "is_deleted": getattr(message, "is_deleted", False) or (message.content == "This message was deleted"),
             "created_at": message.created_at.isoformat().replace("+00:00", "Z"),
             "updated_at": message.updated_at.isoformat().replace("+00:00", "Z") if getattr(message, "updated_at", None) else None,
         }
