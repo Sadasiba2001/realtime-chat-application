@@ -13,7 +13,9 @@ import type {
   CallType,
   CallLog,
   StatusItem,
+  FilterCategory,
 } from '../types/chat.types';
+import type { ToastNotificationData } from '../components/common/NotificationToast';
 
 import type {
   BackendMessagePayload,
@@ -24,6 +26,7 @@ import type {
   WSProfileUpdateEvent,
   WSPresenceEvent,
   WSSocketStatus,
+  WSMessageReactionEvent,
 } from '../types/websocket.types';
 
 
@@ -80,6 +83,8 @@ interface ChatContextType {
   addReaction: (messageId: string, emoji: string) => Promise<void>;
   forwardMessage: (messageId: string, targetUserIds: string | string[]) => Promise<void>;
   sendTyping: (isTyping: boolean) => void;
+  activeNotification: ToastNotificationData | null;
+  dismissNotification: () => void;
   setReplyTo: (reply: ReplyPreview | null) => void;
   setEditingMessage: (message: Message | null) => void;
   togglePin: (id: string) => Promise<void>;
@@ -157,6 +162,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
   const [replyingToMessage, setReplyingToMessage] = useState<ReplyPreview | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [activeNotification, setActiveNotification] = useState<ToastNotificationData | null>(null);
   const [activeCall, setActiveCall] = useState<ActiveCallState | null>(null);
   const [callLogs] = useState<CallLog[]>([]);
   const [statuses] = useState<StatusItem[]>([]);
@@ -309,6 +315,17 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (isCurrentActive) {
           webSocketService.sendReadReceipt(payload.sender_id, [payload.id]);
           newMsg.status = 'read';
+        } else {
+          // Trigger real-time notification toast for incoming message when chat not active
+          const senderUser = allUsersRef.current.find((u) => String(u.id) === String(payload.sender_id));
+          setActiveNotification({
+            id: `msg_${payload.id}_${Date.now()}`,
+            type: 'new_message',
+            title: senderUser?.name || payload.sender_name || `User ${payload.sender_id}`,
+            body: payload.content,
+            avatar: senderUser?.avatar,
+            conversationId: convId,
+          });
         }
       }
 
@@ -800,6 +817,20 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (isMatch) {
               listChanged = true;
               anyChanged = true;
+
+              // If someone else reacted to my message, trigger real-time notification
+              if (String(m.senderId) === String(currentUserRef.current.id) && payload.user_id !== currentUserRef.current.id) {
+                const reacterName = payload.user_name || `User ${payload.user_id}`;
+                const emoji = payload.emoji || payload.reactions?.[0]?.emoji || '❤️';
+                setActiveNotification({
+                  id: `rxn_${payload.message_id}_${Date.now()}`,
+                  type: 'reaction',
+                  title: `${reacterName} reacted ${emoji}`,
+                  body: `on your message: "${m.text}"`,
+                  conversationId: m.conversationId,
+                });
+              }
+
               return {
                 ...m,
                 reactions: newReactions,
@@ -1341,6 +1372,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addReaction,
         forwardMessage,
         sendTyping,
+        activeNotification,
+        dismissNotification: () => setActiveNotification(null),
         setReplyTo: setReplyingToMessage,
         setEditingMessage,
         togglePin,

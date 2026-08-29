@@ -10,9 +10,10 @@ import { ContactInfoDrawer } from '../components/chat/ContactInfoDrawer';
 import { StatusView } from '../components/status/StatusView';
 import { CallsView } from '../components/calls/CallsView';
 import { SettingsView } from '../components/settings/SettingsView';
+import { NotificationToast } from '../components/common/NotificationToast';
 
 export const ChatPage: React.FC = () => {
-  const { activeConversation, isMobileView, mobileShowChat, activeTab } = useChat();
+  const { activeConversation, isMobileView, mobileShowChat, activeTab, activeNotification, dismissNotification, selectConversation } = useChat();
   const [showInChatSearch, setShowInChatSearch] = useState(false);
   const [showContactInfo, setShowContactInfo] = useState(false);
 
@@ -82,6 +83,15 @@ export const ChatPage: React.FC = () => {
           )}
         </>
       )}
+
+      {/* Real-time Notification Toast Banner */}
+      <NotificationToast
+        notification={activeNotification}
+        onClose={dismissNotification}
+        onClickNotification={(convId) => {
+          if (convId) selectConversation(convId);
+        }}
+      />
     </div>
   );
 };
