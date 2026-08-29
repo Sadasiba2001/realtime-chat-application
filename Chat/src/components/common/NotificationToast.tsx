@@ -63,6 +63,9 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
           <img
             src={notification.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(notification.title)}`}
             alt={notification.title}
+            crossOrigin="anonymous"
+            referrerPolicy="no-referrer"
+            decoding="async"
             className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-white/10"
           />
           <div className="absolute -bottom-1 -right-1 p-1 bg-white dark:bg-slate-900 rounded-full shadow-xs border border-slate-100 dark:border-slate-800">

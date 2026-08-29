@@ -102,6 +102,9 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({ message, isOpen, onC
                     <img
                       src={c.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`}
                       alt={displayName}
+                      crossOrigin="anonymous"
+                      referrerPolicy="no-referrer"
+                      decoding="async"
                       className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-white/10"
                     />
                     <div className="min-w-0">
