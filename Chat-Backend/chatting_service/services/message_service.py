@@ -249,6 +249,67 @@ class MessageService:
                 "is_deleted": parent_deleted,
             }
 
+    def forward_message(self, user: User, message_id: int, target_user_ids: List[int]) -> List[Dict[str, Any]]:
+        orig_msg = Message.objects.select_related("sender", "receiver").filter(id=message_id).first()
+        if not orig_msg:
+            raise ValueError("Original message not found.")
+
+        if user.id != orig_msg.sender_id and user.id != orig_msg.receiver_id:
+            raise PermissionError("You do not have permission to forward this message.")
+
+        if getattr(orig_msg, "is_deleted", False) or orig_msg.content == "This message was deleted":
+            raise ValueError("Cannot forward a deleted message.")
+
+        if orig_msg.is_forwarded and orig_msg.forwarded_from_name:
+            original_sender_name = orig_msg.forwarded_from_name
+        else:
+            original_sender_name = orig_msg.sender.username or orig_msg.sender.first_name or f"User {orig_msg.sender_id}"
+
+        forwarded_messages = []
+        for target_id in target_user_ids:
+            target_user = self.validate_target_user(target_id, user.id)
+            new_msg = self.message_repository.create_message(
+                sender=user,
+                receiver=target_user,
+                content=orig_msg.content,
+                is_forwarded=True,
+                forwarded_from_name=original_sender_name,
+            )
+            forwarded_messages.append(self.format_message(new_msg))
+
+        return forwarded_messages
+
+    @staticmethod
+    def format_message(message: Message) -> Dict[str, Any]:
+        is_deleted = getattr(message, "is_deleted", False) or (message.content == "This message was deleted")
+        reactions_data = []
+        if not is_deleted and hasattr(message, "reactions"):
+            try:
+                reactions_data = [
+                    {
+                        "id": r.id,
+                        "emoji": r.emoji,
+                        "user_id": r.user_id,
+                        "user_name": r.user.username or r.user.first_name,
+                    }
+                    for r in message.reactions.all()
+                ]
+            except Exception:
+                reactions_data = []
+
+        reply_to_data = None
+        if getattr(message, "reply_to", None):
+            parent = message.reply_to
+            parent_deleted = getattr(parent, "is_deleted", False) or (parent.content == "This message was deleted")
+            sender_name = getattr(parent.sender, "username", None) or getattr(parent.sender, "first_name", None) or f"User {parent.sender_id}"
+            reply_to_data = {
+                "id": parent.id,
+                "sender_id": parent.sender_id,
+                "sender_name": sender_name,
+                "content": "This message was deleted" if parent_deleted else parent.content,
+                "is_deleted": parent_deleted,
+            }
+
         return {
             "id": message.id,
             "sender_id": message.sender_id,
@@ -259,6 +320,8 @@ class MessageService:
             "is_deleted": is_deleted,
             "reactions": reactions_data,
             "reply_to": reply_to_data,
+            "is_forwarded": getattr(message, "is_forwarded", False),
+            "forwarded_from_name": getattr(message, "forwarded_from_name", None),
             "created_at": message.created_at.isoformat().replace("+00:00", "Z"),
             "updated_at": message.updated_at.isoformat().replace("+00:00", "Z") if getattr(message, "updated_at", None) else None,
         }

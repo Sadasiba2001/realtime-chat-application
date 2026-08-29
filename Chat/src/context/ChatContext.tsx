@@ -78,6 +78,7 @@ interface ChatContextType {
   deleteMessage: (messageId: string, deleteType?: 'me' | 'everyone') => Promise<void>;
   toggleStarMessage: (messageId: string) => Promise<void>;
   addReaction: (messageId: string, emoji: string) => Promise<void>;
+  forwardMessage: (messageId: string, targetUserIds: string | string[]) => Promise<void>;
   setReplyTo: (reply: ReplyPreview | null) => void;
   setEditingMessage: (message: Message | null) => void;
   togglePin: (id: string) => Promise<void>;
@@ -254,6 +255,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         status: (backendMsg.status as MessageStatus) || 'sent',
         isEdited: Boolean(backendMsg.is_edited),
         isDeleted: Boolean(backendMsg.is_deleted) || backendMsg.content === 'This message was deleted',
+        isForwarded: Boolean(backendMsg.is_forwarded),
+        forwardedFromName: backendMsg.forwarded_from_name || undefined,
         reactions,
         replyTo,
         updatedAt: backendMsg.updated_at,
@@ -1163,6 +1166,10 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }));
   };
 
+  const forwardMessage = async (messageId: string, targetUserIds: string | string[]) => {
+    webSocketService.sendForward(messageId, targetUserIds);
+  };
+
   const togglePin = async (id: string) => {
     await chatService.togglePinConversation(id);
     setConversations((prev) =>
@@ -1293,6 +1300,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         deleteMessage,
         toggleStarMessage,
         addReaction,
+        forwardMessage,
         setReplyTo: setReplyingToMessage,
         setEditingMessage,
         togglePin,

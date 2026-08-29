@@ -11,10 +11,12 @@ import {
   MapPin,
   Pencil,
   User as UserIcon,
+  Share2,
 } from 'lucide-react';
 import type { Message, User } from '../../types/chat.types';
 import { useChat } from '../../context/ChatContext';
 import { EmojiPicker } from '../common/EmojiPicker';
+import { ForwardModal } from './ForwardModal';
 
 interface MessageBubbleProps {
   message: Message;
@@ -48,6 +50,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
+  const [showForwardModal, setShowForwardModal] = useState(false);
 
   const handleSelectReaction = (emoji: string) => {
     addReaction(message.id, emoji);
@@ -82,6 +85,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         {showSenderName && displayName && !isOutgoing && (
           <p className="text-xs font-bold text-violet-600 dark:text-violet-400 mb-1">
             {displayName}
+          </p>
+        )}
+
+        {/* Forwarded Header Indicator */}
+        {message.isForwarded && (
+          <p className="flex items-center gap-1 text-[11px] font-medium text-slate-400 dark:text-slate-400 mb-1 italic">
+            <Share2 className="w-3 h-3 text-indigo-400" />
+            <span>Forwarded {message.forwardedFromName ? `from ${message.forwardedFromName}` : ''}</span>
           </p>
         )}
 
@@ -231,6 +242,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             >
               <Star className="w-3.5 h-3.5" />
             </button>
+            <button
+              onClick={() => {
+                setShowForwardModal(true);
+                setShowActions(false);
+              }}
+              className="p-1 text-slate-500 hover:text-indigo-500 dark:text-slate-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title="Forward"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+            </button>
             {isOutgoing && (
               <button
                 onClick={() => {
@@ -340,6 +361,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
         );
       })()}
+      {/* Forward Modal */}
+      <ForwardModal
+        message={message}
+        isOpen={showForwardModal}
+        onClose={() => setShowForwardModal(false)}
+      />
     </div>
   );
 };

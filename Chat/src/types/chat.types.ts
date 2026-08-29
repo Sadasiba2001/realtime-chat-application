@@ -59,6 +59,8 @@ export interface Message {
   isStarred?: boolean;
   isDeleted?: boolean;
   isEdited?: boolean;
+  isForwarded?: boolean;
+  forwardedFromName?: string;
   updatedAt?: string;
   createdAt?: string;
 }

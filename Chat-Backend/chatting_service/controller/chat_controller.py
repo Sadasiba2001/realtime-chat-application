@@ -3,6 +3,8 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 from chatting_service.services import MessageService
 from authentication_service.throttles import HistoryRateThrottle
@@ -252,6 +254,84 @@ def toggle_reaction_view(request, message_id):
 
         return Response(
             {"status": True, "message": "Reaction updated successfully.", "data": res},
+            status=status.HTTP_200_OK,
+        )
+    except PermissionError as exc:
+        return Response(
+            {"status": False, "message": str(exc)},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    except ValueError as exc:
+        err_msg = str(exc)
+        if "not found" in err_msg.lower():
+            return Response(
+                {"status": False, "message": err_msg},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(
+            {"status": False, "message": err_msg},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def forward_message_view(request, message_id):
+    target_user_ids = request.data.get("target_user_ids") or request.data.get("target_user_id") or request.data.get("receiver_id")
+    if target_user_ids is None:
+        return Response(
+            {"status": False, "message": "target_user_ids parameter is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    targets = []
+    if isinstance(target_user_ids, list):
+        for tid in target_user_ids:
+            try:
+                targets.append(int(tid))
+            except (TypeError, ValueError):
+                pass
+    else:
+        try:
+            targets.append(int(target_user_ids))
+        except (TypeError, ValueError):
+            pass
+
+    if not targets:
+        return Response(
+            {"status": False, "message": "Valid target user ID(s) required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    service = MessageService()
+    try:
+        messages = service.forward_message(user=request.user, message_id=message_id, target_user_ids=targets)
+
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            for msg_data in messages:
+                receiver_id = msg_data.get("receiver_id")
+                try:
+                    async_to_sync(channel_layer.group_send)(
+                        f"user_{request.user.id}",
+                        {
+                            "type": "chat.message.event",
+                            "data": msg_data,
+                        },
+                    )
+                    if receiver_id and receiver_id != request.user.id:
+                        async_to_sync(channel_layer.group_send)(
+                            f"user_{receiver_id}",
+                            {
+                                "type": "chat.message.event",
+                                "data": msg_data,
+                            },
+                        )
+                except Exception:
+                    pass
+
+        return Response(
+            {"status": True, "message": "Message forwarded successfully.", "data": messages},
             status=status.HTTP_200_OK,
         )
     except PermissionError as exc:

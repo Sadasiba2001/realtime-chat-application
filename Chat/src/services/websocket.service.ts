@@ -317,6 +317,44 @@ class WebSocketService {
     return false;
   }
 
+  public sendForward(messageId: string | number, targetUserIds: (string | number)[] | string | number): boolean {
+    if (!messageId || !targetUserIds) return false;
+
+    const mMatch = String(messageId).match(/\d+/);
+    const cleanMessageId = mMatch ? parseInt(mMatch[0], 10) : messageId;
+
+    let cleanTargets: number[] = [];
+    if (Array.isArray(targetUserIds)) {
+      cleanTargets = targetUserIds.map((t) => {
+        const match = String(t).match(/\d+/);
+        return match ? parseInt(match[0], 10) : Number(t);
+      }).filter((n) => !isNaN(n));
+    } else {
+      const match = String(targetUserIds).match(/\d+/);
+      if (match) cleanTargets.push(parseInt(match[0], 10));
+    }
+
+    if (cleanTargets.length === 0) return false;
+
+    const payloadStr = JSON.stringify({
+      type: 'forward_message',
+      message_id: cleanMessageId,
+      target_user_ids: cleanTargets,
+    });
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(payloadStr);
+      return true;
+    }
+
+    if (!this.socket || this.socket.readyState === WebSocket.CONNECTING) {
+      this.pendingQueue.push(payloadStr);
+      return true;
+    }
+
+    return false;
+  }
+
   public editMessage(messageId: string | number, content: string): boolean {
     const trimmed = content.trim();
     if (!trimmed || !messageId) return false;

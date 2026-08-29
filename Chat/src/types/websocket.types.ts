@@ -15,6 +15,8 @@ export interface BackendMessagePayload {
     content: string;
     is_deleted?: boolean;
   };
+  is_forwarded?: boolean;
+  forwarded_from_name?: string;
   updated_at?: string;
   created_at: string;
 }

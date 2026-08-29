@@ -38,6 +38,8 @@ class Message(models.Model):
         blank=True,
         related_name="replies",
     )
+    is_forwarded = models.BooleanField(default=False)
+    forwarded_from_name = models.CharField(max_length=255, null=True, blank=True)
 
     class Meta:
         db_table = "messages"

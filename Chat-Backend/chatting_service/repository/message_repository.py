@@ -14,6 +14,8 @@ class MessageRepository:
         content: str,
         status: str = MessageStatus.SENT,
         reply_to_id: Optional[int] = None,
+        is_forwarded: bool = False,
+        forwarded_from_name: Optional[str] = None,
     ) -> Message:
         parent_msg = None
         if reply_to_id:
@@ -34,6 +36,8 @@ class MessageRepository:
             content=content,
             status=status,
             reply_to=parent_msg,
+            is_forwarded=is_forwarded,
+            forwarded_from_name=forwarded_from_name,
         )
 
     @staticmethod

@@ -395,6 +395,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.handle_edit_message(content)
         elif msg_type in ("add_reaction", "toggle_reaction", "remove_reaction"):
             await self.handle_reaction(content)
+        elif msg_type == "forward_message":
+            await self.handle_forward_message(content)
         else:
             await self.send_json({
                 "type": "error",
@@ -931,6 +933,80 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def message_reaction_event(self, event: dict):
         await self.send_json(event["data"])
+
+    async def handle_forward_message(self, content: dict):
+        raw_msg_id = content.get("message_id")
+        raw_target_ids = content.get("target_user_ids") or content.get("target_user_id") or content.get("receiver_id")
+
+        if raw_msg_id is None or raw_target_ids is None:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Message ID and target user ID(s) are required.",
+            })
+            return
+
+        try:
+            message_id = int(raw_msg_id)
+        except (TypeError, ValueError):
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Invalid message ID format.",
+            })
+            return
+
+        target_user_ids = []
+        if isinstance(raw_target_ids, list):
+            for tid in raw_target_ids:
+                try:
+                    target_user_ids.append(int(tid))
+                except (TypeError, ValueError):
+                    pass
+        else:
+            try:
+                target_user_ids.append(int(raw_target_ids))
+            except (TypeError, ValueError):
+                pass
+
+        if not target_user_ids:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Valid target user ID(s) required.",
+            })
+            return
+
+        try:
+            forwarded_messages = await database_sync_to_async(
+                self.message_service.forward_message
+            )(user=self.user, message_id=message_id, target_user_ids=target_user_ids)
+        except PermissionError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "FORBIDDEN",
+                "message": str(exc),
+            })
+            return
+        except ValueError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": str(exc),
+            })
+            return
+
+        for msg_data in forwarded_messages:
+            receiver_id = msg_data.get("receiver_id")
+            await self.send_json(msg_data)
+            if receiver_id and receiver_id != self.user.id:
+                await self.channel_layer.group_send(
+                    f"user_{receiver_id}",
+                    {
+                        "type": "chat.message.event",
+                        "data": msg_data,
+                    },
+                )
 
 
 
