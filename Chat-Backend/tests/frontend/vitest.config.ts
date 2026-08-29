@@ -17,10 +17,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, '../../Chat/src'),
+      '@': path.resolve(__dirname, '../../../Chat/src'),
       'react': path.resolve(__dirname, '../node_modules/react'),
       'react-dom': path.resolve(__dirname, '../node_modules/react-dom'),
-      'lucide-react': path.resolve(__dirname, '../../Chat/node_modules/lucide-react'),
+      'lucide-react': path.resolve(__dirname, '../../../Chat/node_modules/lucide-react'),
     },
     dedupe: ['react', 'react-dom', 'lucide-react'],
   },

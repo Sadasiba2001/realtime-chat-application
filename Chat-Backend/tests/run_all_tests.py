@@ -5,13 +5,13 @@ import time
 
 def run():
     print("=" * 60)
-    print("      REALTIME CHAT APPLICATION - TEST RUNNER")
+    print("  REALTIME CHAT APPLICATION - ISOLATED TEST RUNNER")
     print("=" * 60)
     
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(root_dir)
-    backend_dir = os.path.join(project_root, "Chat-Backend")
-    reports_dir = os.path.join(root_dir, "reports")
+    tests_dir = os.path.dirname(os.path.abspath(__file__))
+    backend_dir = os.path.dirname(tests_dir)
+    project_root = os.path.dirname(backend_dir)
+    reports_dir = os.path.join(tests_dir, "reports")
     os.makedirs(reports_dir, exist_ok=True)
     
     venv_python = os.path.join(backend_dir, "venv", "Scripts", "python.exe")
@@ -19,7 +19,7 @@ def run():
         venv_python = sys.executable
 
     env = os.environ.copy()
-    env["PYTHONPATH"] = project_root
+    env["PYTHONPATH"] = backend_dir
 
     # 1. Run Backend Unit & Integration Tests
     print("\n[1/2] Running Backend Unit & Integration Tests...")
@@ -30,7 +30,7 @@ def run():
         "test",
         "tests.backend",
         "tests.integration",
-        "--settings=tests.backend.test_settings",
+        "--settings=tests.test_settings",
         "--noinput"
     ]
     backend_proc = subprocess.run(backend_cmd, cwd=backend_dir, env=env, capture_output=True, text=True)
@@ -47,7 +47,7 @@ def run():
     print("\n[2/2] Running Frontend Unit & Component Tests...")
     start_frontend = time.time()
     npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
-    frontend_proc = subprocess.run([npm_cmd, "test"], cwd=root_dir, capture_output=True, text=True)
+    frontend_proc = subprocess.run([npm_cmd, "test"], cwd=tests_dir, capture_output=True, text=True)
     frontend_time = round(time.time() - start_frontend, 2)
     frontend_success = (frontend_proc.returncode == 0)
     
@@ -64,6 +64,7 @@ def run():
     
     report_md = f"""# Test Execution Summary Report
 
+**Execution Location**: `Chat-Backend/tests/`
 **Execution Timestamp**: {time.strftime('%Y-%m-%d %H:%M:%S')}
 **Environment**: Windows Isolated Unit Testing System
 
