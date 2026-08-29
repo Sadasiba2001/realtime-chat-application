@@ -16,6 +16,7 @@ import type {
   FilterCategory,
 } from '../types/chat.types';
 import type { ToastNotificationData } from '../components/common/NotificationToast';
+import { showBrowserPushNotification } from '../utils/browserNotification.utils';
 
 import type {
   BackendMessagePayload,
@@ -318,14 +319,22 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } else {
           // Trigger real-time notification toast for incoming message when chat not active
           const senderUser = allUsersRef.current.find((u) => String(u.id) === String(payload.sender_id));
+          const senderTitle = senderUser?.name || payload.sender_name || `User ${payload.sender_id}`;
           setActiveNotification({
             id: `msg_${payload.id}_${Date.now()}`,
             type: 'new_message',
-            title: senderUser?.name || payload.sender_name || `User ${payload.sender_id}`,
+            title: senderTitle,
             body: payload.content,
             avatar: senderUser?.avatar,
             conversationId: convId,
           });
+          showBrowserPushNotification(
+            senderTitle,
+            { body: payload.content, conversationId: convId },
+            (targetId) => {
+              if (targetId) selectConversation(targetId);
+            }
+          );
         }
       }
 
@@ -822,13 +831,22 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               if (String(m.senderId) === String(currentUserRef.current.id) && payload.user_id !== currentUserRef.current.id) {
                 const reacterName = payload.user_name || `User ${payload.user_id}`;
                 const emoji = payload.emoji || payload.reactions?.[0]?.emoji || '❤️';
+                const rxnTitle = `${reacterName} reacted ${emoji}`;
+                const rxnBody = `on your message: "${m.text}"`;
                 setActiveNotification({
                   id: `rxn_${payload.message_id}_${Date.now()}`,
                   type: 'reaction',
-                  title: `${reacterName} reacted ${emoji}`,
-                  body: `on your message: "${m.text}"`,
+                  title: rxnTitle,
+                  body: rxnBody,
                   conversationId: m.conversationId,
                 });
+                showBrowserPushNotification(
+                  rxnTitle,
+                  { body: rxnBody, conversationId: m.conversationId },
+                  (targetId) => {
+                    if (targetId) selectConversation(targetId);
+                  }
+                );
               }
 
               return {
