@@ -159,6 +159,10 @@ class WebSocketService {
         this.emit('MESSAGE_EDITED', event);
         break;
 
+      case 'message_reaction_updated':
+        this.emit('MESSAGE_REACTION_UPDATED', event);
+        break;
+
       case 'profile_update':
         this.emit('PROFILE_UPDATE', event);
         break;
@@ -456,6 +460,30 @@ class WebSocketService {
       return true;
     }
 
+    return false;
+  }
+
+  public sendReaction(messageId: string | number, emoji: string): boolean {
+    const numMsg = String(messageId).match(/\d+/);
+    const cleanMsgId = numMsg ? parseInt(numMsg[0], 10) : messageId;
+
+    const payloadStr = JSON.stringify({
+      type: 'add_reaction',
+      message_id: cleanMsgId,
+      emoji,
+    });
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(payloadStr);
+      return true;
+    }
+
+    if (!this.socket || this.socket.readyState === WebSocket.CONNECTING) {
+      this.pendingQueue.push(payloadStr);
+      return true;
+    }
+
+    console.warn('[WebSocket] Cannot send reaction: Socket is not open.');
     return false;
   }
 

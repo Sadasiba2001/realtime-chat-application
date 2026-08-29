@@ -36,6 +36,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   isMatch = false,
 }) => {
   const {
+    currentUser,
     deleteMessage,
     toggleStarMessage,
     addReaction,
@@ -51,6 +52,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const handleSelectReaction = (emoji: string) => {
     addReaction(message.id, emoji);
     setShowEmojiPicker(false);
+    setShowActions(false);
   };
 
   const displayName = senderName || sender?.name;
@@ -62,9 +64,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       } ${isMatch ? 'ring-2 ring-violet-400 rounded-2xl p-0.5' : ''}`}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => {
-        setShowActions(false);
-        setShowEmojiPicker(false);
-        setShowDeleteMenu(false);
+        if (!showEmojiPicker && !showDeleteMenu) {
+          setShowActions(false);
+        }
       }}
     >
       {/* Bubble Wrapper */}
@@ -278,22 +280,52 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
         {/* Emoji Picker Popover */}
         {showEmojiPicker && (
-          <div className="absolute z-50 bottom-full mb-2">
+          <div
+            className={`absolute z-50 bottom-full mb-2 ${
+              isOutgoing ? 'right-0' : 'left-0'
+            }`}
+            onMouseEnter={() => setShowActions(true)}
+          >
             <EmojiPicker onSelectEmoji={handleSelectReaction} />
           </div>
         )}
       </div>
 
       {/* Message Reactions Badge */}
-      {message.reactions && message.reactions.length > 0 && (
-        <div className="flex items-center gap-1 -mt-2.5 z-10 px-2.5 py-0.5 bg-white dark:bg-[#1a2234] rounded-full shadow-md border border-slate-200 dark:border-white/10 text-xs">
-          {message.reactions.map((r, i) => (
-            <span key={i} title={r.userName}>
-              {r.emoji}
-            </span>
-          ))}
-        </div>
-      )}
+      {!message.isDeleted && message.reactions && message.reactions.length > 0 && (() => {
+        const grouped = message.reactions.reduce((acc, r) => {
+          if (!acc[r.emoji]) {
+            acc[r.emoji] = { emoji: r.emoji, count: 0, users: [], userReacted: false };
+          }
+          acc[r.emoji].count += 1;
+          if (r.userName) acc[r.emoji].users.push(r.userName);
+          if (currentUser?.id && r.userId === String(currentUser.id)) acc[r.emoji].userReacted = true;
+          return acc;
+        }, {} as Record<string, { emoji: string; count: number; users: string[]; userReacted: boolean }>);
+
+        const groups = Object.values(grouped);
+        if (groups.length === 0) return null;
+
+        return (
+          <div className="flex flex-wrap items-center gap-1.5 -mt-2 z-10">
+            {groups.map((g) => (
+              <button
+                key={g.emoji}
+                onClick={() => addReaction(message.id, g.emoji)}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-all shadow-sm cursor-pointer ${
+                  g.userReacted
+                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-500/50 font-semibold'
+                    : 'bg-white dark:bg-[#1a2234] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+                title={g.users.length > 0 ? `${g.emoji} by ${g.users.join(', ')}` : g.emoji}
+              >
+                <span>{g.emoji}</span>
+                <span>{g.count}</span>
+              </button>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 };

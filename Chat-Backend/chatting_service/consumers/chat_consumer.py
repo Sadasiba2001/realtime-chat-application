@@ -393,6 +393,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.handle_delete_message(content)
         elif msg_type == "edit_message":
             await self.handle_edit_message(content)
+        elif msg_type in ("add_reaction", "toggle_reaction", "remove_reaction"):
+            await self.handle_reaction(content)
         else:
             await self.send_json({
                 "type": "error",
@@ -846,6 +848,72 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             )
 
     async def message_edited_event(self, event: dict):
+        await self.send_json(event["data"])
+
+    async def handle_reaction(self, content: dict):
+        raw_msg_id = content.get("message_id")
+        emoji = content.get("emoji")
+
+        if raw_msg_id is None or not emoji:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Message ID and emoji are required.",
+            })
+            return
+
+        try:
+            message_id = int(raw_msg_id)
+        except (TypeError, ValueError):
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Invalid message ID format.",
+            })
+            return
+
+        try:
+            reaction_info = await database_sync_to_async(
+                self.message_service.toggle_reaction
+            )(message_id=message_id, user_id=self.user.id, emoji=str(emoji))
+        except PermissionError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "FORBIDDEN",
+                "message": str(exc),
+            })
+            return
+        except ValueError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": str(exc),
+            })
+            return
+
+        if reaction_info:
+            partner_id = reaction_info.get("partner_id")
+            event_data = {
+                "type": "message_reaction_updated",
+                "data": reaction_info,
+            }
+            await self.channel_layer.group_send(
+                f"user_{self.user.id}",
+                {
+                    "type": "message.reaction.event",
+                    "data": event_data,
+                },
+            )
+            if partner_id and partner_id != self.user.id:
+                await self.channel_layer.group_send(
+                    f"user_{partner_id}",
+                    {
+                        "type": "message.reaction.event",
+                        "data": event_data,
+                    },
+                )
+
+    async def message_reaction_event(self, event: dict):
         await self.send_json(event["data"])
 
 

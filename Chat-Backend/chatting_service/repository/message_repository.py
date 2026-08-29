@@ -1,7 +1,7 @@
 from typing import Optional, List, Tuple
 from django.contrib.auth import get_user_model
 from django.db.models import BigIntegerField, Case, CharField, F, OuterRef, Q, QuerySet, Subquery, When
-from chatting_service.models import Message, MessageStatus, UserMessageDeletion
+from chatting_service.models import Message, MessageStatus, UserMessageDeletion, MessageReaction
 
 User = get_user_model()
 
@@ -40,6 +40,7 @@ class MessageRepository:
 
         return (
             qs.select_related("sender", "receiver")
+            .prefetch_related("reactions__user")
             .order_by("created_at")[offset : offset + limit]
         )
 
@@ -58,7 +59,7 @@ class MessageRepository:
     @staticmethod
     def get_message_by_id(message_id: int) -> Optional[Message]:
         try:
-            return Message.objects.select_related("sender", "receiver").get(id=message_id)
+            return Message.objects.select_related("sender", "receiver").prefetch_related("reactions__user").get(id=message_id)
         except Message.DoesNotExist:
             return None
 
@@ -113,6 +114,54 @@ class MessageRepository:
             }
         except Message.DoesNotExist:
             return None
+
+    @staticmethod
+    def toggle_reaction(message_id: int, user_id: int, emoji: str) -> dict:
+        try:
+            msg = Message.objects.select_related("sender", "receiver").prefetch_related("reactions__user").get(id=message_id)
+        except Message.DoesNotExist:
+            raise ValueError("Message not found.")
+
+        if msg.sender_id != user_id and msg.receiver_id != user_id:
+            raise PermissionError("You are not a participant in this conversation.")
+
+        if msg.is_deleted or msg.content == "This message was deleted":
+            raise ValueError("Cannot react to a deleted message.")
+
+        existing = MessageReaction.objects.filter(message=msg, user_id=user_id).first()
+        if existing:
+            if existing.emoji == emoji:
+                existing.delete()
+                action = "removed"
+            else:
+                existing.emoji = emoji
+                existing.save(update_fields=["emoji"])
+                action = "updated"
+        else:
+            MessageReaction.objects.create(message=msg, user_id=user_id, emoji=emoji)
+            action = "added"
+
+        partner_id = msg.receiver_id if msg.sender_id == user_id else msg.sender_id
+        reactions_qs = MessageReaction.objects.filter(message=msg).select_related("user")
+        reactions_data = [
+            {
+                "id": r.id,
+                "emoji": r.emoji,
+                "user_id": r.user_id,
+                "user_name": r.user.username or r.user.first_name,
+            }
+            for r in reactions_qs
+        ]
+        return {
+            "message_id": msg.id,
+            "action": action,
+            "emoji": emoji,
+            "user_id": user_id,
+            "sender_id": msg.sender_id,
+            "receiver_id": msg.receiver_id,
+            "partner_id": partner_id,
+            "reactions": reactions_data,
+        }
 
     @staticmethod
     def get_pending_sent_messages_for_user(user_id: int) -> QuerySet[Message]:

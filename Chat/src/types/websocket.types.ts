@@ -122,6 +122,29 @@ export interface WSMessageEditedEvent {
   data: BackendMessagePayload;
 }
 
+export interface BackendReactionData {
+  id: number | string;
+  emoji: string;
+  user_id: number | string;
+  user_name?: string;
+}
+
+export interface WSMessageReactionPayload {
+  message_id: number | string;
+  action: 'added' | 'removed' | 'updated';
+  emoji: string;
+  user_id: number | string;
+  sender_id: number | string;
+  receiver_id: number | string;
+  partner_id?: number | string;
+  reactions: BackendReactionData[];
+}
+
+export interface WSMessageReactionEvent {
+  type: 'message_reaction_updated';
+  data: WSMessageReactionPayload;
+}
+
 export type WSServerEvent =
   | WSConnectionEvent
   | WSMessageEvent
@@ -130,6 +153,7 @@ export type WSServerEvent =
   | WSMessageStatusEvent
   | WSMessageDeleteEvent
   | WSMessageEditedEvent
+  | WSMessageReactionEvent
   | WSProfileUpdateEvent
   | WSErrorEvent
   | WSVoiceSignalingEvent
@@ -179,6 +203,7 @@ export type WSEventType =
   | 'MESSAGE_READ'
   | 'MESSAGE_DELETED'
   | 'MESSAGE_EDITED'
+  | 'MESSAGE_REACTION_UPDATED'
   | 'USER_TYPING'
   | 'PRESENCE_CHANGE'
   | 'PROFILE_UPDATE'

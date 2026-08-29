@@ -212,8 +212,29 @@ class MessageService:
 
         return self.format_message(message)
 
+    def toggle_reaction(self, message_id: int, user_id: int, emoji: str) -> Dict[str, Any]:
+        if not emoji or not isinstance(emoji, str):
+            raise ValueError("Emoji reaction cannot be empty.")
+        return self.message_repository.toggle_reaction(message_id=message_id, user_id=user_id, emoji=emoji)
+
     @staticmethod
     def format_message(message: Message) -> Dict[str, Any]:
+        is_deleted = getattr(message, "is_deleted", False) or (message.content == "This message was deleted")
+        reactions_data = []
+        if not is_deleted and hasattr(message, "reactions"):
+            try:
+                reactions_data = [
+                    {
+                        "id": r.id,
+                        "emoji": r.emoji,
+                        "user_id": r.user_id,
+                        "user_name": r.user.username or r.user.first_name,
+                    }
+                    for r in message.reactions.all()
+                ]
+            except Exception:
+                reactions_data = []
+
         return {
             "id": message.id,
             "sender_id": message.sender_id,
@@ -221,7 +242,8 @@ class MessageService:
             "content": message.content,
             "status": message.status,
             "is_edited": getattr(message, "is_edited", False),
-            "is_deleted": getattr(message, "is_deleted", False) or (message.content == "This message was deleted"),
+            "is_deleted": is_deleted,
+            "reactions": reactions_data,
             "created_at": message.created_at.isoformat().replace("+00:00", "Z"),
             "updated_at": message.updated_at.isoformat().replace("+00:00", "Z") if getattr(message, "updated_at", None) else None,
         }

@@ -65,3 +65,30 @@ class UserMessageDeletion(models.Model):
     def __str__(self):
         return f"User {self.user_id} deleted message {self.message_id} for self"
 
+
+class MessageReaction(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name="reactions",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="message_reactions",
+    )
+    emoji = models.CharField(max_length=16)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "message_reactions"
+        unique_together = ("message", "user")
+        indexes = [
+            models.Index(fields=["message", "emoji"]),
+            models.Index(fields=["user", "message"]),
+        ]
+
+    def __str__(self):
+        return f"User {self.user_id} reacted {self.emoji} to message {self.message_id}"
+

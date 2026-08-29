@@ -230,7 +230,13 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Helper to map backend message to frontend Message model
   const mapBackendMessage = useCallback(
-    (backendMsg: BackendMessagePayload, targetConvId: string): Message => {
+    (backendMsg: BackendMessagePayload & { reactions?: any[]; is_deleted?: boolean }, targetConvId: string): Message => {
+      const reactions = (backendMsg.reactions || []).map((r: any) => ({
+        emoji: r.emoji,
+        userId: String(r.user_id),
+        userName: r.user_name || `User ${r.user_id}`,
+      }));
+
       return {
         id: String(backendMsg.id),
         conversationId: targetConvId,
@@ -239,6 +245,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         timestamp: formatMessageTime(backendMsg.created_at),
         status: (backendMsg.status as MessageStatus) || 'sent',
         isEdited: Boolean(backendMsg.is_edited),
+        isDeleted: Boolean(backendMsg.is_deleted) || backendMsg.content === 'This message was deleted',
+        reactions,
         updatedAt: backendMsg.updated_at,
         createdAt: backendMsg.created_at,
       };
@@ -751,11 +759,56 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       );
     });
 
+    const unsubReaction = webSocketService.on<WSMessageReactionEvent>('MESSAGE_REACTION_UPDATED', (event) => {
+      console.log('[ChatContext] Real-time MESSAGE_REACTION_UPDATED event received:', event);
+      const payload = event.data;
+      if (!payload || !payload.message_id) return;
+
+      const targetMsgIdStr = String(payload.message_id);
+      const targetMatch = targetMsgIdStr.match(/\d+/);
+
+      const newReactions = (payload.reactions || []).map((r: any) => ({
+        emoji: r.emoji,
+        userId: String(r.user_id),
+        userName: r.user_name || `User ${r.user_id}`,
+      }));
+
+      setMessagesMap((prev) => {
+        let anyChanged = false;
+        const nextState: Record<string, Message[]> = {};
+
+        for (const [cId, list] of Object.entries(prev)) {
+          let listChanged = false;
+          const updatedList = list.map((m) => {
+            const mStr = String(m.id);
+            const mMatch = mStr.match(/\d+/);
+            const isMatch = mStr === targetMsgIdStr || (mMatch && targetMatch && mMatch[0] === targetMatch[0]);
+
+            if (isMatch) {
+              listChanged = true;
+              anyChanged = true;
+              return {
+                ...m,
+                reactions: newReactions,
+              };
+            }
+            return m;
+          });
+
+          nextState[cId] = listChanged ? updatedList : list;
+        }
+
+        return anyChanged ? nextState : prev;
+      });
+    });
+
     return () => {
       unsubStatus();
       unsubNewMessage();
       unsubMessageStatus();
       unsubDeleteMessage();
+      unsubEditMessage();
+      unsubReaction();
       unsubHistory();
       unsubPresence();
       unsubProfileUpdate();
@@ -1076,6 +1129,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const addReaction = async (messageId: string, emoji: string) => {
     if (!activeConversationId) return;
+    webSocketService.sendReaction(messageId, emoji);
     setMessagesMap((prev) => ({
       ...prev,
       [activeConversationId]: (prev[activeConversationId] || []).map((m) => {

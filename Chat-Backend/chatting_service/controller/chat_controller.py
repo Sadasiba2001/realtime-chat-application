@@ -207,3 +207,66 @@ def delete_message_view(request, message_id):
             {"status": False, "message": err_msg},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def toggle_reaction_view(request, message_id):
+    emoji = request.data.get("emoji")
+    if not emoji:
+        return Response(
+            {"status": False, "message": "Emoji reaction is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    message_service = MessageService()
+    try:
+        res = message_service.toggle_reaction(message_id=message_id, user_id=request.user.id, emoji=str(emoji))
+        partner_id = res.get("partner_id")
+        event_data = {
+            "type": "message_reaction_updated",
+            "data": res,
+        }
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            try:
+                async_to_sync(channel_layer.group_send)(
+                    f"user_{request.user.id}",
+                    {
+                        "type": "message.reaction.event",
+                        "data": event_data,
+                    },
+                )
+                if partner_id and partner_id != request.user.id:
+                    async_to_sync(channel_layer.group_send)(
+                        f"user_{partner_id}",
+                        {
+                            "type": "message.reaction.event",
+                            "data": event_data,
+                        },
+                    )
+            except Exception:
+                pass
+
+        return Response(
+            {"status": True, "message": "Reaction updated successfully.", "data": res},
+            status=status.HTTP_200_OK,
+        )
+    except PermissionError as exc:
+        return Response(
+            {"status": False, "message": str(exc)},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    except ValueError as exc:
+        err_msg = str(exc)
+        if "not found" in err_msg.lower():
+            return Response(
+                {"status": False, "message": err_msg},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(
+            {"status": False, "message": err_msg},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
