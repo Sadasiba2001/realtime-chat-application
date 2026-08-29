@@ -20,6 +20,7 @@ import type {
   WSHistoryEvent,
   WSMessageStatusEvent,
   WSMessageDeleteEvent,
+  WSMessageEditedEvent,
   WSProfileUpdateEvent,
   WSPresenceEvent,
   WSSocketStatus,
@@ -57,6 +58,7 @@ interface ChatContextType {
   inChatSearchQuery: string;
   filterCategory: FilterCategory;
   replyingToMessage: ReplyPreview | null;
+  editingMessage: Message | null;
   activeCall: ActiveCallState | null;
   callLogs: CallLog[];
   statuses: StatusItem[];
@@ -72,10 +74,12 @@ interface ChatContextType {
   setActiveTab: (tab: ActiveTab) => void;
   selectConversation: (id: string | null) => void;
   sendMessage: (text: string, attachments?: Attachment[]) => Promise<void>;
+  editMessage: (messageId: string, text: string) => Promise<void>;
   deleteMessage: (messageId: string, deleteType?: 'me' | 'everyone') => Promise<void>;
   toggleStarMessage: (messageId: string) => Promise<void>;
   addReaction: (messageId: string, emoji: string) => Promise<void>;
   setReplyTo: (reply: ReplyPreview | null) => void;
+  setEditingMessage: (message: Message | null) => void;
   togglePin: (id: string) => Promise<void>;
   toggleMute: (id: string) => Promise<void>;
   createNewChat: (contact: User) => Promise<void>;
@@ -150,6 +154,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [inChatSearchQuery, setInChatSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
   const [replyingToMessage, setReplyingToMessage] = useState<ReplyPreview | null>(null);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [activeCall, setActiveCall] = useState<ActiveCallState | null>(null);
   const [callLogs] = useState<CallLog[]>([]);
   const [statuses] = useState<StatusItem[]>([]);
@@ -233,6 +238,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         text: backendMsg.content,
         timestamp: formatMessageTime(backendMsg.created_at),
         status: (backendMsg.status as MessageStatus) || 'sent',
+        isEdited: Boolean(backendMsg.is_edited),
+        updatedAt: backendMsg.updated_at,
         createdAt: backendMsg.created_at,
       };
     },
@@ -651,6 +658,67 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     });
 
+    const unsubEditMessage = webSocketService.on<WSMessageEditedEvent>('MESSAGE_EDITED', (event) => {
+      console.log('[ChatContext] Real-time MESSAGE_EDITED event received:', event);
+      const payload = event.data;
+      if (!payload || !payload.id) return;
+
+      const editedMsgIdStr = String(payload.id);
+      const targetMatch = editedMsgIdStr.match(/\d+/);
+
+      setMessagesMap((prev) => {
+        let anyChanged = false;
+        const nextState: Record<string, Message[]> = {};
+
+        for (const [cId, list] of Object.entries(prev)) {
+          let listChanged = false;
+          const updatedList = list.map((m) => {
+            const mStr = String(m.id);
+            const mMatch = mStr.match(/\d+/);
+            const isMatch = mStr === editedMsgIdStr || (mMatch && targetMatch && mMatch[0] === targetMatch[0]);
+
+            if (isMatch) {
+              listChanged = true;
+              anyChanged = true;
+              return {
+                ...m,
+                text: payload.content,
+                isEdited: true,
+                updatedAt: payload.updated_at,
+              };
+            }
+            return m;
+          });
+
+          nextState[cId] = listChanged ? updatedList : list;
+        }
+
+        return anyChanged ? nextState : prev;
+      });
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.lastMessage) {
+            const lmStr = String(c.lastMessage.id);
+            const lmMatch = lmStr.match(/\d+/);
+            const isMatch = lmStr === editedMsgIdStr || (lmMatch && targetMatch && lmMatch[0] === targetMatch[0]);
+            if (isMatch) {
+              return {
+                ...c,
+                lastMessage: {
+                  ...c.lastMessage,
+                  text: payload.content,
+                  isEdited: true,
+                  updatedAt: payload.updated_at,
+                },
+              };
+            }
+          }
+          return c;
+        })
+      );
+    });
+
     return () => {
       unsubStatus();
       unsubNewMessage();
@@ -838,6 +906,68 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }));
       }
     }
+  };
+
+  const editMessage = async (messageId: string, newText: string) => {
+    const trimmed = newText.trim();
+    if (!trimmed || !messageId) return;
+
+    webSocketService.editMessage(messageId, trimmed);
+
+    const targetMatch = messageId.match(/\d+/);
+    setMessagesMap((prev) => {
+      let anyChanged = false;
+      const nextState: Record<string, Message[]> = {};
+
+      for (const [cId, list] of Object.entries(prev)) {
+        let listChanged = false;
+        const updatedList = list.map((m) => {
+          const mStr = String(m.id);
+          const mMatch = mStr.match(/\d+/);
+          const isMatch = mStr === messageId || (mMatch && targetMatch && mMatch[0] === targetMatch[0]);
+
+          if (isMatch) {
+            listChanged = true;
+            anyChanged = true;
+            return {
+              ...m,
+              text: trimmed,
+              isEdited: true,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return m;
+        });
+
+        nextState[cId] = listChanged ? updatedList : list;
+      }
+
+      return anyChanged ? nextState : prev;
+    });
+
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.lastMessage) {
+          const lmStr = String(c.lastMessage.id);
+          const lmMatch = lmStr.match(/\d+/);
+          const isMatch = lmStr === messageId || (lmMatch && targetMatch && lmMatch[0] === targetMatch[0]);
+          if (isMatch) {
+            return {
+              ...c,
+              lastMessage: {
+                ...c.lastMessage,
+                text: trimmed,
+                isEdited: true,
+                updatedAt: new Date().toISOString(),
+              },
+            };
+          }
+        }
+        return c;
+      })
+    );
+
+    setEditingMessage(null);
   };
 
   const deleteMessage = async (messageId: string, deleteType: 'me' | 'everyone' = 'everyone') => {
@@ -1045,6 +1175,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         inChatSearchQuery,
         filterCategory,
         replyingToMessage,
+        editingMessage,
         activeCall,
         callLogs,
         statuses,
@@ -1058,10 +1189,12 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setActiveTab,
         selectConversation,
         sendMessage,
+        editMessage,
         deleteMessage,
         toggleStarMessage,
         addReaction,
         setReplyTo: setReplyingToMessage,
+        setEditingMessage,
         togglePin,
         toggleMute,
         createNewChat,

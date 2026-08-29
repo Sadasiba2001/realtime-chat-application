@@ -180,6 +180,25 @@ class MessageService:
     def delete_message_for_everyone(self, message_id: int, user_id: int) -> Optional[Dict[str, Any]]:
         return self.message_repository.delete_message_for_everyone(message_id=message_id, user_id=user_id)
 
+    def edit_message(self, message_id: int, user_id: int, content: str) -> Dict[str, Any]:
+        if not isinstance(content, str) or not content.strip():
+            raise ValueError("Message content cannot be empty.")
+
+        cleaned_content = content.strip()
+        max_length = getattr(settings, "MAX_MESSAGE_LENGTH", 1000)
+        if len(cleaned_content) > max_length:
+            raise ValueError(f"Message exceeds maximum allowed length of {max_length} characters.")
+
+        message = self.message_repository.edit_message(
+            message_id=message_id,
+            user_id=user_id,
+            new_content=cleaned_content,
+        )
+        if message is None:
+            raise ValueError("Message not found.")
+
+        return self.format_message(message)
+
     @staticmethod
     def format_message(message: Message) -> Dict[str, Any]:
         return {
@@ -188,7 +207,9 @@ class MessageService:
             "receiver_id": message.receiver_id,
             "content": message.content,
             "status": message.status,
+            "is_edited": getattr(message, "is_edited", False),
             "created_at": message.created_at.isoformat().replace("+00:00", "Z"),
+            "updated_at": message.updated_at.isoformat().replace("+00:00", "Z") if getattr(message, "updated_at", None) else None,
         }
 
 

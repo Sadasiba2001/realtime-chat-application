@@ -52,6 +52,22 @@ class MessageRepository:
             return None
 
     @staticmethod
+    def edit_message(message_id: int, user_id: int, new_content: str) -> Optional[Message]:
+        try:
+            msg = Message.objects.select_related("sender", "receiver").get(id=message_id)
+            if msg.sender_id != user_id:
+                raise PermissionError("You do not have permission to edit this message.")
+            if msg.content == "This message was deleted":
+                raise ValueError("Cannot edit a deleted message.")
+            if msg.content != new_content:
+                msg.content = new_content
+                msg.is_edited = True
+                msg.save(update_fields=["content", "is_edited", "updated_at"])
+            return msg
+        except Message.DoesNotExist:
+            return None
+
+    @staticmethod
     def delete_message_for_everyone(message_id: int, user_id: int) -> Optional[dict]:
         try:
             msg = Message.objects.get(id=message_id, sender_id=user_id)

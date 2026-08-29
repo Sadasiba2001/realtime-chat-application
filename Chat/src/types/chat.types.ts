@@ -58,6 +58,8 @@ export interface Message {
   reactions?: MessageReaction[];
   isStarred?: boolean;
   isDeleted?: boolean;
+  isEdited?: boolean;
+  updatedAt?: string;
   createdAt?: string;
 }
 

@@ -155,6 +155,10 @@ class WebSocketService {
         this.emit('MESSAGE_DELETED', event);
         break;
 
+      case 'message_edited':
+        this.emit('MESSAGE_EDITED', event);
+        break;
+
       case 'profile_update':
         this.emit('PROFILE_UPDATE', event);
         break;
@@ -299,6 +303,34 @@ class WebSocketService {
     }
 
     console.warn('[WebSocket] Cannot send message: Socket is not open.');
+    return false;
+  }
+
+  public editMessage(messageId: string | number, content: string): boolean {
+    const trimmed = content.trim();
+    if (!trimmed || !messageId) return false;
+
+    const numMatch = String(messageId).match(/\d+/);
+    const cleanMessageId = numMatch ? parseInt(numMatch[0], 10) : messageId;
+
+    const payloadStr = JSON.stringify({
+      type: 'edit_message',
+      message_id: cleanMessageId,
+      content: trimmed,
+    });
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(payloadStr);
+      return true;
+    }
+
+    if (!this.socket || this.socket.readyState === WebSocket.CONNECTING) {
+      console.log('[WebSocket] Socket connecting: Queuing edit_message for transmission upon connect.');
+      this.pendingQueue.push(payloadStr);
+      return true;
+    }
+
+    console.warn('[WebSocket] Cannot edit message: Socket is not open.');
     return false;
   }
 

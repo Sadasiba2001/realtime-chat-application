@@ -1,12 +1,12 @@
-import React, { useState, useRef } from 'react';
-import { Paperclip, Smile, Send, Mic, X, Trash2, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Paperclip, Smile, Send, Mic, X, Trash2, Check, Pencil } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { AttachmentMenu } from './AttachmentMenu';
 import { EmojiPicker } from '../common/EmojiPicker';
 import type { Attachment } from '../../types/chat.types';
 
 export const MessageComposer: React.FC = () => {
-  const { sendMessage, replyingToMessage, setReplyTo } = useChat();
+  const { sendMessage, editMessage, replyingToMessage, setReplyTo, editingMessage, setEditingMessage } = useChat();
   const [text, setText] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
@@ -17,11 +17,23 @@ export const MessageComposer: React.FC = () => {
   const [recordSeconds, setRecordSeconds] = useState(0);
   const recordIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  useEffect(() => {
+    if (editingMessage) {
+      setText(editingMessage.text);
+    }
+  }, [editingMessage]);
+
   const handleSend = () => {
     if (!text.trim() && attachments.length === 0) return;
-    sendMessage(text, attachments.length > 0 ? attachments : undefined);
-    setText('');
-    setAttachments([]);
+    if (editingMessage) {
+      editMessage(editingMessage.id, text.trim());
+      setText('');
+      setEditingMessage(null);
+    } else {
+      sendMessage(text, attachments.length > 0 ? attachments : undefined);
+      setText('');
+      setAttachments([]);
+    }
     setShowAttachmentMenu(false);
     setShowEmojiPicker(false);
   };
@@ -84,6 +96,31 @@ export const MessageComposer: React.FC = () => {
           <button
             onClick={() => setReplyTo(null)}
             className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Editing Message Banner */}
+      {editingMessage && (
+        <div className="flex items-center justify-between px-4 py-2 mb-2 bg-white/95 dark:bg-[#1a2234]/95 backdrop-blur-md rounded-2xl border-l-4 border-l-indigo-500 border border-slate-200/80 dark:border-white/10 text-xs shadow-md">
+          <div className="min-w-0 flex-1 pr-2 flex items-center gap-1.5">
+            <Pencil className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
+            <div className="min-w-0">
+              <span className="font-bold text-indigo-600 dark:text-indigo-400 block">
+                Editing Message
+              </span>
+              <p className="truncate text-slate-600 dark:text-slate-300">{editingMessage.text}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setEditingMessage(null);
+              setText('');
+            }}
+            className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            title="Cancel edit"
           >
             <X className="w-4 h-4" />
           </button>

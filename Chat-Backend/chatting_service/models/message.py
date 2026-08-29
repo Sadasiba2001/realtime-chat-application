@@ -29,6 +29,7 @@ class Message(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_edited = models.BooleanField(default=False)
 
     class Meta:
         db_table = "messages"

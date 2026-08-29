@@ -391,6 +391,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.handle_read_receipt(content)
         elif msg_type == "delete_message":
             await self.handle_delete_message(content)
+        elif msg_type == "edit_message":
+            await self.handle_edit_message(content)
         else:
             await self.send_json({
                 "type": "error",
@@ -718,6 +720,82 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                     )
 
     async def message_delete_event(self, event: dict):
+        await self.send_json(event["data"])
+
+    async def handle_edit_message(self, content: dict):
+        raw_msg_id = content.get("message_id")
+        raw_content = content.get("content")
+
+        if raw_msg_id is None:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Message ID is required.",
+            })
+            return
+
+        try:
+            message_id = int(raw_msg_id)
+        except (TypeError, ValueError):
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Invalid message ID format.",
+            })
+            return
+
+        try:
+            message_data = await database_sync_to_async(self.message_service.edit_message)(
+                message_id=message_id,
+                user_id=self.user.id,
+                content=raw_content,
+            )
+        except PermissionError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "FORBIDDEN",
+                "message": str(exc),
+            })
+            return
+        except ValueError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": str(exc),
+            })
+            return
+        except Exception:
+            await self.send_json({
+                "type": "error",
+                "code": "SERVER_ERROR",
+                "message": "Failed to edit message.",
+            })
+            return
+
+        event_data = {
+            "type": "message_edited",
+            "data": message_data,
+        }
+
+        await self.channel_layer.group_send(
+            f"user_{self.user.id}",
+            {
+                "type": "message.edited.event",
+                "data": event_data,
+            },
+        )
+
+        receiver_id = message_data.get("receiver_id")
+        if receiver_id and receiver_id != self.user.id:
+            await self.channel_layer.group_send(
+                f"user_{receiver_id}",
+                {
+                    "type": "message.edited.event",
+                    "data": event_data,
+                },
+            )
+
+    async def message_edited_event(self, event: dict):
         await self.send_json(event["data"])
 
 

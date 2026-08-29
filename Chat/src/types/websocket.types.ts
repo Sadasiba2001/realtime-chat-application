@@ -6,6 +6,8 @@ export interface BackendMessagePayload {
   receiver_id: number | string;
   content: string;
   status?: MessageStatus;
+  is_edited?: boolean;
+  updated_at?: string;
   created_at: string;
 }
 
@@ -23,6 +25,7 @@ export type WSServerMessageType =
   | 'presence'
   | 'message_status'
   | 'message_deleted'
+  | 'message_edited'
   | 'error';
 
 export interface WSConnectionEvent {
@@ -114,6 +117,11 @@ export interface WSMessageDeleteEvent {
   sender_id?: number | string;
 }
 
+export interface WSMessageEditedEvent {
+  type: 'message_edited';
+  data: BackendMessagePayload;
+}
+
 export type WSServerEvent =
   | WSConnectionEvent
   | WSMessageEvent
@@ -121,6 +129,7 @@ export type WSServerEvent =
   | WSPresenceEvent
   | WSMessageStatusEvent
   | WSMessageDeleteEvent
+  | WSMessageEditedEvent
   | WSProfileUpdateEvent
   | WSErrorEvent
   | WSVoiceSignalingEvent
@@ -169,6 +178,7 @@ export type WSEventType =
   | 'MESSAGE_DELIVERED'
   | 'MESSAGE_READ'
   | 'MESSAGE_DELETED'
+  | 'MESSAGE_EDITED'
   | 'USER_TYPING'
   | 'PRESENCE_CHANGE'
   | 'PROFILE_UPDATE'

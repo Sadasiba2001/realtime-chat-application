@@ -27,3 +27,24 @@ class MessageServiceTests(TestCase):
     def test_send_message_to_nonexistent_user_raises_error(self):
         with self.assertRaises(ValueError):
             self.service.send_message(sender=self.user1, receiver_id=999999, content="Ghost user")
+
+    def test_edit_message_success(self):
+        msg_data = self.service.send_message(sender=self.user1, receiver_id=self.user2.id, content="Original text")
+        edited_data = self.service.edit_message(message_id=msg_data["id"], user_id=self.user1.id, content="Edited text")
+        self.assertEqual(edited_data["content"], "Edited text")
+        self.assertTrue(edited_data["is_edited"])
+        self.assertIsNotNone(edited_data["updated_at"])
+
+    def test_edit_another_user_message_raises_permission_error(self):
+        msg_data = self.service.send_message(sender=self.user1, receiver_id=self.user2.id, content="Original text")
+        with self.assertRaises(PermissionError):
+            self.service.edit_message(message_id=msg_data["id"], user_id=self.user2.id, content="Hacked text")
+
+    def test_edit_nonexistent_message_raises_value_error(self):
+        with self.assertRaises(ValueError):
+            self.service.edit_message(message_id=99999, user_id=self.user1.id, content="Ghost edit")
+
+    def test_edit_empty_content_raises_value_error(self):
+        msg_data = self.service.send_message(sender=self.user1, receiver_id=self.user2.id, content="Original text")
+        with self.assertRaises(ValueError):
+            self.service.edit_message(message_id=msg_data["id"], user_id=self.user1.id, content="   ")
