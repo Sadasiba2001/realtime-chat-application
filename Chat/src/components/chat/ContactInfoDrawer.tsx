@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Phone, Mail, Pin, VolumeX, ShieldAlert, ZoomIn } from 'lucide-react';
+import { X, Phone, Mail, Pin, VolumeX, ShieldAlert, ZoomIn, Flag } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { Avatar } from '../common/Avatar';
 
@@ -153,22 +153,33 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ onClose })
           </button>
 
           {!isGroup && (
-            <button
-              onClick={() => {
-                const partnerId = otherParticipant?.id || activeConversation.id;
-                if (activeConversation.isBlocked) {
-                  unblockUser(partnerId);
-                } else {
-                  blockUser(partnerId);
-                }
-              }}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-2xl transition-colors text-sm text-rose-600 dark:text-rose-400 font-semibold border border-transparent hover:border-rose-200 dark:hover:border-rose-900/50"
-            >
-              <span className="flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4" /> {activeConversation.isBlocked ? 'Unblock Contact' : 'Block Contact'}
-              </span>
-              <span className="text-xs font-bold text-rose-500">{activeConversation.isBlocked ? 'BLOCKED' : ''}</span>
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  const partnerId = otherParticipant?.id || activeConversation.id;
+                  if (activeConversation.isBlocked) {
+                    unblockUser(partnerId);
+                  } else {
+                    blockUser(partnerId);
+                  }
+                }}
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-2xl transition-colors text-sm text-rose-600 dark:text-rose-400 font-semibold border border-transparent hover:border-rose-200 dark:hover:border-rose-900/50"
+              >
+                <span className="flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4" /> {activeConversation.isBlocked ? 'Unblock Contact' : 'Block Contact'}
+                </span>
+                <span className="text-xs font-bold text-rose-500">{activeConversation.isBlocked ? 'BLOCKED' : ''}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  openModal('report_user', activeConversation);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-3 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-2xl transition-colors text-sm text-amber-600 dark:text-amber-400 font-semibold border border-transparent hover:border-amber-200 dark:hover:border-amber-900/50"
+              >
+                <Flag className="w-4 h-4 text-amber-500" /> Report Contact
+              </button>
+            </>
           )}
         </div>
       </div>

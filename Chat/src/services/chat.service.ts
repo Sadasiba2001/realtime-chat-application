@@ -277,6 +277,18 @@ class ChatService {
     return true;
   }
 
+  async reportUser(targetUserId: string, reason: string, description: string = ''): Promise<boolean> {
+    const numericId = parseInt(targetUserId, 10);
+    if (isNaN(numericId)) {
+      throw new Error('Invalid user ID.');
+    }
+    await apiClient.post(`/api/v1/chat/users/${numericId}/report/`, {
+      reason,
+      description,
+    });
+    return true;
+  }
+
   async markAsRead(id: string): Promise<void> {
     this.conversations = this.conversations.map((c) =>
       c.id === id ? { ...c, unreadCount: 0 } : c

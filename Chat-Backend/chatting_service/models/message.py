@@ -196,3 +196,43 @@ class UserBlock(models.Model):
     def __str__(self):
         return f"User {self.blocker_id} blocked User {self.blocked_id}"
 
+
+class UserReport(models.Model):
+    REASON_CHOICES = [
+        ("SPAM", "Spam"),
+        ("HARASSMENT", "Harassment"),
+        ("ABUSE", "Abuse"),
+        ("INAPPROPRIATE_CONTENT", "Inappropriate content"),
+        ("OTHER", "Other"),
+    ]
+
+    STATUS_CHOICES = [
+        ("PENDING", "Pending"),
+        ("INVESTIGATING", "Investigating"),
+        ("RESOLVED", "Resolved"),
+        ("REJECTED", "Rejected"),
+    ]
+
+    reporter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="reports_submitted",
+    )
+    reported_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="reports_received",
+    )
+    reason = models.CharField(max_length=50, choices=REASON_CHOICES)
+    description = models.TextField(blank=True, default="")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDING")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "user_reports"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Report #{self.id}: User {self.reporter_id} reported User {self.reported_user_id} ({self.reason})"
+

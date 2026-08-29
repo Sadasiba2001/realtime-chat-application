@@ -6,8 +6,11 @@ from rest_framework.response import Response
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
+from django.contrib.auth import get_user_model
 from chatting_service.services import MessageService
 from authentication_service.throttles import HistoryRateThrottle, SearchRateThrottle
+
+User = get_user_model()
 
 
 class ConversationPagination(PageNumberPagination):
@@ -462,5 +465,28 @@ def unblock_user_view(request, target_user_id):
         service = MessageService()
         service.unblock_user(blocker=request.user, target_user_id=target_user_id)
         return Response({"status": True, "message": "User unblocked successfully.", "data": {"is_blocked": False}}, status=status.HTTP_200_OK)
+    except ValueError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def report_user_view(request, target_user_id):
+    try:
+        reason = request.data.get("reason", "")
+        description = request.data.get("description", "")
+        service = MessageService()
+        report_data = service.report_user(
+            reporter=request.user,
+            target_user_id=target_user_id,
+            reason=reason,
+            description=description,
+        )
+        return Response(
+            {"status": True, "message": "User reported successfully.", "data": report_data},
+            status=status.HTTP_201_CREATED,
+        )
+    except User.DoesNotExist as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_404_NOT_FOUND)
     except ValueError as exc:
         return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)

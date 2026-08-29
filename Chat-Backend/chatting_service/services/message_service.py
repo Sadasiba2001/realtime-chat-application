@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from authentication_service.repository import UserRepository
 from chatting_service.repository import MessageRepository
-from chatting_service.models import Message, UserChatPin, UserChatArchive, UserChatMute, UserBlock
+from chatting_service.models import Message, UserChatPin, UserChatArchive, UserChatMute, UserBlock, UserReport
 from chatting_service.services.presence_service import PresenceService
 
 User = get_user_model()
@@ -383,6 +383,53 @@ class MessageService:
     def unpin_chat(self, user: User, target_user_id: int) -> bool:
         UserChatPin.objects.filter(user=user, partner_id=target_user_id).delete()
         return True
+
+    def unblock_user(self, blocker: User, target_user_id: int) -> bool:
+        target_user_id = int(target_user_id)
+        UserBlock.objects.filter(blocker=blocker, blocked_id=target_user_id).delete()
+        return True
+
+    def report_user(self, reporter: User, target_user_id: int, reason: str, description: str = "") -> Dict[str, Any]:
+        target_user_id = int(target_user_id)
+        if reporter.id == target_user_id:
+            raise ValueError("You cannot report yourself.")
+
+        try:
+            target_user = User.objects.get(id=target_user_id)
+        except User.DoesNotExist:
+            raise User.DoesNotExist(f"Target user with ID {target_user_id} does not exist.")
+
+        valid_reasons = ["SPAM", "HARASSMENT", "ABUSE", "INAPPROPRIATE_CONTENT", "OTHER"]
+        upper_reason = str(reason).strip().upper()
+        if upper_reason not in valid_reasons:
+            raise ValueError(f"Invalid report reason. Allowed reasons: {', '.join(valid_reasons)}")
+
+        clean_description = str(description).strip() if description else ""
+        if len(clean_description) > 500:
+            raise ValueError("Description cannot exceed 500 characters.")
+
+        if upper_reason == "OTHER" and not clean_description:
+            raise ValueError("An explanation description is required when reason is 'Other'.")
+
+        report, created = UserReport.objects.update_or_create(
+            reporter=reporter,
+            reported_user=target_user,
+            status="PENDING",
+            defaults={
+                "reason": upper_reason,
+                "description": clean_description,
+            },
+        )
+
+        return {
+            "id": report.id,
+            "reporter_id": report.reporter_id,
+            "reported_user_id": report.reported_user_id,
+            "reason": report.reason,
+            "description": report.description,
+            "status": report.status,
+            "created_at": report.created_at.isoformat().replace("+00:00", "Z"),
+        }
 
     def toggle_pin_chat(self, user: User, target_user_id: int) -> bool:
         target_user = self.validate_target_user(target_user_id, user.id)

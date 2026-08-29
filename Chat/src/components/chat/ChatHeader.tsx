@@ -10,6 +10,7 @@ import {
   Archive,
   VolumeX,
   ShieldAlert,
+  Flag,
 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { useVoiceCall } from '../../context/VoiceCallContext';
@@ -206,21 +207,33 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 View Contact Info
               </button>
               {!isGroup && (
-                <button
-                  onClick={() => {
-                    const partnerId = activeConversation.participantIds.find((pid) => pid !== currentUser.id) || activeConversation.id;
-                    if (activeConversation.isBlocked) {
-                      unblockUser(partnerId);
-                    } else {
-                      blockUser(partnerId);
-                    }
-                    setShowDropdown(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 transition-colors border-t border-slate-100 dark:border-slate-800 font-medium"
-                >
-                  <ShieldAlert className="w-4 h-4" />
-                  {activeConversation.isBlocked ? 'Unblock User' : 'Block User'}
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      const partnerId = activeConversation.participantIds.find((pid) => pid !== currentUser.id) || activeConversation.id;
+                      if (activeConversation.isBlocked) {
+                        unblockUser(partnerId);
+                      } else {
+                        blockUser(partnerId);
+                      }
+                      setShowDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 transition-colors border-t border-slate-100 dark:border-slate-800 font-medium"
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                    {activeConversation.isBlocked ? 'Unblock User' : 'Block User'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      openModal('report_user', activeConversation);
+                      setShowDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center gap-2 transition-colors border-t border-slate-100 dark:border-slate-800 font-medium"
+                  >
+                    <Flag className="w-4 h-4" />
+                    Report User
+                  </button>
+                </>
               )}
             </div>
           )}
