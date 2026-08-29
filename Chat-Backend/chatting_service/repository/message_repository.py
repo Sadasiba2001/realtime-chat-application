@@ -13,12 +13,27 @@ class MessageRepository:
         receiver: User,
         content: str,
         status: str = MessageStatus.SENT,
+        reply_to_id: Optional[int] = None,
     ) -> Message:
+        parent_msg = None
+        if reply_to_id:
+            try:
+                parent_msg = Message.objects.select_related("sender", "receiver").get(id=reply_to_id)
+                is_valid_conv = (
+                    (parent_msg.sender_id == sender.id and parent_msg.receiver_id == receiver.id)
+                    or (parent_msg.sender_id == receiver.id and parent_msg.receiver_id == sender.id)
+                )
+                if not is_valid_conv:
+                    raise PermissionError("Referenced reply message does not belong to this conversation.")
+            except Message.DoesNotExist:
+                raise ValueError("Referenced reply message not found.")
+
         return Message.objects.create(
             sender=sender,
             receiver=receiver,
             content=content,
             status=status,
+            reply_to=parent_msg,
         )
 
     @staticmethod
@@ -39,7 +54,7 @@ class MessageRepository:
             qs = qs.exclude(id__in=deleted_ids)
 
         return (
-            qs.select_related("sender", "receiver")
+            qs.select_related("sender", "receiver", "reply_to", "reply_to__sender")
             .prefetch_related("reactions__user")
             .order_by("created_at")[offset : offset + limit]
         )

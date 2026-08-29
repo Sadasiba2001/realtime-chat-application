@@ -7,6 +7,14 @@ export interface BackendMessagePayload {
   content: string;
   status?: MessageStatus;
   is_edited?: boolean;
+  is_deleted?: boolean;
+  reply_to?: {
+    id: number | string;
+    sender_id: number | string;
+    sender_name?: string;
+    content: string;
+    is_deleted?: boolean;
+  };
   updated_at?: string;
   created_at: string;
 }

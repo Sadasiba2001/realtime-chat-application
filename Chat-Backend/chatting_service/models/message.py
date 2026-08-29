@@ -31,6 +31,13 @@ class Message(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     is_edited = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
+    reply_to = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="replies",
+    )
 
     class Meta:
         db_table = "messages"

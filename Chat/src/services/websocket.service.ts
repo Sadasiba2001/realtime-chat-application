@@ -281,7 +281,7 @@ class WebSocketService {
     }
   }
 
-  public sendMessage(receiverId: string | number, content: string): boolean {
+  public sendMessage(receiverId: string | number, content: string, replyToId?: string | number): boolean {
     const trimmed = content.trim();
     if (!trimmed || !receiverId) return false;
 
@@ -289,10 +289,17 @@ class WebSocketService {
     const numMatch = String(receiverId).match(/\d+/);
     const cleanReceiverId = numMatch ? parseInt(numMatch[0], 10) : receiverId;
 
+    let cleanReplyToId: number | string | undefined = undefined;
+    if (replyToId !== undefined && replyToId !== null) {
+      const rMatch = String(replyToId).match(/\d+/);
+      cleanReplyToId = rMatch ? parseInt(rMatch[0], 10) : replyToId;
+    }
+
     const payloadStr = JSON.stringify({
       type: 'message',
       receiver_id: cleanReceiverId,
       content: trimmed,
+      ...(cleanReplyToId !== undefined ? { reply_to_id: cleanReplyToId, reply_to: cleanReplyToId } : {}),
     });
 
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {

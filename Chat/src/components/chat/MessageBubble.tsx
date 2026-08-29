@@ -59,6 +59,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   return (
     <div
+      id={`msg-${message.id}`}
       className={`group relative flex flex-col my-1 max-w-[85%] sm:max-w-[70%] select-none ${
         isOutgoing ? 'ml-auto items-end' : 'mr-auto items-start'
       } ${isMatch ? 'ring-2 ring-violet-400 rounded-2xl p-0.5' : ''}`}
@@ -87,11 +88,24 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         {/* Reply Preview inside Bubble */}
         {message.replyTo && (
           <div
-            className={`p-2 mb-2 rounded-xl text-xs border-l-3 ${
+            onClick={() => {
+              if (message.replyTo?.id) {
+                const targetEl = document.getElementById(`msg-${message.replyTo.id}`);
+                if (targetEl) {
+                  targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  targetEl.classList.add('ring-4', 'ring-amber-400', 'transition-all');
+                  setTimeout(() => {
+                    targetEl.classList.remove('ring-4', 'ring-amber-400');
+                  }, 1500);
+                }
+              }
+            }}
+            className={`p-2 mb-2 rounded-xl text-xs border-l-3 cursor-pointer hover:opacity-90 transition-opacity ${
               isOutgoing
                 ? 'bg-black/20 border-l-white/90 text-violet-100'
                 : 'bg-slate-100 dark:bg-[#111827] border-l-violet-500 text-slate-700 dark:text-slate-300'
             }`}
+            title="Click to locate original message"
           >
             <span className="font-bold block">{message.replyTo.senderName}</span>
             <p className="truncate opacity-90">{message.replyTo.text}</p>

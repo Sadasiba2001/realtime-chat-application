@@ -445,12 +445,28 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             })
             return
 
+        raw_reply_to = content.get("reply_to_id") or content.get("reply_to")
+        reply_to_id = None
+        if raw_reply_to is not None:
+            try:
+                reply_to_id = int(raw_reply_to)
+            except (TypeError, ValueError):
+                reply_to_id = None
+
         try:
             message_data = await database_sync_to_async(self.message_service.send_message)(
                 sender=self.user,
                 receiver_id=receiver_id,
                 content=raw_content,
+                reply_to_id=reply_to_id,
             )
+        except PermissionError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "FORBIDDEN",
+                "message": str(exc),
+            })
+            return
         except ValueError as exc:
             await self.send_json({
                 "type": "error",

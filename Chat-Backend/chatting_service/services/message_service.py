@@ -43,7 +43,7 @@ class MessageService:
 
         return target_user
 
-    def send_message(self, sender: User, receiver_id: int, content: str) -> Dict[str, Any]:
+    def send_message(self, sender: User, receiver_id: int, content: str, reply_to_id: Optional[int] = None) -> Dict[str, Any]:
         if not isinstance(content, str) or not content.strip():
             raise ValueError("Message content cannot be empty.")
 
@@ -58,6 +58,7 @@ class MessageService:
             sender=sender,
             receiver=receiver,
             content=cleaned_content,
+            reply_to_id=reply_to_id,
         )
 
         return self.format_message(message)
@@ -235,6 +236,19 @@ class MessageService:
             except Exception:
                 reactions_data = []
 
+        reply_to_data = None
+        if getattr(message, "reply_to", None):
+            parent = message.reply_to
+            parent_deleted = getattr(parent, "is_deleted", False) or (parent.content == "This message was deleted")
+            sender_name = getattr(parent.sender, "username", None) or getattr(parent.sender, "first_name", None) or f"User {parent.sender_id}"
+            reply_to_data = {
+                "id": parent.id,
+                "sender_id": parent.sender_id,
+                "sender_name": sender_name,
+                "content": "This message was deleted" if parent_deleted else parent.content,
+                "is_deleted": parent_deleted,
+            }
+
         return {
             "id": message.id,
             "sender_id": message.sender_id,
@@ -244,6 +258,7 @@ class MessageService:
             "is_edited": getattr(message, "is_edited", False),
             "is_deleted": is_deleted,
             "reactions": reactions_data,
+            "reply_to": reply_to_data,
             "created_at": message.created_at.isoformat().replace("+00:00", "Z"),
             "updated_at": message.updated_at.isoformat().replace("+00:00", "Z") if getattr(message, "updated_at", None) else None,
         }

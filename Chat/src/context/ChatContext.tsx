@@ -230,12 +230,20 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Helper to map backend message to frontend Message model
   const mapBackendMessage = useCallback(
-    (backendMsg: BackendMessagePayload & { reactions?: any[]; is_deleted?: boolean }, targetConvId: string): Message => {
+    (backendMsg: BackendMessagePayload & { reactions?: any[]; is_deleted?: boolean; reply_to?: any }, targetConvId: string): Message => {
       const reactions = (backendMsg.reactions || []).map((r: any) => ({
         emoji: r.emoji,
         userId: String(r.user_id),
         userName: r.user_name || `User ${r.user_id}`,
       }));
+
+      const replyTo = backendMsg.reply_to
+        ? {
+            id: String(backendMsg.reply_to.id),
+            senderName: backendMsg.reply_to.sender_name || `User ${backendMsg.reply_to.sender_id}`,
+            text: backendMsg.reply_to.is_deleted ? 'This message was deleted' : backendMsg.reply_to.content,
+          }
+        : undefined;
 
       return {
         id: String(backendMsg.id),
@@ -247,6 +255,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isEdited: Boolean(backendMsg.is_edited),
         isDeleted: Boolean(backendMsg.is_deleted) || backendMsg.content === 'This message was deleted',
         reactions,
+        replyTo,
         updatedAt: backendMsg.updated_at,
         createdAt: backendMsg.created_at,
       };
@@ -958,11 +967,12 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       )
     );
 
+    const replyToId = replyingToMessage ? replyingToMessage.id : undefined;
     setReplyingToMessage(null);
 
     // Send through real Django WebSocket
     console.log(`[ChatContext] Sending WebSocket message to receiver ${targetUserId}:`, trimmed);
-    let sent = webSocketService.sendMessage(targetUserId, trimmed);
+    let sent = webSocketService.sendMessage(targetUserId, trimmed, replyToId);
     if (!sent) {
       const token = storage.getAuthToken();
       if (token && !webSocketService.isConnected()) {
