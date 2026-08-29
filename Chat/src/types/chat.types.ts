@@ -76,6 +76,7 @@ export interface Conversation {
   unreadCount: number;
   lastMessage?: Message;
   pinned: boolean;
+  archived?: boolean;
   muted: boolean;
   createdAt: string;
   updatedAt: string;

@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from authentication_service.repository import UserRepository
 from chatting_service.repository import MessageRepository
-from chatting_service.models import Message, UserChatPin
+from chatting_service.models import Message, UserChatPin, UserChatArchive
 from chatting_service.services.presence_service import PresenceService
 
 User = get_user_model()
@@ -115,6 +115,7 @@ class MessageService:
     def get_user_conversations(self, user_id: int) -> List[Dict[str, Any]]:
         conversations_qs = self.message_repository.get_user_conversations(user_id=user_id)
         pinned_partner_ids = set(UserChatPin.objects.filter(user_id=user_id).values_list("partner_id", flat=True))
+        archived_partner_ids = set(UserChatArchive.objects.filter(user_id=user_id).values_list("partner_id", flat=True))
         results = []
         for partner in conversations_qs:
             last_message_at_str = (
@@ -145,6 +146,7 @@ class MessageService:
                 "status": presence["status"],
                 "last_seen": presence["last_seen"],
                 "is_pinned": partner.id in pinned_partner_ids,
+                "is_archived": partner.id in archived_partner_ids,
 
                 "last_message": {
                     "id": partner.last_message_id,
@@ -368,6 +370,23 @@ class MessageService:
         pin_obj, created = UserChatPin.objects.get_or_create(user=user, partner=target_user)
         if not created:
             pin_obj.delete()
+            return False
+        return True
+
+    def archive_chat(self, user: User, target_user_id: int) -> bool:
+        target_user = self.validate_target_user(target_user_id, user.id)
+        UserChatArchive.objects.get_or_create(user=user, partner=target_user)
+        return True
+
+    def unarchive_chat(self, user: User, target_user_id: int) -> bool:
+        UserChatArchive.objects.filter(user=user, partner_id=target_user_id).delete()
+        return True
+
+    def toggle_archive_chat(self, user: User, target_user_id: int) -> bool:
+        target_user = self.validate_target_user(target_user_id, user.id)
+        arc_obj, created = UserChatArchive.objects.get_or_create(user=user, partner=target_user)
+        if not created:
+            arc_obj.delete()
             return False
         return True
 

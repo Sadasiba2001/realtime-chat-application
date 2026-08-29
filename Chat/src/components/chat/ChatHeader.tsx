@@ -7,6 +7,7 @@ import {
   MoreVertical,
   Info,
   Pin,
+  Archive,
   VolumeX,
 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
@@ -28,6 +29,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     activeConversation,
     currentUser,
     togglePin,
+    toggleArchive,
     toggleMute,
     isMobileView,
     backToChatListMobile,
@@ -164,6 +166,16 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               >
                 <Pin className="w-4 h-4" />
                 {activeConversation.pinned ? 'Unpin Conversation' : 'Pin Conversation'}
+              </button>
+              <button
+                onClick={() => {
+                  toggleArchive(activeConversation.id);
+                  setShowDropdown(false);
+                }}
+                className="w-full px-4 py-2 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors"
+              >
+                <Archive className="w-4 h-4" />
+                {activeConversation.archived ? 'Unarchive Conversation' : 'Archive Conversation'}
               </button>
               <button
                 onClick={() => {

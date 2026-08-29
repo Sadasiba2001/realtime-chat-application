@@ -62,6 +62,12 @@ export const ChatList: React.FC = () => {
     // Only display conversations that have messages or are currently active
     if (!c.lastMessage && c.id !== activeConversationId) return false;
 
+    if (filterCategory === 'archived') {
+      if (!c.archived) return false;
+    } else {
+      if (c.archived) return false;
+    }
+
     if (filterCategory === 'unread' && c.unreadCount === 0) return false;
     if (filterCategory === 'favorites' && !c.pinned) return false;
     if (filterCategory === 'groups' && c.type !== 'group') return false;
@@ -95,6 +101,7 @@ export const ChatList: React.FC = () => {
     { id: 'unread', label: 'Unread' },
     { id: 'favorites', label: 'Pinned' },
     { id: 'groups', label: 'Groups' },
+    { id: 'archived', label: 'Archived' },
   ];
 
   return (

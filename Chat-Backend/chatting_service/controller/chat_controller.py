@@ -396,3 +396,26 @@ def unpin_chat_view(request, target_user_id):
         return Response({"status": True, "message": "Chat unpinned successfully.", "data": {"is_pinned": False}}, status=status.HTTP_200_OK)
     except ValueError as exc:
         return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def archive_chat_view(request, target_user_id):
+    try:
+        service = MessageService()
+        is_archived = service.toggle_archive_chat(user=request.user, target_user_id=target_user_id)
+        msg = "Chat archived successfully." if is_archived else "Chat unarchived successfully."
+        return Response({"status": True, "message": msg, "data": {"is_archived": is_archived}}, status=status.HTTP_200_OK)
+    except ValueError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def unarchive_chat_view(request, target_user_id):
+    try:
+        service = MessageService()
+        service.unarchive_chat(user=request.user, target_user_id=target_user_id)
+        return Response({"status": True, "message": "Chat unarchived successfully.", "data": {"is_archived": False}}, status=status.HTTP_200_OK)
+    except ValueError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)

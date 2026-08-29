@@ -107,6 +107,7 @@ class ChatService {
             unreadCount: item.unread_count || 0,
             lastMessage: lastMsg,
             pinned: Boolean(item.is_pinned || item.pinned),
+            archived: Boolean(item.is_archived || item.archived),
             muted: false,
             createdAt: item.last_message?.created_at || item.last_message_at || new Date().toISOString(),
             updatedAt: item.last_message?.created_at || item.last_message_at || new Date().toISOString(),
@@ -188,6 +189,27 @@ class ChatService {
       }
     }
     return newPinnedState;
+  }
+
+  async toggleArchiveConversation(id: string): Promise<boolean> {
+    const numericId = parseInt(id, 10);
+    let newArchivedState = false;
+    this.conversations = this.conversations.map((c) => {
+      if (c.id === id) {
+        newArchivedState = !c.archived;
+        return { ...c, archived: newArchivedState };
+      }
+      return c;
+    });
+
+    if (!isNaN(numericId)) {
+      try {
+        await apiClient.post(`/api/v1/chat/conversations/${numericId}/archive/`);
+      } catch (err) {
+        console.error('[ChatService] Failed to persist archive status on backend:', err);
+      }
+    }
+    return newArchivedState;
   }
 
   async toggleMuteConversation(id: string): Promise<boolean> {

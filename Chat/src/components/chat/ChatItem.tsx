@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pin, VolumeX, Check, CheckCheck } from 'lucide-react';
+import { Pin, Archive, VolumeX, Check, CheckCheck } from 'lucide-react';
 import type { Conversation } from '../../types/chat.types';
 import { useChat } from '../../context/ChatContext';
 import { Avatar } from '../common/Avatar';
@@ -15,7 +15,7 @@ export const ChatItem: React.FC<ChatItemProps> = ({
   isSelected,
   onClick,
 }) => {
-  const { currentUser, togglePin, toggleMute } = useChat();
+  const { currentUser, togglePin, toggleArchive, toggleMute } = useChat();
 
   const isGroup = conversation.type === 'group';
   const otherParticipant = isGroup
@@ -167,6 +167,16 @@ export const ChatItem: React.FC<ChatItemProps> = ({
           title={conversation.pinned ? 'Unpin' : 'Pin'}
         >
           <Pin className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleArchive(conversation.id);
+          }}
+          className="p-1 text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 rounded-lg transition-colors"
+          title={conversation.archived ? 'Unarchive' : 'Archive'}
+        >
+          <Archive className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={(e) => {

@@ -7,6 +7,8 @@ from chatting_service.controller.chat_controller import (
     search_messages_view,
     pin_chat_view,
     unpin_chat_view,
+    archive_chat_view,
+    unarchive_chat_view,
 )
 
 __all__ = [
@@ -18,4 +20,6 @@ __all__ = [
     "search_messages_view",
     "pin_chat_view",
     "unpin_chat_view",
+    "archive_chat_view",
+    "unarchive_chat_view",
 ]

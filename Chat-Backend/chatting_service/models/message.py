@@ -123,3 +123,25 @@ class UserChatPin(models.Model):
     def __str__(self):
         return f"User {self.user_id} pinned chat with {self.partner_id}"
 
+
+class UserChatArchive(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="chat_archives",
+    )
+    partner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="archived_by_users",
+    )
+    archived_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "user_chat_archives"
+        unique_together = ("user", "partner")
+        ordering = ["-archived_at"]
+
+    def __str__(self):
+        return f"User {self.user_id} archived chat with {self.partner_id}"
+

@@ -40,7 +40,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { formatMessageTime } from '../utils/date.utils';
 import { getDirectConversationId, getTargetUserIdFromConversation } from '../utils/conversation.utils';
 
-export type FilterCategory = 'all' | 'unread' | 'favorites' | 'groups';
+export type FilterCategory = 'all' | 'unread' | 'favorites' | 'groups' | 'archived';
 
 
 export interface ActiveCallState {
@@ -89,6 +89,7 @@ interface ChatContextType {
   setReplyTo: (reply: ReplyPreview | null) => void;
   setEditingMessage: (message: Message | null) => void;
   togglePin: (id: string) => Promise<void>;
+  toggleArchive: (id: string) => Promise<void>;
   toggleMute: (id: string) => Promise<void>;
   createNewChat: (contact: User) => Promise<void>;
   createNewGroup: (name: string, members: User[]) => Promise<void>;
@@ -1265,6 +1266,13 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
   };
 
+  const toggleArchive = async (id: string) => {
+    await chatService.toggleArchiveConversation(id);
+    setConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, archived: !c.archived } : c))
+    );
+  };
+
   const toggleMute = async (id: string) => {
     await chatService.toggleMuteConversation(id);
     setConversations((prev) =>
@@ -1395,6 +1403,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setReplyTo: setReplyingToMessage,
         setEditingMessage,
         togglePin,
+        toggleArchive,
         toggleMute,
         createNewChat,
         createNewGroup,
