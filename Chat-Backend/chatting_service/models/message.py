@@ -101,3 +101,25 @@ class MessageReaction(models.Model):
     def __str__(self):
         return f"User {self.user_id} reacted {self.emoji} to message {self.message_id}"
 
+
+class UserChatPin(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="chat_pins",
+    )
+    partner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="pinned_by_users",
+    )
+    pinned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "user_chat_pins"
+        unique_together = ("user", "partner")
+        ordering = ["-pinned_at"]
+
+    def __str__(self):
+        return f"User {self.user_id} pinned chat with {self.partner_id}"
+

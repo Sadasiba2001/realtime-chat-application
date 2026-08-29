@@ -106,7 +106,7 @@ class ChatService {
             participants: [myUser, contactUser],
             unreadCount: item.unread_count || 0,
             lastMessage: lastMsg,
-            pinned: false,
+            pinned: Boolean(item.is_pinned || item.pinned),
             muted: false,
             createdAt: item.last_message?.created_at || item.last_message_at || new Date().toISOString(),
             updatedAt: item.last_message?.created_at || item.last_message_at || new Date().toISOString(),
@@ -170,10 +170,24 @@ class ChatService {
   }
 
   async togglePinConversation(id: string): Promise<boolean> {
-    this.conversations = this.conversations.map((c) =>
-      c.id === id ? { ...c, pinned: !c.pinned } : c
-    );
-    return simulateNetworkDelay(true);
+    const numericId = parseInt(id, 10);
+    let newPinnedState = false;
+    this.conversations = this.conversations.map((c) => {
+      if (c.id === id) {
+        newPinnedState = !c.pinned;
+        return { ...c, pinned: newPinnedState };
+      }
+      return c;
+    });
+
+    if (!isNaN(numericId)) {
+      try {
+        await apiClient.post(`/api/v1/chat/conversations/${numericId}/pin/`);
+      } catch (err) {
+        console.error('[ChatService] Failed to persist pin status on backend:', err);
+      }
+    }
+    return newPinnedState;
   }
 
   async toggleMuteConversation(id: string): Promise<boolean> {

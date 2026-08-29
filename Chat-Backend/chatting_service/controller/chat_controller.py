@@ -373,3 +373,26 @@ def search_messages_view(request):
     message_service = MessageService()
     result = message_service.search_messages(user=request.user, query=query, page=page, page_size=page_size)
     return Response({"status": True, "message": "Search successful.", "data": result}, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def pin_chat_view(request, target_user_id):
+    try:
+        service = MessageService()
+        is_pinned = service.toggle_pin_chat(user=request.user, target_user_id=target_user_id)
+        msg = "Chat pinned successfully." if is_pinned else "Chat unpinned successfully."
+        return Response({"status": True, "message": msg, "data": {"is_pinned": is_pinned}}, status=status.HTTP_200_OK)
+    except ValueError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def unpin_chat_view(request, target_user_id):
+    try:
+        service = MessageService()
+        service.unpin_chat(user=request.user, target_user_id=target_user_id)
+        return Response({"status": True, "message": "Chat unpinned successfully.", "data": {"is_pinned": False}}, status=status.HTTP_200_OK)
+    except ValueError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
