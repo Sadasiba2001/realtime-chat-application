@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Phone, Mail, Pin, VolumeX, ShieldAlert, ZoomIn, Flag } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { Avatar } from '../common/Avatar';
+import { SharedMediaSection } from './SharedMediaSection';
 
 interface ContactInfoDrawerProps {
   onClose: () => void;
@@ -123,6 +124,9 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ onClose })
             )}
           </div>
         )}
+
+        {/* Shared Media Section */}
+        <SharedMediaSection targetUserId={activeConversation.id} />
 
         {/* Action Toggles */}
         <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">

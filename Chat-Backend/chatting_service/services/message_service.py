@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from authentication_service.repository import UserRepository
 from chatting_service.repository import MessageRepository
-from chatting_service.models import Message, UserChatPin, UserChatArchive, UserChatMute, UserBlock, UserReport, MessageAttachment
+from chatting_service.models import Message, UserChatPin, UserChatArchive, UserChatMute, UserBlock, UserReport, MessageAttachment, UserMessageDeletion
 from chatting_service.services.presence_service import PresenceService
 
 User = get_user_model()
@@ -635,6 +635,144 @@ class MessageService:
         target_user_id = int(target_user_id)
         UserBlock.objects.filter(blocker=blocker, blocked_id=target_user_id).delete()
         return True
+
+    def get_shared_media(
+        self,
+        user: User,
+        target_user_id: int,
+        category: str = "media",
+        page: int = 1,
+        page_size: int = 20,
+    ) -> Dict[str, Any]:
+        target_user = self.validate_target_user(target_user_id, user.id)
+
+        deleted_msg_ids = UserMessageDeletion.objects.filter(user=user).values_list("message_id", flat=True)
+
+        messages_qs = Message.objects.filter(
+            (Q(sender=user, receiver=target_user) | Q(sender=target_user, receiver=user)),
+            is_deleted=False,
+        ).exclude(id__in=deleted_msg_ids).order_by("-created_at")
+
+        if category == "media":
+            attachments = MessageAttachment.objects.filter(
+                message__in=messages_qs,
+                file_type__in=["image", "video", "audio"],
+            ).select_related("message", "uploader").order_by("-created_at")
+
+            total_count = attachments.count()
+            start = (page - 1) * page_size
+            end = start + page_size
+            page_attachments = attachments[start:end]
+
+            items = []
+            for att in page_attachments:
+                formatted_size = (
+                    f"{(att.file_size / (1024 * 1024)):.1f} MB"
+                    if att.file_size > 1024 * 1024
+                    else f"{round(att.file_size / 1024)} KB"
+                )
+                items.append({
+                    "id": f"att_{att.id}",
+                    "attachment_id": att.id,
+                    "message_id": att.message_id,
+                    "sender_id": att.uploader_id,
+                    "type": att.file_type,
+                    "url": att.file_path.url if att.file_path else f"/api/v1/chat/attachments/{att.id}/download/",
+                    "name": att.file_name,
+                    "size": formatted_size,
+                    "mimeType": att.mime_type,
+                    "created_at": att.created_at.isoformat().replace("+00:00", "Z"),
+                })
+
+            return {
+                "category": "media",
+                "total_count": total_count,
+                "page": page,
+                "page_size": page_size,
+                "has_next": end < total_count,
+                "items": items,
+            }
+
+        elif category == "files":
+            attachments = MessageAttachment.objects.filter(
+                message__in=messages_qs,
+                file_type__in=["document", "archive", "other"],
+            ).select_related("message", "uploader").order_by("-created_at")
+
+            total_count = attachments.count()
+            start = (page - 1) * page_size
+            end = start + page_size
+            page_attachments = attachments[start:end]
+
+            items = []
+            for att in page_attachments:
+                formatted_size = (
+                    f"{(att.file_size / (1024 * 1024)):.1f} MB"
+                    if att.file_size > 1024 * 1024
+                    else f"{round(att.file_size / 1024)} KB"
+                )
+                items.append({
+                    "id": f"att_{att.id}",
+                    "attachment_id": att.id,
+                    "message_id": att.message_id,
+                    "sender_id": att.uploader_id,
+                    "type": att.file_type,
+                    "url": att.file_path.url if att.file_path else f"/api/v1/chat/attachments/{att.id}/download/",
+                    "name": att.file_name,
+                    "size": formatted_size,
+                    "mimeType": att.mime_type,
+                    "created_at": att.created_at.isoformat().replace("+00:00", "Z"),
+                })
+
+            return {
+                "category": "files",
+                "total_count": total_count,
+                "page": page,
+                "page_size": page_size,
+                "has_next": end < total_count,
+                "items": items,
+            }
+
+        elif category == "links":
+            link_messages = messages_qs.filter(
+                Q(content__icontains="http://") | Q(content__icontains="https://")
+            )
+
+            import re
+            url_pattern = re.compile(r'https?://[^\s<>"]+|www\.[^\s<>"]+')
+
+            raw_link_items = []
+            for msg in link_messages:
+                found_urls = url_pattern.findall(msg.content)
+                for url in found_urls:
+                    domain = url.split("//")[-1].split("/")[0] if "//" in url else url.split("/")[0]
+                    raw_link_items.append({
+                        "id": f"link_{msg.id}_{len(raw_link_items)}",
+                        "message_id": msg.id,
+                        "sender_id": msg.sender_id,
+                        "sender_name": msg.sender.username or msg.sender.email,
+                        "url": url,
+                        "domain": domain,
+                        "snippet": msg.content[:120],
+                        "created_at": msg.created_at.isoformat().replace("+00:00", "Z"),
+                    })
+
+            total_count = len(raw_link_items)
+            start = (page - 1) * page_size
+            end = start + page_size
+            page_items = raw_link_items[start:end]
+
+            return {
+                "category": "links",
+                "total_count": total_count,
+                "page": page,
+                "page_size": page_size,
+                "has_next": end < total_count,
+                "items": page_items,
+            }
+
+        else:
+            raise ValueError(f"Invalid shared media category: {category}")
 
 
 

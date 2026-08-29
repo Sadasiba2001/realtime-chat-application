@@ -17,6 +17,7 @@ from chatting_service.controller.chat_controller import (
     report_message_view,
     upload_file_view,
     download_attachment_view,
+    get_shared_media_view,
 )
 
 __all__ = [
@@ -38,4 +39,5 @@ __all__ = [
     "report_message_view",
     "upload_file_view",
     "download_attachment_view",
+    "get_shared_media_view",
 ]

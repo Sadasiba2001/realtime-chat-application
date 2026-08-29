@@ -18,10 +18,12 @@ from chatting_service.controller import (
     report_message_view,
     upload_file_view,
     download_attachment_view,
+    get_shared_media_view,
 )
 
 urlpatterns = [
     path("conversations/", get_conversations, name="get_conversations"),
+    path("conversations/<int:target_user_id>/shared-media/", get_shared_media_view, name="get_shared_media"),
     path("conversations/<int:target_user_id>/pin/", pin_chat_view, name="pin_chat"),
     path("conversations/<int:target_user_id>/unpin/", unpin_chat_view, name="unpin_chat"),
     path("conversations/<int:target_user_id>/archive/", archive_chat_view, name="archive_chat"),

@@ -558,3 +558,31 @@ def download_attachment_view(request, attachment_id):
         return Response({"status": False, "message": str(exc)}, status=status.HTTP_404_NOT_FOUND)
     except PermissionError as exc:
         return Response({"status": False, "message": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_shared_media_view(request, target_user_id):
+    category = request.query_params.get("category", "media").lower()
+    page = int(request.query_params.get("page", 1))
+    page_size = int(request.query_params.get("page_size", 20))
+
+    try:
+        service = MessageService()
+        data = service.get_shared_media(
+            user=request.user,
+            target_user_id=target_user_id,
+            category=category,
+            page=page,
+            page_size=page_size,
+        )
+        return Response(
+            {"status": True, "message": "Shared media retrieved successfully.", "data": data},
+            status=status.HTTP_200_OK,
+        )
+    except User.DoesNotExist as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+    except PermissionError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+    except ValueError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)

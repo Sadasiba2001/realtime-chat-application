@@ -312,6 +312,28 @@ class ChatService {
     return res.data.data;
   }
 
+  async getSharedMedia(
+    targetUserId: string,
+    category: 'media' | 'files' | 'links' = 'media',
+    page: number = 1
+  ): Promise<{
+    category: string;
+    total_count: number;
+    page: number;
+    page_size: number;
+    has_next: boolean;
+    items: any[];
+  }> {
+    const numericId = parseInt(targetUserId, 10);
+    if (isNaN(numericId)) {
+      return { category, total_count: 0, page: 1, page_size: 20, has_next: false, items: [] };
+    }
+    const res = await apiClient.get(`/api/v1/chat/conversations/${numericId}/shared-media/`, {
+      params: { category, page },
+    });
+    return res.data.data;
+  }
+
   async markAsRead(id: string): Promise<void> {
     this.conversations = this.conversations.map((c) =>
       c.id === id ? { ...c, unreadCount: 0 } : c
