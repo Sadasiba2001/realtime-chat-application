@@ -150,9 +150,12 @@ export interface WSMessageReactionPayload {
   reactions: BackendReactionData[];
 }
 
-export interface WSMessageReactionEvent {
-  type: 'message_reaction_updated';
-  data: WSMessageReactionPayload;
+export interface WSTypingStatusEvent {
+  type: 'typing_status';
+  user_id: number | string;
+  user_name?: string;
+  is_typing: boolean;
+  conversation_user_id?: number | string;
 }
 
 export type WSServerEvent =
@@ -164,6 +167,7 @@ export type WSServerEvent =
   | WSMessageDeleteEvent
   | WSMessageEditedEvent
   | WSMessageReactionEvent
+  | WSTypingStatusEvent
   | WSProfileUpdateEvent
   | WSErrorEvent
   | WSVoiceSignalingEvent

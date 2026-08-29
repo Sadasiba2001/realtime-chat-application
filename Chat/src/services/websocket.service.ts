@@ -163,6 +163,10 @@ class WebSocketService {
         this.emit('MESSAGE_REACTION_UPDATED', event);
         break;
 
+      case 'typing_status':
+        this.emit('USER_TYPING', event);
+        break;
+
       case 'profile_update':
         this.emit('PROFILE_UPDATE', event);
         break;
@@ -471,6 +475,24 @@ class WebSocketService {
 
     if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
       this.pendingQueue.push(payloadStr);
+      return true;
+    }
+
+    return false;
+  }
+
+  public sendTyping(targetUserId: string | number, isTyping: boolean): boolean {
+    const numMatch = String(targetUserId).match(/\d+/);
+    const cleanUserId = numMatch ? parseInt(numMatch[0], 10) : targetUserId;
+    if (!cleanUserId) return false;
+
+    const payloadStr = JSON.stringify({
+      type: isTyping ? 'typing_start' : 'typing_stop',
+      target_user_id: cleanUserId,
+    });
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(payloadStr);
       return true;
     }
 

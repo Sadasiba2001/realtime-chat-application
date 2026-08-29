@@ -397,6 +397,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.handle_reaction(content)
         elif msg_type == "forward_message":
             await self.handle_forward_message(content)
+        elif msg_type in ("typing_start", "typing_stop", "typing"):
+            await self.handle_typing(content, msg_type)
         else:
             await self.send_json({
                 "type": "error",
@@ -1007,6 +1009,45 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                         "data": msg_data,
                     },
                 )
+
+    async def handle_typing(self, content: dict, msg_type: str):
+        raw_target_id = (
+            content.get("target_user_id")
+            or content.get("receiver_id")
+            or content.get("conversation_user_id")
+        )
+        if raw_target_id is None:
+            return
+
+        try:
+            target_user_id = int(raw_target_id)
+        except (ValueError, TypeError):
+            return
+
+        is_typing = (
+            msg_type == "typing_start"
+            or content.get("is_typing") is True
+            or (msg_type == "typing" and content.get("status") == "start")
+        )
+
+        user_display_name = getattr(self.user, "username", f"User {self.user.id}")
+
+        await self.channel_layer.group_send(
+            f"user_{target_user_id}",
+            {
+                "type": "chat.typing.event",
+                "data": {
+                    "type": "typing_status",
+                    "user_id": self.user.id,
+                    "user_name": user_display_name,
+                    "is_typing": is_typing,
+                    "conversation_user_id": self.user.id,
+                },
+            },
+        )
+
+    async def chat_typing_event(self, event: dict):
+        await self.send_json(event["data"])
 
 
 

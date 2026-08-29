@@ -6,7 +6,7 @@ import { EmojiPicker } from '../common/EmojiPicker';
 import type { Attachment } from '../../types/chat.types';
 
 export const MessageComposer: React.FC = () => {
-  const { sendMessage, editMessage, replyingToMessage, setReplyTo, editingMessage, setEditingMessage } = useChat();
+  const { sendMessage, editMessage, replyingToMessage, setReplyTo, editingMessage, setEditingMessage, sendTyping } = useChat();
   const [text, setText] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
@@ -17,6 +17,27 @@ export const MessageComposer: React.FC = () => {
   const [recordSeconds, setRecordSeconds] = useState(0);
   const recordIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Debounced Typing logic
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTypingSentRef = useRef(false);
+
+  const stopTypingNow = () => {
+    if (typingTimerRef.current) {
+      clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = null;
+    }
+    if (isTypingSentRef.current) {
+      sendTyping(false);
+      isTypingSentRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      stopTypingNow();
+    };
+  }, []);
+
   useEffect(() => {
     if (editingMessage) {
       setText(editingMessage.text);
@@ -25,6 +46,7 @@ export const MessageComposer: React.FC = () => {
 
   const handleSend = () => {
     if (!text.trim() && attachments.length === 0) return;
+    stopTypingNow();
     if (editingMessage) {
       editMessage(editingMessage.id, text.trim());
       setText('');
@@ -36,6 +58,26 @@ export const MessageComposer: React.FC = () => {
     }
     setShowAttachmentMenu(false);
     setShowEmojiPicker(false);
+  };
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setText(val);
+
+    if (!val.trim()) {
+      stopTypingNow();
+      return;
+    }
+
+    if (!isTypingSentRef.current) {
+      sendTyping(true);
+      isTypingSentRef.current = true;
+    }
+
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      stopTypingNow();
+    }, 2000);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -209,7 +251,7 @@ export const MessageComposer: React.FC = () => {
           {/* Auto-expanding Textarea */}
           <textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={handleTextChange}
             onKeyDown={handleKeyDown}
             placeholder="Write a message..."
             rows={1}

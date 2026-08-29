@@ -79,6 +79,7 @@ interface ChatContextType {
   toggleStarMessage: (messageId: string) => Promise<void>;
   addReaction: (messageId: string, emoji: string) => Promise<void>;
   forwardMessage: (messageId: string, targetUserIds: string | string[]) => Promise<void>;
+  sendTyping: (isTyping: boolean) => void;
   setReplyTo: (reply: ReplyPreview | null) => void;
   setEditingMessage: (message: Message | null) => void;
   togglePin: (id: string) => Promise<void>;
@@ -814,6 +815,32 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
     });
 
+    const unsubTyping = webSocketService.on<WSTypingStatusEvent>('USER_TYPING', (event) => {
+      console.log('[ChatContext] Real-time USER_TYPING event received:', event);
+      const targetId = String(event.conversation_user_id || event.user_id);
+      const targetMatch = targetId.match(/\d+/);
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          const cMatch = String(c.id).match(/\d+/);
+          const pMatch = c.participantIds?.[0]?.match(/\d+/);
+          const isMatch =
+            c.id === targetId ||
+            (targetMatch && cMatch && targetMatch[0] === cMatch[0]) ||
+            (targetMatch && pMatch && targetMatch[0] === pMatch[0]);
+
+          if (isMatch) {
+            return {
+              ...c,
+              isTyping: event.is_typing,
+              typingUser: event.is_typing ? (event.user_name || 'Contact') : undefined,
+            };
+          }
+          return c;
+        })
+      );
+    });
+
     return () => {
       unsubStatus();
       unsubNewMessage();
@@ -821,6 +848,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       unsubDeleteMessage();
       unsubEditMessage();
       unsubReaction();
+      unsubTyping();
       unsubHistory();
       unsubPresence();
       unsubProfileUpdate();
@@ -1170,6 +1198,17 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     webSocketService.sendForward(messageId, targetUserIds);
   };
 
+  const sendTyping = (isTyping: boolean) => {
+    if (!activeConversationId) return;
+    const conv = conversations.find((c) => c.id === activeConversationId);
+    if (conv) {
+      const targetId = getTargetUserIdFromConversation(currentUser.id, conv.participantIds);
+      if (targetId) {
+        webSocketService.sendTyping(targetId, isTyping);
+      }
+    }
+  };
+
   const togglePin = async (id: string) => {
     await chatService.togglePinConversation(id);
     setConversations((prev) =>
@@ -1301,6 +1340,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         toggleStarMessage,
         addReaction,
         forwardMessage,
+        sendTyping,
         setReplyTo: setReplyingToMessage,
         setEditingMessage,
         togglePin,

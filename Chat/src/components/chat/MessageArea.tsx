@@ -126,6 +126,20 @@ export const MessageArea: React.FC<MessageAreaProps> = ({
         );
       })}
 
+      {/* Real-time Typing Indicator Bubble */}
+      {activeConversation.isTyping && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/90 dark:bg-[#1a2234]/90 text-slate-500 dark:text-slate-400 text-xs w-max shadow-sm border border-slate-200 dark:border-white/10 animate-fade-in my-1">
+          <div className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+          <span className="font-medium text-slate-700 dark:text-slate-300">
+            {activeConversation.typingUser ? `${activeConversation.typingUser} is typing...` : 'typing...'}
+          </span>
+        </div>
+      )}
+
       <div ref={bottomRef} />
     </div>
   );
