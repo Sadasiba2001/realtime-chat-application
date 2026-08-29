@@ -1,5 +1,5 @@
 from django.contrib import admin
-from chatting_service.models import Message, UserReport
+from chatting_service.models import Message, UserReport, MessageAttachment
 
 
 @admin.register(Message)
@@ -36,4 +36,14 @@ class UserReportAdmin(admin.ModelAdmin):
     )
     raw_id_fields = ("reported_message",)
     readonly_fields = ("created_at", "updated_at")
+    ordering = ("-created_at",)
+
+
+@admin.register(MessageAttachment)
+class MessageAttachmentAdmin(admin.ModelAdmin):
+    list_display = ("id", "uploader", "file_name", "file_type", "file_size", "created_at")
+    list_filter = ("file_type", "created_at")
+    search_fields = ("file_name", "uploader__email", "uploader__username")
+    raw_id_fields = ("message",)
+    readonly_fields = ("created_at",)
     ordering = ("-created_at",)

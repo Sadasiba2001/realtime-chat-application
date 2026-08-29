@@ -243,3 +243,41 @@ class UserReport(models.Model):
     def __str__(self):
         return f"Report #{self.id}: User {self.reporter_id} reported User {self.reported_user_id} ({self.reason})"
 
+
+class MessageAttachment(models.Model):
+    ATTACHMENT_TYPES = [
+        ("image", "Image"),
+        ("document", "Document"),
+        ("audio", "Audio"),
+        ("video", "Video"),
+        ("archive", "Archive"),
+        ("other", "Other"),
+    ]
+
+    id = models.BigAutoField(primary_key=True)
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name="attachments",
+        null=True,
+        blank=True,
+    )
+    uploader = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="uploaded_attachments",
+    )
+    file_type = models.CharField(max_length=20, choices=ATTACHMENT_TYPES, default="document")
+    file_name = models.CharField(max_length=255)
+    file_path = models.FileField(upload_to="chat_attachments/")
+    file_size = models.PositiveIntegerField(default=0)
+    mime_type = models.CharField(max_length=100, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "message_attachments"
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Attachment #{self.id}: {self.file_name} ({self.file_type})"
+

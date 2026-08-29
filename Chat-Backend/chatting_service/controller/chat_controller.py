@@ -6,9 +6,10 @@ from rest_framework.response import Response
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
+from django.http import FileResponse
 from django.contrib.auth import get_user_model
 from chatting_service.services import MessageService
-from chatting_service.models import Message
+from chatting_service.models import Message, MessageAttachment
 from authentication_service.throttles import HistoryRateThrottle, SearchRateThrottle
 
 User = get_user_model()
@@ -516,3 +517,44 @@ def report_message_view(request, message_id):
         return Response({"status": False, "message": str(exc)}, status=status.HTTP_403_FORBIDDEN)
     except ValueError as exc:
         return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def upload_file_view(request):
+    if "file" not in request.FILES:
+        return Response(
+            {"status": False, "message": "No file was uploaded."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    file_obj = request.FILES["file"]
+    try:
+        service = MessageService()
+        attachment_data = service.upload_file(uploader=request.user, file=file_obj)
+        return Response(
+            {"status": True, "message": "File uploaded successfully.", "data": attachment_data},
+            status=status.HTTP_201_CREATED,
+        )
+    except ValueError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def download_attachment_view(request, attachment_id):
+    try:
+        service = MessageService()
+        attachment = service.get_attachment_for_user(user=request.user, attachment_id=attachment_id)
+        if not attachment.file_path:
+            return Response({"status": False, "message": "File path not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        response = FileResponse(attachment.file_path.open("rb"), content_type=attachment.mime_type or "application/octet-stream")
+        response["Content-Disposition"] = f'attachment; filename="{attachment.file_name}"'
+        return response
+    except MessageAttachment.DoesNotExist as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+    except PermissionError as exc:
+        return Response({"status": False, "message": str(exc)}, status=status.HTTP_403_FORBIDDEN)

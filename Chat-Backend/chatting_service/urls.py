@@ -16,6 +16,8 @@ from chatting_service.controller import (
     unblock_user_view,
     report_user_view,
     report_message_view,
+    upload_file_view,
+    download_attachment_view,
 )
 
 urlpatterns = [
@@ -29,6 +31,8 @@ urlpatterns = [
     path("users/<int:target_user_id>/block/", block_user_view, name="block_user"),
     path("users/<int:target_user_id>/unblock/", unblock_user_view, name="unblock_user"),
     path("users/<int:target_user_id>/report/", report_user_view, name="report_user"),
+    path("upload/", upload_file_view, name="upload_file"),
+    path("attachments/<int:attachment_id>/download/", download_attachment_view, name="download_attachment"),
     path("messages/search/", search_messages_view, name="search_messages"),
     path("messages/<int:message_id>/edit/", edit_message_view, name="edit_message"),
     path("messages/<int:message_id>/delete/", delete_message_view, name="delete_message"),

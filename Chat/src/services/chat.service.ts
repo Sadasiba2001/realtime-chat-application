@@ -301,6 +301,17 @@ class ChatService {
     return true;
   }
 
+  async uploadFile(file: File): Promise<Attachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await apiClient.post('/api/v1/chat/upload/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data.data;
+  }
+
   async markAsRead(id: string): Promise<void> {
     this.conversations = this.conversations.map((c) =>
       c.id === id ? { ...c, unreadCount: 0 } : c

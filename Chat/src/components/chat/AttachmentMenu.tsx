@@ -14,6 +14,8 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
 }) => {
   const { openModal, setActiveNotification } = useChat();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
 
   const handleRealFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,8 +61,66 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
     onClose();
   };
 
+  const handleGenericFileSelect = (e: React.ChangeEvent<HTMLInputElement>, category: 'document' | 'audio') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      if (setActiveNotification) {
+        setActiveNotification({
+          id: `err_${Date.now()}`,
+          type: 'error',
+          message: 'File size exceeds the allowed limit (10 MB).',
+        });
+      }
+      onClose();
+      return;
+    }
+
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const prohibited = ['exe', 'bat', 'cmd', 'sh', 'php', 'js', 'vbs'];
+    if (prohibited.includes(ext)) {
+      if (setActiveNotification) {
+        setActiveNotification({
+          id: `err_${Date.now()}`,
+          type: 'error',
+          message: 'This file type is not supported.',
+        });
+      }
+      onClose();
+      return;
+    }
+
+    const formattedSize =
+      file.size > 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.round(file.size / 1024)} KB`;
+
+    let fileType: Attachment['type'] = category;
+    if (file.type.startsWith('video/')) fileType = 'video';
+    else if (['zip', 'rar', 'tar', 'gz', '7z'].includes(ext)) fileType = 'document';
+
+    onSelectAttachment({
+      id: `att_${Date.now()}`,
+      type: fileType,
+      url: URL.createObjectURL(file),
+      name: file.name,
+      size: formattedSize,
+      mimeType: file.type,
+    });
+    onClose();
+  };
+
   const handlePickImageClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handlePickDocumentClick = () => {
+    docInputRef.current?.click();
+  };
+
+  const handlePickAudioClick = () => {
+    audioInputRef.current?.click();
   };
 
   const handlePickMockDocument = () => {
@@ -121,13 +181,13 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
       label: 'Document',
       icon: <FileText className="w-5 h-5 text-blue-500" />,
       bg: 'bg-blue-100 dark:bg-blue-950/60',
-      onClick: handlePickMockDocument,
+      onClick: handlePickDocumentClick,
     },
     {
       label: 'Audio',
       icon: <Headphones className="w-5 h-5 text-amber-500" />,
       bg: 'bg-amber-100 dark:bg-amber-950/60',
-      onClick: handlePickMockAudio,
+      onClick: handlePickAudioClick,
     },
     {
       label: 'Location',
@@ -151,6 +211,20 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
         accept="image/jpeg,image/png,image/gif,image/webp"
         className="hidden"
         onChange={handleRealFileSelect}
+      />
+      <input
+        type="file"
+        ref={docInputRef}
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.ppt,.pptx,.zip,.rar,.tar,.gz"
+        className="hidden"
+        onChange={(e) => handleGenericFileSelect(e, 'document')}
+      />
+      <input
+        type="file"
+        ref={audioInputRef}
+        accept="audio/*,video/*,.mp3,.wav,.ogg,.m4a,.mp4,.webm,.mov"
+        className="hidden"
+        onChange={(e) => handleGenericFileSelect(e, 'audio')}
       />
       <div className="space-y-1">
         {items.map((item) => (

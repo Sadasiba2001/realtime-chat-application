@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from authentication_service.repository import UserRepository
 from chatting_service.repository import MessageRepository
-from chatting_service.models import Message, UserChatPin, UserChatArchive, UserChatMute, UserBlock, UserReport
+from chatting_service.models import Message, UserChatPin, UserChatArchive, UserChatMute, UserBlock, UserReport, MessageAttachment
 from chatting_service.services.presence_service import PresenceService
 
 User = get_user_model()
@@ -480,6 +480,80 @@ class MessageService:
             "status": report.status,
             "created_at": report.created_at.isoformat().replace("+00:00", "Z"),
         }
+
+    def upload_file(self, uploader: User, file) -> Dict[str, Any]:
+        # File Size Validation (Max 10 MB = 10 * 1024 * 1024 bytes)
+        max_bytes = 10 * 1024 * 1024
+        if file.size > max_bytes:
+            raise ValueError("File size exceeds the allowed limit (10 MB).")
+
+        # Filename Sanitization & Path Traversal Check
+        raw_name = str(file.name)
+        if ".." in raw_name:
+            raise ValueError("Invalid filename.")
+        orig_name = raw_name.split("/")[-1].split("\\")[-1]
+
+        ext = orig_name.split(".")[-1].lower() if "." in orig_name else ""
+        prohibited_exts = ["exe", "bat", "cmd", "sh", "php", "js", "vbs"]
+        if ext in prohibited_exts:
+            raise ValueError("Unsupported or prohibited file extension.")
+
+        # Determine file category
+        mime_type = getattr(file, "content_type", "") or ""
+        if mime_type.startswith("image/") or ext in ["jpg", "jpeg", "png", "gif", "webp"]:
+            file_type = "image"
+        elif mime_type == "application/pdf" or ext == "pdf":
+            file_type = "document"
+        elif ext in ["doc", "docx", "xls", "xlsx", "txt", "csv", "ppt", "pptx"]:
+            file_type = "document"
+        elif mime_type.startswith("audio/") or ext in ["mp3", "wav", "ogg", "m4a", "aac"]:
+            file_type = "audio"
+        elif mime_type.startswith("video/") or ext in ["mp4", "webm", "mov", "avi", "mkv"]:
+            file_type = "video"
+        elif ext in ["zip", "rar", "tar", "gz", "7z"]:
+            file_type = "archive"
+        else:
+            file_type = "document"
+
+        attachment = MessageAttachment.objects.create(
+            uploader=uploader,
+            file_type=file_type,
+            file_name=orig_name,
+            file_path=file,
+            file_size=file.size,
+            mime_type=mime_type,
+        )
+
+        formatted_size = (
+            f"{(file.size / (1024 * 1024)):.1f} MB"
+            if file.size > 1024 * 1024
+            else f"{round(file.size / 1024)} KB"
+        )
+
+        return {
+            "id": f"att_{attachment.id}",
+            "attachment_id": attachment.id,
+            "type": attachment.file_type,
+            "url": attachment.file_path.url if attachment.file_path else f"/api/v1/chat/attachments/{attachment.id}/download/",
+            "name": attachment.file_name,
+            "size": formatted_size,
+            "mimeType": attachment.mime_type,
+        }
+
+    def get_attachment_for_user(self, user: User, attachment_id: int) -> MessageAttachment:
+        try:
+            attachment = MessageAttachment.objects.select_related("message", "uploader").get(id=attachment_id)
+        except MessageAttachment.DoesNotExist:
+            raise MessageAttachment.DoesNotExist("Attachment not found.")
+
+        # Uploader or message participant check
+        if attachment.uploader_id == user.id:
+            return attachment
+
+        if attachment.message and (attachment.message.sender_id == user.id or attachment.message.receiver_id == user.id):
+            return attachment
+
+        raise PermissionError("You do not have permission to access or download this file.")
 
     def toggle_pin_chat(self, user: User, target_user_id: int) -> bool:
         target_user = self.validate_target_user(target_user_id, user.id)

@@ -13,6 +13,8 @@ import {
   User as UserIcon,
   Share2,
   Flag,
+  Headphones,
+  Film,
 } from 'lucide-react';
 import type { Message, User } from '../../types/chat.types';
 import { useChat } from '../../context/ChatContext';
@@ -168,11 +170,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   </div>
                 )}
 
-                {att.type === 'document' && (
+                {(att.type === 'document' || att.type === 'archive') && (
                   <a
                     href={att.url}
                     target="_blank"
                     rel="noreferrer"
+                    download={att.name}
                     className={`flex items-center gap-3 p-2.5 rounded-xl border text-xs transition-colors ${
                       isOutgoing
                         ? 'bg-white/10 border-white/20 text-white hover:bg-white/15'
@@ -186,6 +189,45 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     </div>
                     <Download className="w-4 h-4 opacity-75" />
                   </a>
+                )}
+
+                {att.type === 'audio' && (
+                  <a
+                    href={att.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    download={att.name}
+                    className={`flex items-center gap-3 p-2.5 rounded-xl border text-xs transition-colors ${
+                      isOutgoing
+                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/15'
+                        : 'bg-slate-50 dark:bg-[#111827] border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <Headphones className="w-6 h-6 text-amber-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold truncate">{att.name}</p>
+                      <span className="opacity-75">{att.size}</span>
+                    </div>
+                    <Download className="w-4 h-4 opacity-75" />
+                  </a>
+                )}
+
+                {att.type === 'video' && (
+                  <div
+                    onClick={() => openModal('media_viewer', { url: att.url, name: att.name, type: 'video' })}
+                    className={`flex items-center gap-3 p-2.5 rounded-xl border text-xs cursor-pointer transition-colors ${
+                      isOutgoing
+                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/15'
+                        : 'bg-slate-50 dark:bg-[#111827] border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <Film className="w-6 h-6 text-rose-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold truncate">{att.name}</p>
+                      <span className="opacity-75">{att.size}</span>
+                    </div>
+                    <Download className="w-4 h-4 opacity-75" />
+                  </div>
                 )}
 
                 {att.type === 'location' && (
