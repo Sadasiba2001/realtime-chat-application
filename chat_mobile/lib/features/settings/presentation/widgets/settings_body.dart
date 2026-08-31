@@ -24,7 +24,6 @@ class SettingsBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final currentThemeMode = ChatApp.themeModeNotifier.value;
     final controller = authController ?? AuthScope.maybeOf(context);
     final user = controller?.currentUser;
 
@@ -89,38 +88,43 @@ class SettingsBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.s8),
-        AppCard(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.s16,
-            vertical: AppSpacing.s8,
-          ),
-          child: Column(
-            children: [
-              _buildThemeOption(
-                context: context,
-                title: 'System Default',
-                icon: Icons.brightness_auto_rounded,
-                isSelected: currentThemeMode == ThemeMode.system,
-                onTap: () => ChatApp.setThemeMode(ThemeMode.system),
+        ValueListenableBuilder<ThemeMode>(
+          valueListenable: ChatApp.themeModeNotifier,
+          builder: (context, currentThemeMode, _) {
+            return AppCard(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s16,
+                vertical: AppSpacing.s8,
               ),
-              const AppDivider(),
-              _buildThemeOption(
-                context: context,
-                title: 'Light Theme',
-                icon: Icons.light_mode_rounded,
-                isSelected: currentThemeMode == ThemeMode.light,
-                onTap: () => ChatApp.setThemeMode(ThemeMode.light),
+              child: Column(
+                children: [
+                  _buildThemeOption(
+                    context: context,
+                    title: 'System Default',
+                    icon: Icons.brightness_auto_rounded,
+                    isSelected: currentThemeMode == ThemeMode.system,
+                    onTap: () => ChatApp.setThemeMode(ThemeMode.system),
+                  ),
+                  const AppDivider(),
+                  _buildThemeOption(
+                    context: context,
+                    title: 'Light Theme',
+                    icon: Icons.light_mode_rounded,
+                    isSelected: currentThemeMode == ThemeMode.light,
+                    onTap: () => ChatApp.setThemeMode(ThemeMode.light),
+                  ),
+                  const AppDivider(),
+                  _buildThemeOption(
+                    context: context,
+                    title: 'Dark Theme (#252330)',
+                    icon: Icons.dark_mode_rounded,
+                    isSelected: currentThemeMode == ThemeMode.dark,
+                    onTap: () => ChatApp.setThemeMode(ThemeMode.dark),
+                  ),
+                ],
               ),
-              const AppDivider(),
-              _buildThemeOption(
-                context: context,
-                title: 'Dark Theme (#252330)',
-                icon: Icons.dark_mode_rounded,
-                isSelected: currentThemeMode == ThemeMode.dark,
-                onTap: () => ChatApp.setThemeMode(ThemeMode.dark),
-              ),
-            ],
-          ),
+            );
+          },
         ),
         const SizedBox(height: AppSpacing.s20),
 

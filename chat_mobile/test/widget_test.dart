@@ -145,7 +145,7 @@ void main() {
     expect(find.text('Alexander Wright'), findsOneWidget);
   });
 
-  testWidgets('Theme mode switcher updates successfully', (WidgetTester tester) async {
+  testWidgets('Theme mode switcher allows independent selection across all three modes', (WidgetTester tester) async {
     mockAuthRepo.isAuthenticatedState = true;
     await mockAuthController.checkAuthStatus();
     AppRouter.router.go('/main/chats');
@@ -157,16 +157,27 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
 
-    // Tap Dark Theme option
+    // 1. Initial is System
+    expect(ChatApp.themeModeNotifier.value, ThemeMode.system);
+
+    // 2. Directly select Dark Theme from System Default
     await tester.tap(find.text('Dark Theme (#252330)'));
     await tester.pumpAndSettle();
-
     expect(ChatApp.themeModeNotifier.value, ThemeMode.dark);
 
-    // Revert to system
+    // 3. Select Light Theme from Dark Theme
+    await tester.tap(find.text('Light Theme'));
+    await tester.pumpAndSettle();
+    expect(ChatApp.themeModeNotifier.value, ThemeMode.light);
+
+    // 4. Select Dark Theme from Light Theme
+    await tester.tap(find.text('Dark Theme (#252330)'));
+    await tester.pumpAndSettle();
+    expect(ChatApp.themeModeNotifier.value, ThemeMode.dark);
+
+    // 5. Select System Default from Dark Theme
     await tester.tap(find.text('System Default'));
     await tester.pumpAndSettle();
-
     expect(ChatApp.themeModeNotifier.value, ThemeMode.system);
   });
 }
