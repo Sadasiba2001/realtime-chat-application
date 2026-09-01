@@ -7,10 +7,10 @@ export const storage = {
     return useAuthStore.getState().tokens.access;
   },
   getRefreshToken: (): string | null => {
-    return null;
+    return useAuthStore.getState().tokens.refresh;
   },
-  setAuthTokens: (access: string, _refresh?: string | null): void => {
-    useAuthStore.getState().setTokens({ access, refresh: null });
+  setAuthTokens: (access: string, refresh?: string | null): void => {
+    useAuthStore.getState().setTokens({ access, refresh: refresh ?? null });
     localStorage.removeItem('chat_auth_token');
     localStorage.removeItem('chat_refresh_token');
   },

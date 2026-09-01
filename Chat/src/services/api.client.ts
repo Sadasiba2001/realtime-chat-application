@@ -87,14 +87,18 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const response = await apiClient.post('/api/v1/auth/token/refresh/');
+        const refreshToken = storage.getRefreshToken() || useAuthStore.getState().tokens.refresh;
+        const response = await apiClient.post('/api/v1/auth/token/refresh/', {
+          refresh: refreshToken,
+        });
         const dataObj = response.data?.data || response.data;
         const newAccess = dataObj?.access;
+        const newRefresh = dataObj?.refresh || refreshToken;
         if (!newAccess) {
           throw new Error('Refresh response missing access token');
         }
 
-        useAuthStore.getState().setTokens({ access: newAccess, refresh: null });
+        useAuthStore.getState().setTokens({ access: newAccess, refresh: newRefresh });
 
         // Update Authorization header on original request
         originalRequest.headers.Authorization = `Bearer ${newAccess}`;
