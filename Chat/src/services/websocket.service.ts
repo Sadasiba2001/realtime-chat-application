@@ -68,12 +68,18 @@ class WebSocketService {
     this.setStatus('connecting');
 
     const wsUrl = this.resolveWebSocketUrl();
+    console.log('[WS CLIENT] connect() called');
+    console.log(`[WS CLIENT] WebSocket URL = ${wsUrl}`);
+    console.log(`[WS CLIENT] token exists = ${Boolean(token)}`);
+    console.log(`[WS CLIENT] token length = ${token ? token.length : 0}`);
+    console.log('[WS CLIENT] subprotocol = access_token');
     console.log(`[WebSocket] Connecting to user-level socket... (${wsUrl})`);
 
     try {
       this.socket = new WebSocket(wsUrl, ['access_token', token]);
 
       this.socket.onopen = () => {
+        console.log('[WS CLIENT] WebSocket OPENED');
         console.log('[WebSocket] User-level WebSocket connected successfully.');
         this.reconnectAttempts = 0;
         this.setStatus('connected');
@@ -82,6 +88,7 @@ class WebSocketService {
       };
 
       this.socket.onmessage = (event: MessageEvent) => {
+        console.log('[WS CLIENT] WebSocket MESSAGE received:', event.data);
         try {
           const payload = JSON.parse(event.data) as WSServerEvent;
           this.handleServerMessage(payload);
@@ -91,12 +98,17 @@ class WebSocketService {
       };
 
       this.socket.onerror = (event) => {
+        console.log('[WS CLIENT] WebSocket ERROR:', event);
         console.warn('[WebSocket] Socket error:', event);
         this.setStatus('error');
         this.emit('ERROR', { code: 'SOCKET_ERROR', message: 'WebSocket encountered an error.' });
       };
 
       this.socket.onclose = (event: CloseEvent) => {
+        console.log('[WS CLIENT] WebSocket CLOSED');
+        console.log(`[WS CLIENT] close code = ${event.code}`);
+        console.log(`[WS CLIENT] close reason = ${event.reason || 'None'}`);
+        console.log(`[WS CLIENT] wasClean = ${event.wasClean}`);
         console.log(`[WebSocket] Socket closed (code: ${event.code}, reason: ${event.reason || 'None'})`);
         this.cleanupSocket();
         this.setStatus('disconnected');

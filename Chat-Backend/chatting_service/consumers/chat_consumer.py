@@ -21,9 +21,17 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def connect(self):
         self.user = self.scope.get("user")
+        print("[WS CONNECT] connect() called")
+        print(f"[WS CONNECT] path = {self.scope.get('path')}")
+        print(f"[WS CONNECT] scope user type = {type(self.user)}")
+        print(f"[WS CONNECT] user id = {getattr(self.user, 'id', None)}")
+        print(f"[WS CONNECT] is_authenticated = {getattr(self.user, 'is_authenticated', False)}")
+        print(f"[WS CONNECT] is_anonymous = {getattr(self.user, 'is_anonymous', True)}")
 
         # 1. Authentication check
         if not self.user or self.user.is_anonymous or not self.user.is_authenticated:
+            print("[WS CONNECT] AUTHENTICATION REJECT")
+            print("[WS CONNECT] reason = user missing/anonymous/unauthenticated")
             await self.close(code=4001)
             return
 
@@ -37,6 +45,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         ip_conns = cache.get(ip_conn_key, 0)
 
         if user_conns >= 5 or ip_conns >= 10:
+            print(f"[WS CONNECT] CONNECTION LIMIT EXCEEDED: user_conns={user_conns}, ip_conns={ip_conns}")
             await self.close(code=4003)
             return
 
@@ -90,7 +99,10 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             if "access_token" in sec_protocol:
                 selected_subprotocol = "access_token"
 
+        print("[WS CONNECT] AUTHENTICATION PASSED")
+        print(f"[WS CONNECT] accepting WebSocket with subprotocol = {selected_subprotocol}")
         await self.accept(subprotocol=selected_subprotocol)
+        print("[WS CONNECT] WebSocket ACCEPTED")
 
         # Start token lifecycle monitor task (B-12, B-14)
         token = get_token_from_scope(self.scope)
