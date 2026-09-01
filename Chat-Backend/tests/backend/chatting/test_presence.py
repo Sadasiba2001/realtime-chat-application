@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TransactionTestCase
 from asgiref.sync import async_to_sync
 from channels.testing import WebsocketCommunicator
 from chatting_service.services import PresenceService
@@ -10,7 +10,7 @@ from django.core.cache import cache
 User = get_user_model()
 
 
-class PresenceServiceUnitTests(TestCase):
+class PresenceServiceUnitTests(TransactionTestCase):
     def setUp(self):
         cache.clear()
         self.presence_service = PresenceService()
