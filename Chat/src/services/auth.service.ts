@@ -27,8 +27,8 @@ class AuthService {
     const resData = response.data;
     const dataObj = resData?.data || resData;
 
-    const access = dataObj?.access || dataObj?.token;
-    const refresh = dataObj?.refresh || '';
+    const access = dataObj?.access || resData?.access || dataObj?.token;
+    const refresh = dataObj?.refresh || resData?.refresh || '';
 
     if (access) {
       storage.setAuthTokens(access, refresh);
@@ -64,8 +64,8 @@ class AuthService {
     const resData = response.data;
     const dataObj = resData?.data || resData;
 
-    const access = dataObj?.access || dataObj?.token;
-    const refresh = dataObj?.refresh || '';
+    const access = dataObj?.access || resData?.access || dataObj?.token;
+    const refresh = dataObj?.refresh || resData?.refresh || '';
 
     if (!access) {
       throw new Error('Registration failed: missing access token in response');

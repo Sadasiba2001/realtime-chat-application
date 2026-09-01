@@ -7,12 +7,12 @@ export const storage = {
     return useAuthStore.getState().tokens.access;
   },
   getRefreshToken: (): string | null => {
-    return useAuthStore.getState().tokens.refresh;
+    return useAuthStore.getState().tokens.refresh || localStorage.getItem('chat_refresh_token');
   },
   setAuthTokens: (access: string, refresh?: string | null): void => {
     useAuthStore.getState().setTokens({ access, refresh: refresh ?? null });
-    localStorage.removeItem('chat_auth_token');
-    localStorage.removeItem('chat_refresh_token');
+    if (access) localStorage.setItem('chat_auth_token', access);
+    if (refresh) localStorage.setItem('chat_refresh_token', refresh);
   },
   removeAuthToken: (): void => {
     useAuthStore.getState().clearAuth();
