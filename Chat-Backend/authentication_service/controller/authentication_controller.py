@@ -163,13 +163,6 @@ def login(request):
         "user": user_data,
     }
 
-    print("======== LOGIN BACKEND CONSOLE ========", flush=True)
-    print(f"User Email: {serializer.validated_data.get('email')}", flush=True)
-    print(f"Generated Access Token: {access_token}", flush=True)
-    print(f"Generated Refresh Token: {refresh_token}", flush=True)
-    print(f"Response Data Keys: {list(response_data.keys())}", flush=True)
-    print("=======================================\n", flush=True)
-
     response = Response(
         {
             "status": True,
