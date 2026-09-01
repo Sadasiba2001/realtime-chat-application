@@ -285,9 +285,9 @@ class WebSocketService {
     }
   }
 
-  public sendMessage(receiverId: string | number, content: string, replyToId?: string | number): boolean {
+  public sendMessage(receiverId: string | number, content: string, replyToId?: string | number, attachmentIds?: (number | string)[]): boolean {
     const trimmed = content.trim();
-    if (!trimmed || !receiverId) return false;
+    if ((!trimmed && (!attachmentIds || attachmentIds.length === 0)) || !receiverId) return false;
 
     // Clean numeric ID if string like "user_2"
     const numMatch = String(receiverId).match(/\d+/);
@@ -302,8 +302,9 @@ class WebSocketService {
     const payloadStr = JSON.stringify({
       type: 'message',
       receiver_id: cleanReceiverId,
-      content: trimmed,
+      content: trimmed || '🎤 Voice Message',
       ...(cleanReplyToId !== undefined ? { reply_to_id: cleanReplyToId, reply_to: cleanReplyToId } : {}),
+      ...(attachmentIds && attachmentIds.length > 0 ? { attachment_ids: attachmentIds } : {}),
     });
 
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {

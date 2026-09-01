@@ -407,14 +407,28 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             })
 
     async def handle_message(self, content: dict):
-        raw_content = content.get("content")
-        if not isinstance(raw_content, str) or not raw_content.strip():
+        raw_content = content.get("content", "")
+        attachment_ids = content.get("attachment_ids")
+
+        if not isinstance(raw_content, str):
+            raw_content = ""
+
+        if not raw_content.strip() and not attachment_ids:
             await self.send_json({
                 "type": "error",
                 "code": "INVALID_MESSAGE",
                 "message": "Message content is required.",
             })
             return
+
+        clean_att_ids = None
+        if attachment_ids and isinstance(attachment_ids, list):
+            clean_att_ids = []
+            for aid in attachment_ids:
+                try:
+                    clean_att_ids.append(int(str(aid).replace("att_", "")))
+                except (ValueError, TypeError):
+                    pass
 
         max_length = getattr(settings, "MAX_MESSAGE_LENGTH", 1000)
         if len(raw_content.strip()) > max_length:
@@ -463,6 +477,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                 receiver_id=receiver_id,
                 content=raw_content,
                 reply_to_id=reply_to_id,
+                attachment_ids=clean_att_ids,
             )
         except PermissionError as exc:
             await self.send_json({

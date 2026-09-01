@@ -259,6 +259,16 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         : undefined;
 
+      const attachments = ((backendMsg as any).attachments || []).map((att: any) => ({
+        id: String(att.id),
+        type: att.type,
+        url: att.url,
+        name: att.name,
+        size: att.size,
+        mimeType: att.mimeType,
+        duration: att.duration,
+      }));
+
       return {
         id: String(backendMsg.id),
         conversationId: targetConvId,
@@ -272,6 +282,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         forwardedFromName: backendMsg.forwarded_from_name || undefined,
         reactions,
         replyTo,
+        attachments: attachments.length > 0 ? attachments : undefined,
         updatedAt: backendMsg.updated_at,
         createdAt: backendMsg.created_at,
       };
@@ -1055,9 +1066,15 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const replyToId = replyingToMessage ? replyingToMessage.id : undefined;
     setReplyingToMessage(null);
 
+    const attachmentIds = attachments
+      ? attachments
+          .map((a) => (a.attachment_id ? a.attachment_id : parseInt(String(a.id).replace('att_', ''), 10)))
+          .filter((id) => !isNaN(id))
+      : undefined;
+
     // Send through real Django WebSocket
-    console.log(`[ChatContext] Sending WebSocket message to receiver ${targetUserId}:`, trimmed);
-    let sent = webSocketService.sendMessage(targetUserId, trimmed, replyToId);
+    console.log(`[ChatContext] Sending WebSocket message to receiver ${targetUserId}:`, trimmed, attachmentIds);
+    let sent = webSocketService.sendMessage(targetUserId, trimmed, replyToId, attachmentIds);
     if (!sent) {
       const token = storage.getAuthToken();
       if (token && !webSocketService.isConnected()) {
@@ -1065,7 +1082,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         webSocketService.connect(token);
         // Brief retry after initiating connection
         setTimeout(() => {
-          const retrySent = webSocketService.sendMessage(targetUserId, trimmed);
+          const retrySent = webSocketService.sendMessage(targetUserId, trimmed, replyToId, attachmentIds);
           if (!retrySent) {
             console.error('[ChatContext] Failed to dispatch message via WebSocket: Socket not connected.');
             setMessagesMap((prev) => ({

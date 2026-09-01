@@ -6,15 +6,23 @@ import { EmojiPicker } from '../common/EmojiPicker';
 import type { Attachment } from '../../types/chat.types';
 
 export const MessageComposer: React.FC = () => {
-  const { sendMessage, editMessage, replyingToMessage, setReplyTo, editingMessage, setEditingMessage, sendTyping, activeConversation, currentUser, unblockUser } = useChat();
+  const { sendMessage, editMessage, replyingToMessage, setReplyTo, editingMessage, setEditingMessage, sendTyping, activeConversation, currentUser, unblockUser, setActiveNotification } = useChat();
   const [text, setText] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  // Voice recording mock state
+  // Real Voice recording state
   const [isRecording, setIsRecording] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploadingVoice, setIsUploadingVoice] = useState(false);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const recordIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Debounced Typing logic
@@ -35,6 +43,10 @@ export const MessageComposer: React.FC = () => {
   useEffect(() => {
     return () => {
       stopTypingNow();
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      if (recordIntervalRef.current) clearInterval(recordIntervalRef.current);
     };
   }, []);
 
@@ -95,32 +107,128 @@ export const MessageComposer: React.FC = () => {
     setText((prev) => prev + emoji);
   };
 
-  const startRecording = () => {
-    setIsRecording(true);
-    setRecordSeconds(0);
-    recordIntervalRef.current = setInterval(() => {
-      setRecordSeconds((prev) => prev + 1);
-    }, 1000);
+  const startRecording = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (setActiveNotification) {
+          setActiveNotification({
+            id: `err_${Date.now()}`,
+            type: 'error',
+            message: 'Voice recording is not supported in this browser.',
+          });
+        }
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : '';
+
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: mimeType || 'audio/webm' });
+        setAudioBlob(blob);
+        const url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
+        setIsPreviewing(true);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setIsPreviewing(false);
+      setRecordSeconds(0);
+      recordIntervalRef.current = setInterval(() => {
+        setRecordSeconds((prev) => prev + 1);
+      }, 1000);
+    } catch (err: any) {
+      if (setActiveNotification) {
+        setActiveNotification({
+          id: `err_${Date.now()}`,
+          type: 'error',
+          message: 'Microphone permission is required to record a voice message.',
+        });
+      }
+    }
+  };
+
+  const stopRecording = () => {
+    if (recordIntervalRef.current) clearInterval(recordIntervalRef.current);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+    setIsRecording(false);
   };
 
   const cancelRecording = () => {
     if (recordIntervalRef.current) clearInterval(recordIntervalRef.current);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.onstop = null;
+      mediaRecorderRef.current.stop();
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setIsRecording(false);
+    setIsPreviewing(false);
+    setAudioBlob(null);
+    setPreviewUrl(null);
     setRecordSeconds(0);
   };
 
-  const stopAndSendRecording = () => {
-    if (recordIntervalRef.current) clearInterval(recordIntervalRef.current);
-    setIsRecording(false);
-    const mockAudio: Attachment = {
-      id: `audio_${Date.now()}`,
-      type: 'audio',
-      url: '#',
-      name: 'Voice Note',
-      duration: `0:${recordSeconds < 10 ? '0' : ''}${recordSeconds}`,
-    };
-    sendMessage('🎤 Voice Message', [mockAudio]);
-    setRecordSeconds(0);
+  const sendVoiceMessage = async () => {
+    if (!audioBlob) return;
+    setIsUploadingVoice(true);
+    try {
+      const ext = audioBlob.type.includes('mp4') ? 'mp4' : 'webm';
+      const file = new File([audioBlob], `voice_note_${Date.now()}.${ext}`, { type: audioBlob.type || 'audio/webm' });
+      const uploadedAtt = await chatService.uploadFile(file);
+
+      const mins = Math.floor(recordSeconds / 60);
+      const secs = recordSeconds % 60;
+      const formattedDuration = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+      const voiceAttachment: Attachment = {
+        id: uploadedAtt.id,
+        type: 'audio',
+        url: uploadedAtt.url,
+        name: uploadedAtt.name || 'Voice Message',
+        size: uploadedAtt.size,
+        duration: formattedDuration,
+      };
+
+      sendMessage('🎤 Voice Message', [voiceAttachment]);
+      cancelRecording();
+    } catch (err: any) {
+      if (setActiveNotification) {
+        setActiveNotification({
+          id: `err_${Date.now()}`,
+          type: 'error',
+          message: 'Voice message could not be uploaded. Try again.',
+        });
+      }
+    } finally {
+      setIsUploadingVoice(false);
+    }
   };
 
   return (
@@ -233,23 +341,49 @@ export const MessageComposer: React.FC = () => {
               <div className="flex items-center gap-2.5">
                 <span className="w-3 h-3 bg-rose-600 rounded-full animate-ping" />
                 <span className="font-mono text-sm font-semibold">
-                  0:{recordSeconds < 10 ? '0' : ''}{recordSeconds}
+                  🔴 Recording {Math.floor(recordSeconds / 60)}:{recordSeconds % 60 < 10 ? '0' : ''}{recordSeconds % 60}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={cancelRecording}
-                  className="p-2 hover:bg-rose-200/80 dark:hover:bg-rose-900/60 rounded-full transition-colors"
-                  title="Cancel"
+                  className="p-2 hover:bg-rose-200/80 dark:hover:bg-rose-900/60 rounded-full transition-colors text-xs font-semibold"
+                  title="Cancel Recording"
                 >
                   <Trash2 className="w-5 h-5 text-rose-600 dark:text-rose-400" />
                 </button>
                 <button
-                  onClick={stopAndSendRecording}
-                  className="p-2.5 bg-gradient-to-tr from-violet-600 to-indigo-600 text-white rounded-full transition-transform hover:scale-105 shadow-md"
-                  title="Send Voice Note"
+                  onClick={stopRecording}
+                  className="px-3.5 py-1.5 bg-gradient-to-tr from-violet-600 to-indigo-600 text-white font-semibold text-xs rounded-full transition-transform hover:scale-105 shadow-md flex items-center gap-1.5"
+                  title="Stop & Preview"
                 >
-                  <Check className="w-5 h-5" />
+                  <Check className="w-4 h-4" /> Stop
+                </button>
+              </div>
+            </div>
+          ) : isPreviewing && previewUrl ? (
+            <div className="flex items-center justify-between gap-3 py-2 px-4 bg-white/95 dark:bg-[#1a2234]/95 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-lg">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-violet-600 dark:text-violet-400 mb-1 flex items-center gap-1">
+                  🎤 Voice Message Preview ({Math.floor(recordSeconds / 60)}:{recordSeconds % 60 < 10 ? '0' : ''}{recordSeconds % 60})
+                </p>
+                <audio src={previewUrl} controls className="w-full h-8" />
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={cancelRecording}
+                  disabled={isUploadingVoice}
+                  className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors"
+                  title="Cancel"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={sendVoiceMessage}
+                  disabled={isUploadingVoice}
+                  className="px-4 py-2 bg-gradient-to-tr from-violet-600 to-indigo-600 text-white font-semibold text-xs rounded-xl shadow-md transition-transform active:scale-95 flex items-center gap-1.5"
+                >
+                  <Send className="w-4 h-4" /> {isUploadingVoice ? 'Uploading...' : 'Send'}
                 </button>
               </div>
             </div>

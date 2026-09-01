@@ -20,6 +20,7 @@ import type { Message, User } from '../../types/chat.types';
 import { useChat } from '../../context/ChatContext';
 import { EmojiPicker } from '../common/EmojiPicker';
 import { ForwardModal } from './ForwardModal';
+import { VoiceMessagePlayer } from './VoiceMessagePlayer';
 
 interface MessageBubbleProps {
   message: Message;
@@ -192,24 +193,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 )}
 
                 {att.type === 'audio' && (
-                  <a
-                    href={att.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    download={att.name}
-                    className={`flex items-center gap-3 p-2.5 rounded-xl border text-xs transition-colors ${
-                      isOutgoing
-                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/15'
-                        : 'bg-slate-50 dark:bg-[#111827] border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <Headphones className="w-6 h-6 text-amber-400 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">{att.name}</p>
-                      <span className="opacity-75">{att.size}</span>
-                    </div>
-                    <Download className="w-4 h-4 opacity-75" />
-                  </a>
+                  <VoiceMessagePlayer
+                    url={att.url}
+                    name={att.name}
+                    duration={att.duration}
+                    isOutgoing={isOutgoing}
+                  />
                 )}
 
                 {att.type === 'video' && (

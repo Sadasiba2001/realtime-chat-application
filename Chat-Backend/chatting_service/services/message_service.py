@@ -46,11 +46,18 @@ class MessageService:
 
         return target_user
 
-    def send_message(self, sender: User, receiver_id: int, content: str, reply_to_id: Optional[int] = None) -> Dict[str, Any]:
-        if not isinstance(content, str) or not content.strip():
+    def send_message(
+        self,
+        sender: User,
+        receiver_id: int,
+        content: str,
+        reply_to_id: Optional[int] = None,
+        attachment_ids: Optional[List[int]] = None,
+    ) -> Dict[str, Any]:
+        if not isinstance(content, str) or (not content.strip() and not attachment_ids):
             raise ValueError("Message content cannot be empty.")
 
-        cleaned_content = content.strip()
+        cleaned_content = content.strip() or "🎤 Voice Message"
         max_length = getattr(settings, "MAX_MESSAGE_LENGTH", 1000)
         if len(cleaned_content) > max_length:
             raise ValueError(f"Message exceeds maximum allowed length of {max_length} characters.")
@@ -66,6 +73,13 @@ class MessageService:
             content=cleaned_content,
             reply_to_id=reply_to_id,
         )
+
+        if attachment_ids:
+            MessageAttachment.objects.filter(
+                id__in=attachment_ids,
+                uploader=sender,
+                message__isnull=True,
+            ).update(message=message)
 
         return self.format_message(message)
 
@@ -333,6 +347,27 @@ class MessageService:
                 "is_deleted": parent_deleted,
             }
 
+        attachments_data = []
+        if hasattr(message, "attachments"):
+            try:
+                for att in message.attachments.all():
+                    formatted_size = (
+                        f"{(att.file_size / (1024 * 1024)):.1f} MB"
+                        if att.file_size > 1024 * 1024
+                        else f"{round(att.file_size / 1024)} KB"
+                    )
+                    attachments_data.append({
+                        "id": f"att_{att.id}",
+                        "attachment_id": att.id,
+                        "type": att.file_type,
+                        "url": att.file_path.url if att.file_path else f"/api/v1/chat/attachments/{att.id}/download/",
+                        "name": att.file_name,
+                        "size": formatted_size,
+                        "mimeType": att.mime_type,
+                    })
+            except Exception:
+                attachments_data = []
+
         return {
             "id": message.id,
             "sender_id": message.sender_id,
@@ -343,6 +378,7 @@ class MessageService:
             "is_deleted": is_deleted,
             "reactions": reactions_data,
             "reply_to": reply_to_data,
+            "attachments": attachments_data,
             "is_forwarded": getattr(message, "is_forwarded", False),
             "forwarded_from_name": getattr(message, "forwarded_from_name", None),
             "created_at": message.created_at.isoformat().replace("+00:00", "Z"),
