@@ -116,10 +116,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       await authService.logout();
       webSocketService.disconnect();
       setSessionUser(null);
+    } catch {
+      const errorMsg = 'Something went wrong, try it later.';
+      setError(errorMsg);
+      alert(errorMsg);
     } finally {
       setIsLoading(false);
     }

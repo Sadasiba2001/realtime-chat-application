@@ -27,8 +27,8 @@ class AuthService {
     const resData = response.data;
     const dataObj = resData?.data || resData;
 
-    const access = dataObj?.access || dataObj?.token;
-    const refresh = dataObj?.refresh || '';
+    const access = dataObj?.access || resData?.access || dataObj?.token;
+    const refresh = dataObj?.refresh || resData?.refresh || '';
 
     if (access) {
       storage.setAuthTokens(access, refresh);
@@ -64,8 +64,8 @@ class AuthService {
     const resData = response.data;
     const dataObj = resData?.data || resData;
 
-    const access = dataObj?.access || dataObj?.token;
-    const refresh = dataObj?.refresh || '';
+    const access = dataObj?.access || resData?.access || dataObj?.token;
+    const refresh = dataObj?.refresh || resData?.refresh || '';
 
     if (!access) {
       throw new Error('Registration failed: missing access token in response');
@@ -92,17 +92,22 @@ class AuthService {
 
 
   async logout(): Promise<void> {
-    const refreshToken = storage.getRefreshToken() || '';
+    const refreshToken = storage.getRefreshToken() || useAuthStore.getState().tokens.refresh || '';
+
     try {
-      await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT, {
+      const response = await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT, {
         refresh: refreshToken,
       });
-    } catch (err) {
-      console.warn('Logout API call finished with warning:', err);
-    } finally {
-      storage.removeAuthToken();
-      useAuthStore.getState().clearAuth();
+
+      if (response.data && response.data.status === false) {
+        throw new Error('Something went wrong, try it later.');
+      }
+    } catch {
+      throw new Error('Something went wrong, try it later.');
     }
+
+    storage.removeAuthToken();
+    useAuthStore.getState().clearAuth();
     return simulateNetworkDelay(undefined);
   }
 
@@ -113,10 +118,16 @@ class AuthService {
       return storedUser;
     }
 
+    const refreshToken = storage.getRefreshToken() || useAuthStore.getState().tokens.refresh;
+    if (!refreshToken) {
+      return null;
+    }
+
     try {
-      const response = await apiClient.post('/api/v1/auth/token/refresh/');
+      const response = await apiClient.post('/api/v1/auth/token/refresh/', { refresh: refreshToken });
       const dataObj = response.data?.data || response.data;
       const access = dataObj?.access;
+      const newRefresh = dataObj?.refresh || refreshToken;
       if (access) {
         const jwtPayload = parseJwt(access);
         const user: UserSession = {
@@ -130,11 +141,11 @@ class AuthService {
           about: 'Available',
           token: access,
         };
-        useAuthStore.getState().setAuth(user, { access, refresh: null });
+        useAuthStore.getState().setAuth(user, { access, refresh: newRefresh });
         return user;
       }
     } catch (err) {
-      console.warn('Session restoration from cookie failed:', err);
+      console.warn('Session restoration failed:', err);
     }
 
     return null;
