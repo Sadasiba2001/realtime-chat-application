@@ -81,15 +81,16 @@ def register(request):
 
     response_data = {
         "access": access_token,
+        "refresh": refresh_token,
         "user": user_data,
     }
-    if is_testing and refresh_token:
-        response_data["refresh"] = refresh_token
 
     response = Response(
         {
             "status": True,
             "message": "User registered successfully.",
+            "access": access_token,
+            "refresh": refresh_token,
             "data": response_data,
         },
         status=status.HTTP_201_CREATED,
@@ -112,8 +113,12 @@ def register(request):
 @permission_classes([AllowAny])
 @throttle_classes([LoginRateThrottle])
 def login(request):
+    print("\n>>> LOGIN ENDPOINT HIT IN BACKEND <<<", flush=True)
+    print(f">>> Request Data: {request.data}", flush=True)
+
     serializer = LoginSerializer(data=request.data)
     if not serializer.is_valid():
+        print(f">>> Serializer Invalid: {serializer.errors}", flush=True)
         return Response(
             {
                 "status": False,
@@ -130,6 +135,7 @@ def login(request):
         )
     except ValueError as exc:
         msg = str(exc)
+        print(f">>> Auth Error: {msg}", flush=True)
         if msg == "User account is inactive.":
             return Response(
                 {
@@ -151,20 +157,25 @@ def login(request):
     user = auth_service.user_repository.get_by_email(serializer.validated_data["email"].strip().lower())
     user_data = UserResponseSerializer(user).data if user else None
 
-    import sys
-    is_testing = "test" in sys.argv
-
     response_data = {
         "access": access_token,
+        "refresh": refresh_token,
         "user": user_data,
     }
-    if is_testing and refresh_token:
-        response_data["refresh"] = refresh_token
+
+    print("======== LOGIN BACKEND CONSOLE ========", flush=True)
+    print(f"User Email: {serializer.validated_data.get('email')}", flush=True)
+    print(f"Generated Access Token: {access_token}", flush=True)
+    print(f"Generated Refresh Token: {refresh_token}", flush=True)
+    print(f"Response Data Keys: {list(response_data.keys())}", flush=True)
+    print("=======================================\n", flush=True)
 
     response = Response(
         {
             "status": True,
             "message": "Login successful.",
+            "access": access_token,
+            "refresh": refresh_token,
             "data": response_data,
         },
         status=status.HTTP_200_OK,
