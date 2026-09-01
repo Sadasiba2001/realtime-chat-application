@@ -21,13 +21,15 @@ if not SECRET_KEY:
     raise ImproperlyConfigured("The SECRET_KEY setting must not be empty. Set the SECRET_KEY environment variable.")
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
+    '*',
+] if DEBUG else [
     'localhost', 
     '127.0.0.1', 
     '[::1]', 
-    "footwork-vessel-guide.ngrok-free.dev",
     'sbchatwebpro.online',
     'www.sbchatwebpro.online',
-    ] if DEBUG else [])
+    'footwork-vessel-guide.ngrok-free.dev',
+])
 
 
 
@@ -69,7 +71,7 @@ CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS",
     default=["http://localhost:5173", "http://127.0.0.1:5173"] if DEBUG else []
 )
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOW_CREDENTIALS = True
 
 
@@ -109,7 +111,11 @@ if REDIS_URL:
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                'hosts': [REDIS_URL],
+                'hosts': [{
+                    'address': REDIS_URL,
+                    'socket_timeout': None,
+                    'socket_connect_timeout': 5,
+                }],
             },
         },
     }

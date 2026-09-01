@@ -22,8 +22,16 @@ class WebSocketService {
 
     let baseUrl = '';
 
-    if (rawWsUrl) {
-      if ((rawWsUrl.includes('localhost') || rawWsUrl.includes('127.0.0.1')) && rawWsUrl.startsWith('wss://')) {
+    const isBackendRemote = rawBackendUrl && !rawBackendUrl.includes('localhost') && !rawBackendUrl.includes('127.0.0.1');
+    const isWsLocalhost = rawWsUrl.includes('localhost') || rawWsUrl.includes('127.0.0.1');
+
+    if (isBackendRemote && (!rawWsUrl || isWsLocalhost)) {
+      const isHttps = rawBackendUrl.startsWith('https');
+      const wsProtocol = isHttps ? 'wss' : 'ws';
+      const host = rawBackendUrl.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+      baseUrl = `${wsProtocol}://${host}/ws`;
+    } else if (rawWsUrl) {
+      if (isWsLocalhost && rawWsUrl.startsWith('wss://')) {
         rawWsUrl = rawWsUrl.replace('wss://', 'ws://');
       }
       baseUrl = rawWsUrl.replace(/\/+$/, '');

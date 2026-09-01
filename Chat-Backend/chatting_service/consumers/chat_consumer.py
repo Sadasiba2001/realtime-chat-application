@@ -49,8 +49,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=4003)
             return
 
-        cache.set(user_conn_key, user_conns + 1, timeout=86400)
-        cache.set(ip_conn_key, ip_conns + 1, timeout=86400)
+        cache.set(user_conn_key, user_conns + 1, timeout=300)
+        cache.set(ip_conn_key, ip_conns + 1, timeout=300)
         self.added_to_connection_cache = True
 
         # 2. Join user's personal channel group (for persistent user-level delivery)
@@ -154,12 +154,16 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             ip_conn_key = f"ws_conn_ip_{ip_address}"
             
             user_conns = cache.get(user_conn_key, 0)
-            if user_conns > 0:
-                cache.set(user_conn_key, user_conns - 1, timeout=86400)
+            if user_conns > 1:
+                cache.set(user_conn_key, user_conns - 1, timeout=300)
+            else:
+                cache.delete(user_conn_key)
             
             ip_conns = cache.get(ip_conn_key, 0)
-            if ip_conns > 0:
-                cache.set(ip_conn_key, ip_conns - 1, timeout=86400)
+            if ip_conns > 1:
+                cache.set(ip_conn_key, ip_conns - 1, timeout=300)
+            else:
+                cache.delete(ip_conn_key)
 
         if self.user_group:
             await self.channel_layer.group_discard(self.user_group, self.channel_name)
@@ -364,7 +368,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         import sys
         is_testing = "test" in sys.argv
 
-        if not is_testing:
+        if not is_testing and msg_type in ("message", "forward_message"):
             # 1. Spam protection (rapid repeated messages)
             last_time_key = f"ws_last_msg_time_{user_id}"
             last_time = cache.get(last_time_key)
@@ -522,19 +526,15 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             },
         )
 
-        # Broadcast to receiver's user group (if distinct from sender and receiver is online)
+        # Broadcast to receiver's user group (if distinct from sender)
         if receiver_id != self.user.id:
-            is_receiver_online = await database_sync_to_async(
-                self.presence_service.is_user_online
-            )(receiver_id)
-            if is_receiver_online:
-                await self.channel_layer.group_send(
-                    f"user_{receiver_id}",
-                    {
-                        "type": "chat.message",
-                        "data": message_data,
-                    },
-                )
+            await self.channel_layer.group_send(
+                f"user_{receiver_id}",
+                {
+                    "type": "chat.message",
+                    "data": message_data,
+                },
+            )
 
     async def handle_delivery_receipt(self, content: dict):
         raw_msg_ids = content.get("message_ids")

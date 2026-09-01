@@ -4,8 +4,8 @@ import { useAuthStore } from '../store/useAuthStore';
 
 import { webSocketService } from './websocket.service';
 
-export const API_BASE_URL = import.meta.env.VITE_REMOTE_BACKEND_URL || '';
-export const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'wss://footwork-vessel-guide.ngrok-free.dev/ws';
+export const API_BASE_URL = import.meta.env.VITE_REMOTE_BACKEND_URL || import.meta.env.VITE_API_URL || '';
+export const WS_BASE_URL = import.meta.env.VITE_WS_URL || (API_BASE_URL ? `${API_BASE_URL.replace(/^http/, 'ws')}/ws` : '');
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
