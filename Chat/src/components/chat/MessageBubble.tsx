@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Check,
   CheckCheck,
@@ -77,10 +77,45 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const [showForwardModal, setShowForwardModal] = useState(false);
 
+  const bubbleRef = useRef<HTMLDivElement>(null);
+
+  // Close action menu when clicking outside
+  useEffect(() => {
+    if (!showActions && !showEmojiPicker && !showDeleteMenu) return;
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (bubbleRef.current && !bubbleRef.current.contains(e.target as Node)) {
+        setShowActions(false);
+        setShowEmojiPicker(false);
+        setShowDeleteMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showActions, showEmojiPicker, showDeleteMenu]);
+
   const handleSelectReaction = (emoji: string) => {
     addReaction(message.id, emoji);
     setShowEmojiPicker(false);
     setShowActions(false);
+  };
+
+  const handleBubbleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('button') ||
+      target.closest('a') ||
+      target.closest('input') ||
+      target.closest('.emoji-picker')
+    ) {
+      return;
+    }
+    setShowActions((prev) => !prev);
   };
 
   const displayName = senderName || sender?.name;
@@ -88,19 +123,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   return (
     <div
       id={`msg-${message.id}`}
+      ref={bubbleRef}
       className={`group relative flex flex-col my-1 max-w-[85%] sm:max-w-[70%] select-none ${
         isOutgoing ? 'ml-auto items-end' : 'mr-auto items-start'
       } ${isMatch ? 'ring-4 ring-amber-400 dark:ring-amber-500 rounded-2xl shadow-xl scale-[1.02] transition-all' : ''}`}
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => {
-        if (!showEmojiPicker && !showDeleteMenu) {
-          setShowActions(false);
-        }
-      }}
     >
       {/* Bubble Wrapper */}
       <div
-        className={`relative px-4 py-2.5 rounded-2xl text-sm transition-all duration-150 ${
+        onClick={handleBubbleClick}
+        className={`relative px-4 py-2.5 rounded-2xl text-sm transition-all duration-150 cursor-pointer ${
           isOutgoing
             ? 'bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-600 text-white rounded-tr-xs shadow-md shadow-indigo-500/15 border border-violet-400/20'
             : 'bg-white dark:bg-[#1a2234] text-slate-900 dark:text-slate-100 rounded-tl-xs border border-slate-200/80 dark:border-white/10 shadow-xs'
@@ -260,12 +291,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           )}
         </div>
 
-        {/* Message Action Bar on Hover */}
+        {/* Message Action Bar on Click (Positioned at the SIDE of the message bubble) */}
         {showActions && !message.isDeleted && (
           <div
-            className={`absolute top-1 ${
-              isOutgoing ? '-left-28' : '-right-28'
-            } flex items-center gap-0.5 bg-white/95 dark:bg-[#1a2234]/95 backdrop-blur-md p-1 rounded-full shadow-xl border border-slate-200 dark:border-white/10 z-30 animate-fade-in`}
+            className={`absolute top-1/2 -translate-y-1/2 ${
+              isOutgoing ? 'right-full mr-2' : 'left-full ml-2'
+            } flex items-center gap-0.5 sm:gap-1 bg-white/95 dark:bg-[#1a2234]/95 backdrop-blur-md p-1 sm:p-1.5 rounded-full shadow-2xl border border-slate-200/80 dark:border-white/15 z-40 animate-fade-in whitespace-nowrap`}
           >
             <button
               onClick={() => {
@@ -365,19 +396,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     <span>Delete for me</span>
                   </button>
 
-                  {isOutgoing && (
-                    <button
-                      onClick={() => {
-                        deleteMessage(message.id, 'everyone');
-                        setShowDeleteMenu(false);
-                        setShowActions(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-left rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors font-medium cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                      <span>Delete for everyone</span>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      deleteMessage(message.id, 'everyone');
+                      setShowDeleteMenu(false);
+                      setShowActions(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors font-medium cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Delete for everyone</span>
+                  </button>
                 </div>
               )}
             </div>

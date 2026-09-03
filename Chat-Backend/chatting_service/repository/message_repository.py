@@ -102,7 +102,7 @@ class MessageRepository:
     def delete_message_for_everyone(message_id: int, user_id: int) -> Optional[dict]:
         try:
             msg = Message.objects.select_related("sender", "receiver").get(id=message_id)
-            if msg.sender_id != user_id:
+            if msg.sender_id != user_id and msg.receiver_id != user_id:
                 raise PermissionError("You do not have permission to delete this message for everyone.")
             msg.content = "This message was deleted"
             msg.is_deleted = True
