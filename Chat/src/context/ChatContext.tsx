@@ -871,8 +871,19 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               anyChanged = true;
 
               // If someone else reacted to my message, trigger real-time notification
-              if (String(m.senderId) === String(currentUserRef.current.id) && payload.user_id !== currentUserRef.current.id) {
-                const reacterName = payload.user_name || `User ${payload.user_id}`;
+              if (String(m.senderId) === String(currentUserRef.current.id) && String(payload.user_id) !== String(currentUserRef.current.id)) {
+                const conv = conversationsRef.current.find((c) => c.id === cId);
+                const partnerParticipant = conv?.participants.find((p) => {
+                  const pMatch = String(p.id).match(/\d+/);
+                  const uMatch = String(payload.user_id).match(/\d+/);
+                  return pMatch && uMatch ? pMatch[0] === uMatch[0] : String(p.id) === String(payload.user_id);
+                });
+
+                const rawName = payload.user_name || partnerParticipant?.name;
+                const reacterName = (rawName && !rawName.startsWith('User '))
+                  ? rawName
+                  : (partnerParticipant?.name || payload.user_name || `User ${payload.user_id}`);
+
                 const emoji = payload.emoji || payload.reactions?.[0]?.emoji || '❤️';
                 const rxnTitle = `${reacterName} reacted ${emoji}`;
                 const rxnBody = `on your message: "${m.text}"`;

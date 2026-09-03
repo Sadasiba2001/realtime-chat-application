@@ -266,7 +266,7 @@ class MessageService:
                         "id": r.id,
                         "emoji": r.emoji,
                         "user_id": r.user_id,
-                        "user_name": r.user.username or r.user.first_name,
+                        "user_name": getattr(r.user, "name", None) or getattr(r.user, "first_name", None) or getattr(r.user, "username", None) or f"User {r.user_id}",
                     }
                     for r in message.reactions.all()
                 ]

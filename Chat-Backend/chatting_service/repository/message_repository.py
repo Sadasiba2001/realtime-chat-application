@@ -167,15 +167,26 @@ class MessageRepository:
                 "id": r.id,
                 "emoji": r.emoji,
                 "user_id": r.user_id,
-                "user_name": r.user.username or r.user.first_name,
+                "user_name": getattr(r.user, "name", None) or getattr(r.user, "first_name", None) or getattr(r.user, "username", None) or f"User {r.user_id}",
             }
             for r in reactions_qs
         ]
+
+        from authentication_service.models import User as AuthUser
+        u_obj = AuthUser.objects.filter(id=user_id).first()
+        user_display_name = (
+            getattr(u_obj, "name", None)
+            or getattr(u_obj, "first_name", None)
+            or getattr(u_obj, "username", None)
+            or f"User {user_id}"
+        )
+
         return {
             "message_id": msg.id,
             "action": action,
             "emoji": emoji,
             "user_id": user_id,
+            "user_name": user_display_name,
             "sender_id": msg.sender_id,
             "receiver_id": msg.receiver_id,
             "partner_id": partner_id,
