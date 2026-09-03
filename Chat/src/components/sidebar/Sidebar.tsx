@@ -59,7 +59,7 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="w-16 md:w-20 flex flex-col justify-between items-center py-4 bg-white dark:bg-[#171324] rounded-none md:rounded-2xl border-0 md:border border-slate-200/80 dark:border-white/10 shadow-none md:shadow-2xl flex-shrink-0 z-30 select-none transition-all">
+    <aside className="hidden md:flex w-20 flex-col justify-between items-center py-4 bg-white dark:bg-[#171324] rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-2xl flex-shrink-0 z-30 select-none transition-all">
       {/* Top Section: Standalone Logo & Navigation */}
       <div className="flex flex-col items-center gap-5 w-full">
         {/* Standalone App Logo */}
