@@ -388,8 +388,29 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const existingConv = prev.find((c) => c.id === convId);
 
         if (existingConv) {
+          let updatedParticipants = existingConv.participants;
+          if (!isMyMessage && (payload.sender_name || payload.sender_username)) {
+            const senderDisplayName = payload.sender_name || payload.sender_username;
+            updatedParticipants = existingConv.participants.map((p) => {
+              const pStr = String(p.id);
+              const oStr = String(otherId);
+              const pMatch = pStr.match(/\d+/);
+              const oMatch = oStr.match(/\d+/);
+              const isPartner = pMatch && oMatch ? pMatch[0] === oMatch[0] : pStr === oStr;
+              if (isPartner && (p.name.startsWith('User ') || !p.name)) {
+                return {
+                  ...p,
+                  name: senderDisplayName || p.name,
+                  avatar: payload.sender_avatar || p.avatar,
+                };
+              }
+              return p;
+            });
+          }
+
           const updatedConv: Conversation = {
             ...existingConv,
+            participants: updatedParticipants,
             lastMessage: newMsg,
             unreadCount: isCurrentActive ? 0 : (existingConv.unreadCount || 0) + (!isMyMessage ? 1 : 0),
             updatedAt: newMsg.createdAt || new Date().toISOString(),
@@ -399,6 +420,11 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         // If conversation not yet present in list, dynamically add it to the top
+        const otherName = (!isMyMessage && (payload.sender_name || payload.sender_username))
+          ? (payload.sender_name || payload.sender_username)
+          : undefined;
+        const otherAvatar = (!isMyMessage && payload.sender_avatar) ? payload.sender_avatar : undefined;
+
         const knownOtherUser = allUsersRef.current.find((u) => {
           const uMatch = String(u.id).match(/\d+/);
           const oMatch = String(otherId).match(/\d+/);
@@ -406,8 +432,9 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return String(u.id) === String(otherId);
         }) || {
           id: otherId,
-          name: `User ${otherId}`,
-          avatar: '',
+          name: otherName || `User ${otherId}`,
+          username: payload.sender_username || '',
+          avatar: otherAvatar || '',
           status: 'online',
           about: 'Available',
           phone: '',

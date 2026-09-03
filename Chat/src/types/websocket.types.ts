@@ -4,6 +4,9 @@ export interface BackendMessagePayload {
   id: number | string;
   sender_id: number | string;
   receiver_id: number | string;
+  sender_name?: string;
+  sender_username?: string;
+  sender_avatar?: string;
   content: string;
   status?: MessageStatus;
   is_edited?: boolean;

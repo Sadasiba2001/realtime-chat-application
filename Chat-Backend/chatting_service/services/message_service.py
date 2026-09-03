@@ -368,10 +368,22 @@ class MessageService:
             except Exception:
                 attachments_data = []
 
+        sender = getattr(message, "sender", None)
+        sender_name = None
+        sender_username = None
+        sender_avatar = None
+        if sender:
+            sender_name = getattr(sender, "name", None) or getattr(sender, "first_name", None) or getattr(sender, "username", None) or getattr(sender, "email", None)
+            sender_username = getattr(sender, "username", None)
+            sender_avatar = getattr(sender, "profile_image", None) or getattr(sender, "profile_image_url", None)
+
         return {
             "id": message.id,
             "sender_id": message.sender_id,
             "receiver_id": message.receiver_id,
+            "sender_name": sender_name or f"User {message.sender_id}",
+            "sender_username": sender_username,
+            "sender_avatar": sender_avatar or "",
             "content": message.content,
             "status": message.status,
             "is_edited": getattr(message, "is_edited", False),
