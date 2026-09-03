@@ -46,89 +46,89 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onToggleV
 
       {/* Name Input */}
       <div className="space-y-1">
-        <label className="block text-[11px] font-semibold text-purple-200/90 tracking-wide ml-1">
+        <label className="block text-[11px] sm:text-xs font-semibold text-purple-200/90 tracking-wide ml-1">
           Full Name
         </label>
         <div className="relative group">
-          <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-300/60 group-focus-within:text-purple-300 transition-colors" />
+          <UserIcon className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-300/60 group-focus-within:text-purple-300 transition-colors" />
           <input
             type="text"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="John Doe"
-            className="w-full pl-11 pr-4 py-2.5 text-xs bg-white/10 dark:bg-[#251545]/70 text-white placeholder-purple-300/40 rounded-full border border-purple-400/25 outline-hidden focus:scale-[1.01] focus:ring-2 focus:ring-purple-400/70 focus:border-purple-400 focus:shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all duration-200 shadow-inner"
+            className="w-full pl-10 sm:pl-11 pr-4 py-2 sm:py-2.5 text-xs sm:text-sm bg-white/10 dark:bg-[#251545]/70 text-white placeholder-purple-300/40 rounded-full border border-purple-400/25 outline-hidden focus:scale-[1.01] focus:ring-2 focus:ring-purple-400/70 focus:border-purple-400 focus:shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all duration-200 shadow-inner"
           />
         </div>
       </div>
 
       {/* Username Input */}
       <div className="space-y-1">
-        <label className="block text-[11px] font-semibold text-purple-200/90 tracking-wide ml-1">
+        <label className="block text-[11px] sm:text-xs font-semibold text-purple-200/90 tracking-wide ml-1">
           Username
         </label>
         <div className="relative group">
-          <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-300/60 group-focus-within:text-purple-300 transition-colors" />
+          <AtSign className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-300/60 group-focus-within:text-purple-300 transition-colors" />
           <input
             type="text"
             required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="johndoe2026"
-            className="w-full pl-11 pr-4 py-2.5 text-xs bg-white/10 dark:bg-[#251545]/70 text-white placeholder-purple-300/40 rounded-full border border-purple-400/25 outline-hidden focus:scale-[1.01] focus:ring-2 focus:ring-purple-400/70 focus:border-purple-400 focus:shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all duration-200 shadow-inner"
+            className="w-full pl-10 sm:pl-11 pr-4 py-2 sm:py-2.5 text-xs sm:text-sm bg-white/10 dark:bg-[#251545]/70 text-white placeholder-purple-300/40 rounded-full border border-purple-400/25 outline-hidden focus:scale-[1.01] focus:ring-2 focus:ring-purple-400/70 focus:border-purple-400 focus:shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all duration-200 shadow-inner"
           />
         </div>
       </div>
 
       {/* Email Input */}
       <div className="space-y-1">
-        <label className="block text-[11px] font-semibold text-purple-200/90 tracking-wide ml-1">
+        <label className="block text-[11px] sm:text-xs font-semibold text-purple-200/90 tracking-wide ml-1">
           Email Address
         </label>
         <div className="relative group">
-          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-300/60 group-focus-within:text-purple-300 transition-colors" />
+          <Mail className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-300/60 group-focus-within:text-purple-300 transition-colors" />
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="john@example.com"
-            className="w-full pl-11 pr-4 py-2.5 text-xs bg-white/10 dark:bg-[#251545]/70 text-white placeholder-purple-300/40 rounded-full border border-purple-400/25 outline-hidden focus:scale-[1.01] focus:ring-2 focus:ring-purple-400/70 focus:border-purple-400 focus:shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all duration-200 shadow-inner"
+            className="w-full pl-10 sm:pl-11 pr-4 py-2 sm:py-2.5 text-xs sm:text-sm bg-white/10 dark:bg-[#251545]/70 text-white placeholder-purple-300/40 rounded-full border border-purple-400/25 outline-hidden focus:scale-[1.01] focus:ring-2 focus:ring-purple-400/70 focus:border-purple-400 focus:shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all duration-200 shadow-inner"
           />
         </div>
       </div>
 
       {/* Phone Input */}
       <div className="space-y-1">
-        <label className="block text-[11px] font-semibold text-purple-200/90 tracking-wide ml-1">
+        <label className="block text-[11px] sm:text-xs font-semibold text-purple-200/90 tracking-wide ml-1">
           Phone Number
         </label>
         <div className="relative group">
-          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-300/60 group-focus-within:text-purple-300 transition-colors" />
+          <Phone className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-300/60 group-focus-within:text-purple-300 transition-colors" />
           <input
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+1 234 567 8900"
-            className="w-full pl-11 pr-4 py-2.5 text-xs bg-white/10 dark:bg-[#251545]/70 text-white placeholder-purple-300/40 rounded-full border border-purple-400/25 outline-hidden focus:scale-[1.01] focus:ring-2 focus:ring-purple-400/70 focus:border-purple-400 focus:shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all duration-200 shadow-inner"
+            className="w-full pl-10 sm:pl-11 pr-4 py-2 sm:py-2.5 text-xs sm:text-sm bg-white/10 dark:bg-[#251545]/70 text-white placeholder-purple-300/40 rounded-full border border-purple-400/25 outline-hidden focus:scale-[1.01] focus:ring-2 focus:ring-purple-400/70 focus:border-purple-400 focus:shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all duration-200 shadow-inner"
           />
         </div>
       </div>
 
       {/* Password Input */}
       <div className="space-y-1">
-        <label className="block text-[11px] font-semibold text-purple-200/90 tracking-wide ml-1">
+        <label className="block text-[11px] sm:text-xs font-semibold text-purple-200/90 tracking-wide ml-1">
           Password
         </label>
         <div className="relative group">
-          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-300/60 group-focus-within:text-purple-300 transition-colors" />
+          <Lock className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-300/60 group-focus-within:text-purple-300 transition-colors" />
           <input
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Create password"
-            className="w-full pl-11 pr-4 py-2.5 text-xs bg-white/10 dark:bg-[#251545]/70 text-white placeholder-purple-300/40 rounded-full border border-purple-400/25 outline-hidden focus:scale-[1.01] focus:ring-2 focus:ring-purple-400/70 focus:border-purple-400 focus:shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all duration-200 shadow-inner"
+            className="w-full pl-10 sm:pl-11 pr-4 py-2 sm:py-2.5 text-xs sm:text-sm bg-white/10 dark:bg-[#251545]/70 text-white placeholder-purple-300/40 rounded-full border border-purple-400/25 outline-hidden focus:scale-[1.01] focus:ring-2 focus:ring-purple-400/70 focus:border-purple-400 focus:shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all duration-200 shadow-inner"
           />
         </div>
       </div>
@@ -138,7 +138,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onToggleV
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 hover:scale-[1.02] hover:shadow-[0_0_35px_rgba(168,85,247,0.55)] active:scale-[0.98] disabled:opacity-50 text-white font-extrabold rounded-full transition-all duration-300 shadow-lg shadow-purple-600/40 flex items-center justify-center gap-2 text-xs tracking-wider uppercase cursor-pointer"
+          className="w-full py-2.5 sm:py-3 px-6 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 hover:scale-[1.02] hover:shadow-[0_0_35px_rgba(168,85,247,0.55)] active:scale-[0.98] disabled:opacity-50 text-white font-extrabold rounded-full transition-all duration-300 shadow-lg shadow-purple-600/40 flex items-center justify-center gap-2 text-xs sm:text-sm tracking-wider uppercase cursor-pointer"
         >
           {isLoading ? (
             <Loader2 className="w-4 h-4 animate-spin text-white" />
