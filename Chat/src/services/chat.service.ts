@@ -106,8 +106,11 @@ class ChatService {
             participants: [myUser, contactUser],
             unreadCount: item.unread_count || 0,
             lastMessage: lastMsg,
-            pinned: false,
-            muted: false,
+            pinned: Boolean(item.is_pinned || item.pinned),
+            archived: Boolean(item.is_archived || item.archived),
+            muted: Boolean(item.is_muted || item.muted),
+            isBlocked: Boolean(item.is_blocked || item.user?.is_blocked),
+            isBlockedByThem: Boolean(item.is_blocked_by_them || item.user?.is_blocked_by_them),
             createdAt: item.last_message?.created_at || item.last_message_at || new Date().toISOString(),
             updatedAt: item.last_message?.created_at || item.last_message_at || new Date().toISOString(),
           };
@@ -170,17 +173,165 @@ class ChatService {
   }
 
   async togglePinConversation(id: string): Promise<boolean> {
-    this.conversations = this.conversations.map((c) =>
-      c.id === id ? { ...c, pinned: !c.pinned } : c
-    );
-    return simulateNetworkDelay(true);
+    const numericId = parseInt(id, 10);
+    let newPinnedState = false;
+    this.conversations = this.conversations.map((c) => {
+      if (c.id === id) {
+        newPinnedState = !c.pinned;
+        return { ...c, pinned: newPinnedState };
+      }
+      return c;
+    });
+
+    if (!isNaN(numericId)) {
+      try {
+        await apiClient.post(`/api/v1/chat/conversations/${numericId}/pin/`);
+      } catch (err) {
+        console.error('[ChatService] Failed to persist pin status on backend:', err);
+      }
+    }
+    return newPinnedState;
   }
 
-  async toggleMuteConversation(id: string): Promise<boolean> {
-    this.conversations = this.conversations.map((c) =>
-      c.id === id ? { ...c, muted: !c.muted } : c
-    );
-    return simulateNetworkDelay(true);
+  async toggleArchiveConversation(id: string): Promise<boolean> {
+    const numericId = parseInt(id, 10);
+    let newArchivedState = false;
+    this.conversations = this.conversations.map((c) => {
+      if (c.id === id) {
+        newArchivedState = !c.archived;
+        return { ...c, archived: newArchivedState };
+      }
+      return c;
+    });
+
+    if (!isNaN(numericId)) {
+      try {
+        await apiClient.post(`/api/v1/chat/conversations/${numericId}/archive/`);
+      } catch (err) {
+        console.error('[ChatService] Failed to persist archive status on backend:', err);
+      }
+    }
+    return newArchivedState;
+  }
+
+  async toggleMuteConversation(id: string, duration: string = 'always'): Promise<boolean> {
+    const numericId = parseInt(id, 10);
+    let newMutedState = false;
+    this.conversations = this.conversations.map((c) => {
+      if (c.id === id) {
+        newMutedState = !c.muted;
+        return { ...c, muted: newMutedState };
+      }
+      return c;
+    });
+
+    if (!isNaN(numericId)) {
+      try {
+        if (newMutedState) {
+          await apiClient.post(`/api/v1/chat/conversations/${numericId}/mute/`, { duration });
+        } else {
+          await apiClient.delete(`/api/v1/chat/conversations/${numericId}/unmute/`);
+        }
+      } catch (err) {
+        console.error('[ChatService] Failed to persist mute status on backend:', err);
+      }
+    }
+    return newMutedState;
+  }
+
+  async blockUser(targetUserId: string): Promise<boolean> {
+    const numericId = parseInt(targetUserId, 10);
+    this.conversations = this.conversations.map((c) => {
+      if (c.id === targetUserId || c.participantIds.includes(targetUserId)) {
+        return { ...c, isBlocked: true };
+      }
+      return c;
+    });
+
+    if (!isNaN(numericId)) {
+      try {
+        await apiClient.post(`/api/v1/chat/users/${numericId}/block/`);
+      } catch (err) {
+        console.error('[ChatService] Failed to persist block status on backend:', err);
+      }
+    }
+    return true;
+  }
+
+  async unblockUser(targetUserId: string): Promise<boolean> {
+    const numericId = parseInt(targetUserId, 10);
+    this.conversations = this.conversations.map((c) => {
+      if (c.id === targetUserId || c.participantIds.includes(targetUserId)) {
+        return { ...c, isBlocked: false };
+      }
+      return c;
+    });
+
+    if (!isNaN(numericId)) {
+      try {
+        await apiClient.delete(`/api/v1/chat/users/${numericId}/unblock/`);
+      } catch (err) {
+        console.error('[ChatService] Failed to persist unblock status on backend:', err);
+      }
+    }
+    return true;
+  }
+
+  async reportUser(targetUserId: string, reason: string, description: string = ''): Promise<boolean> {
+    const numericId = parseInt(targetUserId, 10);
+    if (isNaN(numericId)) {
+      throw new Error('Invalid user ID.');
+    }
+    await apiClient.post(`/api/v1/chat/users/${numericId}/report/`, {
+      reason,
+      description,
+    });
+    return true;
+  }
+
+  async reportMessage(messageId: string, reason: string, description: string = ''): Promise<boolean> {
+    const numericId = parseInt(messageId, 10);
+    if (isNaN(numericId)) {
+      throw new Error('Invalid message ID.');
+    }
+    await apiClient.post(`/api/v1/chat/messages/${numericId}/report/`, {
+      reason,
+      description,
+    });
+    return true;
+  }
+
+  async uploadFile(file: File): Promise<Attachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await apiClient.post('/api/v1/chat/upload/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data.data;
+  }
+
+  async getSharedMedia(
+    targetUserId: string,
+    category: 'media' | 'files' | 'links' = 'media',
+    page: number = 1
+  ): Promise<{
+    category: string;
+    total_count: number;
+    page: number;
+    page_size: number;
+    has_next: boolean;
+    items: any[];
+  }> {
+    const numericId = parseInt(targetUserId, 10);
+    if (isNaN(numericId)) {
+      return { category, total_count: 0, page: 1, page_size: 20, has_next: false, items: [] };
+    }
+    const res = await apiClient.get(`/api/v1/chat/conversations/${numericId}/shared-media/`, {
+      params: { category, page },
+    });
+    return res.data.data;
   }
 
   async markAsRead(id: string): Promise<void> {
@@ -188,6 +339,19 @@ class ChatService {
       c.id === id ? { ...c, unreadCount: 0 } : c
     );
     return simulateNetworkDelay(undefined);
+  }
+
+  async searchMessages(query: string, page: number = 1, pageSize: number = 20) {
+    if (!query.trim()) return { count: 0, results: [] };
+    try {
+      const response = await apiClient.get(
+        `/api/v1/chat/messages/search/?q=${encodeURIComponent(query.trim())}&page=${page}&page_size=${pageSize}`
+      );
+      return response.data?.data || { count: 0, results: [] };
+    } catch (err) {
+      console.error('[ChatService] Error searching messages:', err);
+      return { count: 0, results: [] };
+    }
   }
 }
 

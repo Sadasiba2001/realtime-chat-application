@@ -58,6 +58,10 @@ export interface Message {
   reactions?: MessageReaction[];
   isStarred?: boolean;
   isDeleted?: boolean;
+  isEdited?: boolean;
+  isForwarded?: boolean;
+  forwardedFromName?: string;
+  updatedAt?: string;
   createdAt?: string;
 }
 
@@ -72,7 +76,10 @@ export interface Conversation {
   unreadCount: number;
   lastMessage?: Message;
   pinned: boolean;
+  archived?: boolean;
   muted: boolean;
+  isBlocked?: boolean;
+  isBlockedByThem?: boolean;
   createdAt: string;
   updatedAt: string;
   groupAvatar?: string;

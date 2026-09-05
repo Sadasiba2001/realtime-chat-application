@@ -38,6 +38,7 @@ class LoginSerializer(serializers.Serializer):
 class UserResponseSerializer(serializers.ModelSerializer):
     avatar = serializers.SerializerMethodField()
     profile_image_url = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -52,6 +53,7 @@ class UserResponseSerializer(serializers.ModelSerializer):
             "profile_image_url",
             "avatar",
             "is_active",
+            "status",
             "last_seen",
             "created_at",
         ]
@@ -63,10 +65,15 @@ class UserResponseSerializer(serializers.ModelSerializer):
     def get_profile_image_url(self, obj):
         return obj.profile_image or None
 
+    def get_status(self, obj):
+        from chatting_service.services.presence_service import PresenceService
+        return "online" if PresenceService().is_user_online(obj.id) else "offline"
+
 
 class UserSearchResponseSerializer(serializers.ModelSerializer):
     avatar = serializers.SerializerMethodField()
     profile_image_url = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -77,6 +84,7 @@ class UserSearchResponseSerializer(serializers.ModelSerializer):
             "profile_image",
             "profile_image_url",
             "avatar",
+            "status",
         ]
         read_only_fields = fields
 
@@ -85,4 +93,8 @@ class UserSearchResponseSerializer(serializers.ModelSerializer):
 
     def get_profile_image_url(self, obj):
         return obj.profile_image or None
+
+    def get_status(self, obj):
+        from chatting_service.services.presence_service import PresenceService
+        return "online" if PresenceService().is_user_online(obj.id) else "offline"
 

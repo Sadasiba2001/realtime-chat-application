@@ -19,6 +19,20 @@ export const InChatSearch: React.FC<InChatSearchProps> = ({
 }) => {
   const { inChatSearchQuery, setInChatSearchQuery } = useChat();
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'PageDown' || (e.key === 'Enter' && !e.shiftKey) || e.key === 'ArrowDown') {
+      e.preventDefault();
+      onNext();
+    } else if (e.key === 'PageUp' || (e.key === 'Enter' && e.shiftKey) || e.key === 'ArrowUp') {
+      e.preventDefault();
+      onPrev();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setInChatSearchQuery('');
+      onClose();
+    }
+  };
+
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-2 bg-gray-50 dark:bg-[#111b21] border-b border-gray-200 dark:border-gray-800 animate-fade-in z-10 shadow-xs select-none">
       <div className="flex items-center gap-2 flex-1 max-w-md">
@@ -28,6 +42,7 @@ export const InChatSearch: React.FC<InChatSearchProps> = ({
           placeholder="Search in messages..."
           value={inChatSearchQuery}
           onChange={(e) => setInChatSearchQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
           autoFocus
           className="w-full text-sm bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-hidden"
         />

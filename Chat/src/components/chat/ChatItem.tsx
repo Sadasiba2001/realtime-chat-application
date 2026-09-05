@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pin, VolumeX, Check, CheckCheck } from 'lucide-react';
+import { Pin, Archive, VolumeX, Check, CheckCheck } from 'lucide-react';
 import type { Conversation } from '../../types/chat.types';
 import { useChat } from '../../context/ChatContext';
 import { Avatar } from '../common/Avatar';
@@ -15,7 +15,7 @@ export const ChatItem: React.FC<ChatItemProps> = ({
   isSelected,
   onClick,
 }) => {
-  const { currentUser, togglePin, toggleMute } = useChat();
+  const { currentUser, togglePin, toggleArchive, toggleMute, openModal } = useChat();
 
   const isGroup = conversation.type === 'group';
   const otherParticipant = isGroup
@@ -32,6 +32,10 @@ export const ChatItem: React.FC<ChatItemProps> = ({
   return (
     <div
       onClick={onClick}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        togglePin(conversation.id);
+      }}
       className={`group relative flex items-center gap-3.5 px-3 py-2.5 rounded-2xl cursor-pointer transition-all duration-150 select-none ${isSelected
           ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-indigo-500/20'
           : 'hover:bg-slate-100/80 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-200'
@@ -124,10 +128,19 @@ export const ChatItem: React.FC<ChatItemProps> = ({
               />
             )}
             {conversation.pinned && (
-              <Pin
-                className={`w-3.5 h-3.5 fill-current ${isSelected ? 'text-white' : 'text-violet-600 dark:text-violet-400'
-                  }`}
-              />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePin(conversation.id);
+                }}
+                className="hover:scale-110 transition-transform"
+                title="Unpin conversation"
+              >
+                <Pin
+                  className={`w-3.5 h-3.5 fill-current ${isSelected ? 'text-white' : 'text-violet-600 dark:text-violet-400'
+                    }`}
+                />
+              </button>
             )}
             {conversation.unreadCount > 0 && (
               <span
@@ -158,7 +171,21 @@ export const ChatItem: React.FC<ChatItemProps> = ({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            toggleMute(conversation.id);
+            toggleArchive(conversation.id);
+          }}
+          className="p-1 text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 rounded-lg transition-colors"
+          title={conversation.archived ? 'Unarchive' : 'Archive'}
+        >
+          <Archive className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (conversation.muted) {
+              toggleMute(conversation.id);
+            } else {
+              openModal('mute_chat', conversation);
+            }
           }}
           className="p-1 text-slate-500 hover:text-amber-500 dark:text-slate-400 dark:hover:text-amber-400 rounded-lg transition-colors"
           title={conversation.muted ? 'Unmute' : 'Mute'}

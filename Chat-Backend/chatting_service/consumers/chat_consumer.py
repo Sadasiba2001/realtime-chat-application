@@ -21,9 +21,17 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def connect(self):
         self.user = self.scope.get("user")
+        print("[WS CONNECT] connect() called")
+        print(f"[WS CONNECT] path = {self.scope.get('path')}")
+        print(f"[WS CONNECT] scope user type = {type(self.user)}")
+        print(f"[WS CONNECT] user id = {getattr(self.user, 'id', None)}")
+        print(f"[WS CONNECT] is_authenticated = {getattr(self.user, 'is_authenticated', False)}")
+        print(f"[WS CONNECT] is_anonymous = {getattr(self.user, 'is_anonymous', True)}")
 
         # 1. Authentication check
         if not self.user or self.user.is_anonymous or not self.user.is_authenticated:
+            print("[WS CONNECT] AUTHENTICATION REJECT")
+            print("[WS CONNECT] reason = user missing/anonymous/unauthenticated")
             await self.close(code=4001)
             return
 
@@ -37,11 +45,12 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         ip_conns = cache.get(ip_conn_key, 0)
 
         if user_conns >= 5 or ip_conns >= 10:
+            print(f"[WS CONNECT] CONNECTION LIMIT EXCEEDED: user_conns={user_conns}, ip_conns={ip_conns}")
             await self.close(code=4003)
             return
 
-        cache.set(user_conn_key, user_conns + 1, timeout=86400)
-        cache.set(ip_conn_key, ip_conns + 1, timeout=86400)
+        cache.set(user_conn_key, user_conns + 1, timeout=300)
+        cache.set(ip_conn_key, ip_conns + 1, timeout=300)
         self.added_to_connection_cache = True
 
         # 2. Join user's personal channel group (for persistent user-level delivery)
@@ -90,7 +99,10 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             if "access_token" in sec_protocol:
                 selected_subprotocol = "access_token"
 
+        print("[WS CONNECT] AUTHENTICATION PASSED")
+        print(f"[WS CONNECT] accepting WebSocket with subprotocol = {selected_subprotocol}")
         await self.accept(subprotocol=selected_subprotocol)
+        print("[WS CONNECT] WebSocket ACCEPTED")
 
         # Start token lifecycle monitor task (B-12, B-14)
         token = get_token_from_scope(self.scope)
@@ -142,12 +154,16 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             ip_conn_key = f"ws_conn_ip_{ip_address}"
             
             user_conns = cache.get(user_conn_key, 0)
-            if user_conns > 0:
-                cache.set(user_conn_key, user_conns - 1, timeout=86400)
+            if user_conns > 1:
+                cache.set(user_conn_key, user_conns - 1, timeout=300)
+            else:
+                cache.delete(user_conn_key)
             
             ip_conns = cache.get(ip_conn_key, 0)
-            if ip_conns > 0:
-                cache.set(ip_conn_key, ip_conns - 1, timeout=86400)
+            if ip_conns > 1:
+                cache.set(ip_conn_key, ip_conns - 1, timeout=300)
+            else:
+                cache.delete(ip_conn_key)
 
         if self.user_group:
             await self.channel_layer.group_discard(self.user_group, self.channel_name)
@@ -352,7 +368,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         import sys
         is_testing = "test" in sys.argv
 
-        if not is_testing:
+        if not is_testing and msg_type in ("message", "forward_message"):
             # 1. Spam protection (rapid repeated messages)
             last_time_key = f"ws_last_msg_time_{user_id}"
             last_time = cache.get(last_time_key)
@@ -389,6 +405,16 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.handle_delivery_receipt(content)
         elif msg_type in ("read_receipt", "read_ack"):
             await self.handle_read_receipt(content)
+        elif msg_type == "delete_message":
+            await self.handle_delete_message(content)
+        elif msg_type == "edit_message":
+            await self.handle_edit_message(content)
+        elif msg_type in ("add_reaction", "toggle_reaction", "remove_reaction"):
+            await self.handle_reaction(content)
+        elif msg_type == "forward_message":
+            await self.handle_forward_message(content)
+        elif msg_type in ("typing_start", "typing_stop", "typing"):
+            await self.handle_typing(content, msg_type)
         else:
             await self.send_json({
                 "type": "error",
@@ -397,14 +423,28 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             })
 
     async def handle_message(self, content: dict):
-        raw_content = content.get("content")
-        if not isinstance(raw_content, str) or not raw_content.strip():
+        raw_content = content.get("content", "")
+        attachment_ids = content.get("attachment_ids")
+
+        if not isinstance(raw_content, str):
+            raw_content = ""
+
+        if not raw_content.strip() and not attachment_ids:
             await self.send_json({
                 "type": "error",
                 "code": "INVALID_MESSAGE",
                 "message": "Message content is required.",
             })
             return
+
+        clean_att_ids = None
+        if attachment_ids and isinstance(attachment_ids, list):
+            clean_att_ids = []
+            for aid in attachment_ids:
+                try:
+                    clean_att_ids.append(int(str(aid).replace("att_", "")))
+                except (ValueError, TypeError):
+                    pass
 
         max_length = getattr(settings, "MAX_MESSAGE_LENGTH", 1000)
         if len(raw_content.strip()) > max_length:
@@ -439,12 +479,29 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             })
             return
 
+        raw_reply_to = content.get("reply_to_id") or content.get("reply_to")
+        reply_to_id = None
+        if raw_reply_to is not None:
+            try:
+                reply_to_id = int(raw_reply_to)
+            except (TypeError, ValueError):
+                reply_to_id = None
+
         try:
             message_data = await database_sync_to_async(self.message_service.send_message)(
                 sender=self.user,
                 receiver_id=receiver_id,
                 content=raw_content,
+                reply_to_id=reply_to_id,
+                attachment_ids=clean_att_ids,
             )
+        except PermissionError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "FORBIDDEN",
+                "message": str(exc),
+            })
+            return
         except ValueError as exc:
             await self.send_json({
                 "type": "error",
@@ -469,19 +526,15 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             },
         )
 
-        # Broadcast to receiver's user group (if distinct from sender and receiver is online)
+        # Broadcast to receiver's user group (if distinct from sender)
         if receiver_id != self.user.id:
-            is_receiver_online = await database_sync_to_async(
-                self.presence_service.is_user_online
-            )(receiver_id)
-            if is_receiver_online:
-                await self.channel_layer.group_send(
-                    f"user_{receiver_id}",
-                    {
-                        "type": "chat.message",
-                        "data": message_data,
-                    },
-                )
+            await self.channel_layer.group_send(
+                f"user_{receiver_id}",
+                {
+                    "type": "chat.message",
+                    "data": message_data,
+                },
+            )
 
     async def handle_delivery_receipt(self, content: dict):
         raw_msg_ids = content.get("message_ids")
@@ -634,6 +687,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                 user2_id=target_user_id,
                 page=page,
                 page_size=page_size,
+                requesting_user_id=self.user.id,
             )
             await self.send_json({
                 "type": "history",
@@ -672,6 +726,354 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json(event["data"])
 
     async def video_call_event(self, event: dict):
+        await self.send_json(event["data"])
+
+    async def handle_delete_message(self, content: dict):
+        raw_msg_id = content.get("message_id")
+        delete_type = content.get("delete_type", "everyone")
+
+        if raw_msg_id is None:
+            return
+
+        try:
+            message_id = int(raw_msg_id)
+        except (TypeError, ValueError):
+            return
+
+        if delete_type == "everyone":
+            try:
+                updated_info = await database_sync_to_async(
+                    self.message_service.delete_message_for_everyone
+                )(message_id=message_id, user_id=self.user.id)
+            except PermissionError as exc:
+                await self.send_json({
+                    "type": "error",
+                    "code": "FORBIDDEN",
+                    "message": str(exc),
+                })
+                return
+            except ValueError as exc:
+                await self.send_json({
+                    "type": "error",
+                    "code": "INVALID_MESSAGE",
+                    "message": str(exc),
+                })
+                return
+
+            if updated_info:
+                partner_id = updated_info.get("partner_id")
+                event_data = {
+                    "type": "message_deleted",
+                    "message_id": message_id,
+                    "delete_type": "everyone",
+                    "sender_id": self.user.id,
+                }
+                await self.channel_layer.group_send(
+                    f"user_{self.user.id}",
+                    {
+                        "type": "message.delete.event",
+                        "data": event_data,
+                    },
+                )
+                if partner_id and partner_id != self.user.id:
+                    await self.channel_layer.group_send(
+                        f"user_{partner_id}",
+                        {
+                            "type": "message.delete.event",
+                            "data": event_data,
+                        },
+                    )
+        elif delete_type == "me":
+            try:
+                updated_info = await database_sync_to_async(
+                    self.message_service.delete_message_for_me
+                )(message_id=message_id, user_id=self.user.id)
+            except PermissionError as exc:
+                await self.send_json({
+                    "type": "error",
+                    "code": "FORBIDDEN",
+                    "message": str(exc),
+                })
+                return
+            except ValueError as exc:
+                await self.send_json({
+                    "type": "error",
+                    "code": "INVALID_MESSAGE",
+                    "message": str(exc),
+                })
+                return
+
+            if updated_info:
+                event_data = {
+                    "type": "message_deleted",
+                    "message_id": message_id,
+                    "delete_type": "me",
+                    "sender_id": self.user.id,
+                }
+                await self.channel_layer.group_send(
+                    f"user_{self.user.id}",
+                    {
+                        "type": "message.delete.event",
+                        "data": event_data,
+                    },
+                )
+
+    async def message_delete_event(self, event: dict):
+        await self.send_json(event["data"])
+
+    async def handle_edit_message(self, content: dict):
+        raw_msg_id = content.get("message_id")
+        raw_content = content.get("content")
+
+        if raw_msg_id is None:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Message ID is required.",
+            })
+            return
+
+        try:
+            message_id = int(raw_msg_id)
+        except (TypeError, ValueError):
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Invalid message ID format.",
+            })
+            return
+
+        try:
+            message_data = await database_sync_to_async(self.message_service.edit_message)(
+                message_id=message_id,
+                user_id=self.user.id,
+                content=raw_content,
+            )
+        except PermissionError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "FORBIDDEN",
+                "message": str(exc),
+            })
+            return
+        except ValueError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": str(exc),
+            })
+            return
+        except Exception:
+            await self.send_json({
+                "type": "error",
+                "code": "SERVER_ERROR",
+                "message": "Failed to edit message.",
+            })
+            return
+
+        event_data = {
+            "type": "message_edited",
+            "data": message_data,
+        }
+
+        await self.channel_layer.group_send(
+            f"user_{self.user.id}",
+            {
+                "type": "message.edited.event",
+                "data": event_data,
+            },
+        )
+
+        receiver_id = message_data.get("receiver_id")
+        if receiver_id and receiver_id != self.user.id:
+            await self.channel_layer.group_send(
+                f"user_{receiver_id}",
+                {
+                    "type": "message.edited.event",
+                    "data": event_data,
+                },
+            )
+
+    async def message_edited_event(self, event: dict):
+        await self.send_json(event["data"])
+
+    async def handle_reaction(self, content: dict):
+        raw_msg_id = content.get("message_id")
+        emoji = content.get("emoji")
+
+        if raw_msg_id is None or not emoji:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Message ID and emoji are required.",
+            })
+            return
+
+        try:
+            message_id = int(raw_msg_id)
+        except (TypeError, ValueError):
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Invalid message ID format.",
+            })
+            return
+
+        try:
+            reaction_info = await database_sync_to_async(
+                self.message_service.toggle_reaction
+            )(message_id=message_id, user_id=self.user.id, emoji=str(emoji))
+        except PermissionError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "FORBIDDEN",
+                "message": str(exc),
+            })
+            return
+        except ValueError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": str(exc),
+            })
+            return
+
+        if reaction_info:
+            partner_id = reaction_info.get("partner_id")
+            event_data = {
+                "type": "message_reaction_updated",
+                "data": reaction_info,
+            }
+            await self.channel_layer.group_send(
+                f"user_{self.user.id}",
+                {
+                    "type": "message.reaction.event",
+                    "data": event_data,
+                },
+            )
+            if partner_id and partner_id != self.user.id:
+                await self.channel_layer.group_send(
+                    f"user_{partner_id}",
+                    {
+                        "type": "message.reaction.event",
+                        "data": event_data,
+                    },
+                )
+
+    async def message_reaction_event(self, event: dict):
+        await self.send_json(event["data"])
+
+    async def handle_forward_message(self, content: dict):
+        raw_msg_id = content.get("message_id")
+        raw_target_ids = content.get("target_user_ids") or content.get("target_user_id") or content.get("receiver_id")
+
+        if raw_msg_id is None or raw_target_ids is None:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Message ID and target user ID(s) are required.",
+            })
+            return
+
+        try:
+            message_id = int(raw_msg_id)
+        except (TypeError, ValueError):
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Invalid message ID format.",
+            })
+            return
+
+        target_user_ids = []
+        if isinstance(raw_target_ids, list):
+            for tid in raw_target_ids:
+                try:
+                    target_user_ids.append(int(tid))
+                except (TypeError, ValueError):
+                    pass
+        else:
+            try:
+                target_user_ids.append(int(raw_target_ids))
+            except (TypeError, ValueError):
+                pass
+
+        if not target_user_ids:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": "Valid target user ID(s) required.",
+            })
+            return
+
+        try:
+            forwarded_messages = await database_sync_to_async(
+                self.message_service.forward_message
+            )(user=self.user, message_id=message_id, target_user_ids=target_user_ids)
+        except PermissionError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "FORBIDDEN",
+                "message": str(exc),
+            })
+            return
+        except ValueError as exc:
+            await self.send_json({
+                "type": "error",
+                "code": "INVALID_MESSAGE",
+                "message": str(exc),
+            })
+            return
+
+        for msg_data in forwarded_messages:
+            receiver_id = msg_data.get("receiver_id")
+            await self.send_json(msg_data)
+            if receiver_id and receiver_id != self.user.id:
+                await self.channel_layer.group_send(
+                    f"user_{receiver_id}",
+                    {
+                        "type": "chat.message.event",
+                        "data": msg_data,
+                    },
+                )
+
+    async def handle_typing(self, content: dict, msg_type: str):
+        raw_target_id = (
+            content.get("target_user_id")
+            or content.get("receiver_id")
+            or content.get("conversation_user_id")
+        )
+        if raw_target_id is None:
+            return
+
+        try:
+            target_user_id = int(raw_target_id)
+        except (ValueError, TypeError):
+            return
+
+        is_typing = (
+            msg_type == "typing_start"
+            or content.get("is_typing") is True
+            or (msg_type == "typing" and content.get("status") == "start")
+        )
+
+        user_display_name = getattr(self.user, "username", f"User {self.user.id}")
+
+        await self.channel_layer.group_send(
+            f"user_{target_user_id}",
+            {
+                "type": "chat.typing.event",
+                "data": {
+                    "type": "typing_status",
+                    "user_id": self.user.id,
+                    "user_name": user_display_name,
+                    "is_typing": is_typing,
+                    "conversation_user_id": self.user.id,
+                },
+            },
+        )
+
+    async def chat_typing_event(self, event: dict):
         await self.send_json(event["data"])
 
 

@@ -22,8 +22,16 @@ class WebSocketService {
 
     let baseUrl = '';
 
-    if (rawWsUrl) {
-      if ((rawWsUrl.includes('localhost') || rawWsUrl.includes('127.0.0.1')) && rawWsUrl.startsWith('wss://')) {
+    const isBackendRemote = rawBackendUrl && !rawBackendUrl.includes('localhost') && !rawBackendUrl.includes('127.0.0.1');
+    const isWsLocalhost = rawWsUrl.includes('localhost') || rawWsUrl.includes('127.0.0.1');
+
+    if (isBackendRemote && (!rawWsUrl || isWsLocalhost)) {
+      const isHttps = rawBackendUrl.startsWith('https');
+      const wsProtocol = isHttps ? 'wss' : 'ws';
+      const host = rawBackendUrl.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+      baseUrl = `${wsProtocol}://${host}/ws`;
+    } else if (rawWsUrl) {
+      if (isWsLocalhost && rawWsUrl.startsWith('wss://')) {
         rawWsUrl = rawWsUrl.replace('wss://', 'ws://');
       }
       baseUrl = rawWsUrl.replace(/\/+$/, '');
@@ -68,12 +76,18 @@ class WebSocketService {
     this.setStatus('connecting');
 
     const wsUrl = this.resolveWebSocketUrl();
+    console.log('[WS CLIENT] connect() called');
+    console.log(`[WS CLIENT] WebSocket URL = ${wsUrl}`);
+    console.log(`[WS CLIENT] token exists = ${Boolean(token)}`);
+    console.log(`[WS CLIENT] token length = ${token ? token.length : 0}`);
+    console.log('[WS CLIENT] subprotocol = access_token');
     console.log(`[WebSocket] Connecting to user-level socket... (${wsUrl})`);
 
     try {
       this.socket = new WebSocket(wsUrl, ['access_token', token]);
 
       this.socket.onopen = () => {
+        console.log('[WS CLIENT] WebSocket OPENED');
         console.log('[WebSocket] User-level WebSocket connected successfully.');
         this.reconnectAttempts = 0;
         this.setStatus('connected');
@@ -82,6 +96,7 @@ class WebSocketService {
       };
 
       this.socket.onmessage = (event: MessageEvent) => {
+        console.log('[WS CLIENT] WebSocket MESSAGE received:', event.data);
         try {
           const payload = JSON.parse(event.data) as WSServerEvent;
           this.handleServerMessage(payload);
@@ -91,12 +106,17 @@ class WebSocketService {
       };
 
       this.socket.onerror = (event) => {
+        console.log('[WS CLIENT] WebSocket ERROR:', event);
         console.warn('[WebSocket] Socket error:', event);
         this.setStatus('error');
         this.emit('ERROR', { code: 'SOCKET_ERROR', message: 'WebSocket encountered an error.' });
       };
 
       this.socket.onclose = (event: CloseEvent) => {
+        console.log('[WS CLIENT] WebSocket CLOSED');
+        console.log(`[WS CLIENT] close code = ${event.code}`);
+        console.log(`[WS CLIENT] close reason = ${event.reason || 'None'}`);
+        console.log(`[WS CLIENT] wasClean = ${event.wasClean}`);
         console.log(`[WebSocket] Socket closed (code: ${event.code}, reason: ${event.reason || 'None'})`);
         this.cleanupSocket();
         this.setStatus('disconnected');
@@ -149,6 +169,22 @@ class WebSocketService {
 
       case 'message_status':
         this.emit('MESSAGE_STATUS_UPDATE', event);
+        break;
+
+      case 'message_deleted':
+        this.emit('MESSAGE_DELETED', event);
+        break;
+
+      case 'message_edited':
+        this.emit('MESSAGE_EDITED', event);
+        break;
+
+      case 'message_reaction_updated':
+        this.emit('MESSAGE_REACTION_UPDATED', event);
+        break;
+
+      case 'typing_status':
+        this.emit('USER_TYPING', event);
         break;
 
       case 'profile_update':
@@ -269,17 +305,91 @@ class WebSocketService {
     }
   }
 
-  public sendMessage(receiverId: string | number, content: string): boolean {
+  public sendMessage(receiverId: string | number, content: string, replyToId?: string | number, attachmentIds?: (number | string)[]): boolean {
     const trimmed = content.trim();
-    if (!trimmed || !receiverId) return false;
+    if ((!trimmed && (!attachmentIds || attachmentIds.length === 0)) || !receiverId) return false;
 
     // Clean numeric ID if string like "user_2"
     const numMatch = String(receiverId).match(/\d+/);
     const cleanReceiverId = numMatch ? parseInt(numMatch[0], 10) : receiverId;
 
+    let cleanReplyToId: number | string | undefined = undefined;
+    if (replyToId !== undefined && replyToId !== null) {
+      const rMatch = String(replyToId).match(/\d+/);
+      cleanReplyToId = rMatch ? parseInt(rMatch[0], 10) : replyToId;
+    }
+
     const payloadStr = JSON.stringify({
       type: 'message',
       receiver_id: cleanReceiverId,
+      content: trimmed || '🎤 Voice Message',
+      ...(cleanReplyToId !== undefined ? { reply_to_id: cleanReplyToId, reply_to: cleanReplyToId } : {}),
+      ...(attachmentIds && attachmentIds.length > 0 ? { attachment_ids: attachmentIds } : {}),
+    });
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(payloadStr);
+      return true;
+    }
+
+    if (!this.socket || this.socket.readyState === WebSocket.CONNECTING) {
+      console.log('[WebSocket] Socket connecting or initializing: Queuing message for transmission upon connect.');
+      this.pendingQueue.push(payloadStr);
+      return true;
+    }
+
+    console.warn('[WebSocket] Cannot send message: Socket is not open.');
+    return false;
+  }
+
+  public sendForward(messageId: string | number, targetUserIds: (string | number)[] | string | number): boolean {
+    if (!messageId || !targetUserIds) return false;
+
+    const mMatch = String(messageId).match(/\d+/);
+    const cleanMessageId = mMatch ? parseInt(mMatch[0], 10) : messageId;
+
+    let cleanTargets: number[] = [];
+    if (Array.isArray(targetUserIds)) {
+      cleanTargets = targetUserIds.map((t) => {
+        const match = String(t).match(/\d+/);
+        return match ? parseInt(match[0], 10) : Number(t);
+      }).filter((n) => !isNaN(n));
+    } else {
+      const match = String(targetUserIds).match(/\d+/);
+      if (match) cleanTargets.push(parseInt(match[0], 10));
+    }
+
+    if (cleanTargets.length === 0) return false;
+
+    const payloadStr = JSON.stringify({
+      type: 'forward_message',
+      message_id: cleanMessageId,
+      target_user_ids: cleanTargets,
+    });
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(payloadStr);
+      return true;
+    }
+
+    if (!this.socket || this.socket.readyState === WebSocket.CONNECTING) {
+      this.pendingQueue.push(payloadStr);
+      return true;
+    }
+
+    return false;
+  }
+
+  public editMessage(messageId: string | number, content: string): boolean {
+    const trimmed = content.trim();
+    if (!trimmed || !messageId) return false;
+
+    const numMatch = String(messageId).match(/\d+/);
+    const cleanMessageId = numMatch ? parseInt(numMatch[0], 10) : messageId;
+
+    const payloadStr = JSON.stringify({
+      type: 'edit_message',
+      message_id: cleanMessageId,
       content: trimmed,
     });
 
@@ -288,13 +398,13 @@ class WebSocketService {
       return true;
     }
 
-    if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
-      console.log('[WebSocket] Socket connecting: Queuing message for transmission upon connect.');
+    if (!this.socket || this.socket.readyState === WebSocket.CONNECTING) {
+      console.log('[WebSocket] Socket connecting: Queuing edit_message for transmission upon connect.');
       this.pendingQueue.push(payloadStr);
       return true;
     }
 
-    console.warn('[WebSocket] Cannot send message: Socket is not open.');
+    console.warn('[WebSocket] Cannot edit message: Socket is not open.');
     return false;
   }
 
@@ -316,8 +426,8 @@ class WebSocketService {
       return true;
     }
 
-    if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
-      console.log('[WebSocket] Socket connecting: Queuing history request for transmission upon connect.');
+    if (!this.socket || this.socket.readyState === WebSocket.CONNECTING) {
+      console.log('[WebSocket] Socket connecting or initializing: Queuing history request for transmission upon connect.');
       this.pendingQueue.push(payloadStr);
       return true;
     }
@@ -389,6 +499,79 @@ class WebSocketService {
       return true;
     }
 
+    return false;
+  }
+
+  public sendTyping(targetUserId: string | number, isTyping: boolean): boolean {
+    const numMatch = String(targetUserId).match(/\d+/);
+    const cleanUserId = numMatch ? parseInt(numMatch[0], 10) : targetUserId;
+    if (!cleanUserId) return false;
+
+    const payloadStr = JSON.stringify({
+      type: isTyping ? 'typing_start' : 'typing_stop',
+      target_user_id: cleanUserId,
+    });
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(payloadStr);
+      return true;
+    }
+
+    return false;
+  }
+
+  public sendDeleteMessage(
+    targetUserId: string | number,
+    messageId: string | number,
+    deleteType: 'me' | 'everyone' = 'everyone'
+  ): boolean {
+    const numTarget = String(targetUserId).match(/\d+/);
+    const cleanTargetId = numTarget ? parseInt(numTarget[0], 10) : targetUserId;
+
+    const numMsg = String(messageId).match(/\d+/);
+    const cleanMsgId = numMsg ? parseInt(numMsg[0], 10) : messageId;
+
+    const payloadStr = JSON.stringify({
+      type: 'delete_message',
+      target_user_id: cleanTargetId,
+      message_id: cleanMsgId,
+      delete_type: deleteType,
+    });
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(payloadStr);
+      return true;
+    }
+
+    if (!this.socket || this.socket.readyState === WebSocket.CONNECTING) {
+      this.pendingQueue.push(payloadStr);
+      return true;
+    }
+
+    return false;
+  }
+
+  public sendReaction(messageId: string | number, emoji: string): boolean {
+    const numMsg = String(messageId).match(/\d+/);
+    const cleanMsgId = numMsg ? parseInt(numMsg[0], 10) : messageId;
+
+    const payloadStr = JSON.stringify({
+      type: 'add_reaction',
+      message_id: cleanMsgId,
+      emoji,
+    });
+
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(payloadStr);
+      return true;
+    }
+
+    if (!this.socket || this.socket.readyState === WebSocket.CONNECTING) {
+      this.pendingQueue.push(payloadStr);
+      return true;
+    }
+
+    console.warn('[WebSocket] Cannot send reaction: Socket is not open.');
     return false;
   }
 

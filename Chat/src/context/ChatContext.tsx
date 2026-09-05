@@ -13,15 +13,21 @@ import type {
   CallType,
   CallLog,
   StatusItem,
+  FilterCategory,
 } from '../types/chat.types';
+import type { ToastNotificationData } from '../components/common/NotificationToast';
+import { showBrowserPushNotification } from '../utils/browserNotification.utils';
 
 import type {
   BackendMessagePayload,
   WSHistoryEvent,
   WSMessageStatusEvent,
+  WSMessageDeleteEvent,
+  WSMessageEditedEvent,
   WSProfileUpdateEvent,
   WSPresenceEvent,
   WSSocketStatus,
+  WSMessageReactionEvent,
 } from '../types/websocket.types';
 
 
@@ -34,7 +40,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { formatMessageTime } from '../utils/date.utils';
 import { getDirectConversationId, getTargetUserIdFromConversation } from '../utils/conversation.utils';
 
-export type FilterCategory = 'all' | 'unread' | 'favorites' | 'groups';
+export type FilterCategory = 'all' | 'unread' | 'favorites' | 'groups' | 'archived';
 
 
 export interface ActiveCallState {
@@ -56,6 +62,7 @@ interface ChatContextType {
   inChatSearchQuery: string;
   filterCategory: FilterCategory;
   replyingToMessage: ReplyPreview | null;
+  editingMessage: Message | null;
   activeCall: ActiveCallState | null;
   callLogs: CallLog[];
   statuses: StatusItem[];
@@ -71,12 +78,23 @@ interface ChatContextType {
   setActiveTab: (tab: ActiveTab) => void;
   selectConversation: (id: string | null) => void;
   sendMessage: (text: string, attachments?: Attachment[]) => Promise<void>;
-  deleteMessage: (messageId: string) => Promise<void>;
+  editMessage: (messageId: string, text: string) => Promise<void>;
+  deleteMessage: (messageId: string, deleteType?: 'me' | 'everyone') => Promise<void>;
   toggleStarMessage: (messageId: string) => Promise<void>;
   addReaction: (messageId: string, emoji: string) => Promise<void>;
+  forwardMessage: (messageId: string, targetUserIds: string | string[]) => Promise<void>;
+  sendTyping: (isTyping: boolean) => void;
+  activeNotification: ToastNotificationData | null;
+  dismissNotification: () => void;
   setReplyTo: (reply: ReplyPreview | null) => void;
+  setEditingMessage: (message: Message | null) => void;
   togglePin: (id: string) => Promise<void>;
+  toggleArchive: (id: string) => Promise<void>;
   toggleMute: (id: string) => Promise<void>;
+  blockUser: (targetUserId: string) => Promise<void>;
+  unblockUser: (targetUserId: string) => Promise<void>;
+  reportUser: (targetUserId: string, reason: string, description?: string) => Promise<void>;
+  reportMessage: (messageId: string, reason: string, description?: string) => Promise<void>;
   createNewChat: (contact: User) => Promise<void>;
   createNewGroup: (name: string, members: User[]) => Promise<void>;
   updateUserProfile: (updates: Partial<User>) => Promise<void>;
@@ -130,13 +148,27 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({});
+  const [messagesMapState, setMessagesMapState] = useState<Record<string, Message[]>>(() => storage.getMessagesMap<Message>());
+
+  const setMessagesMap: React.Dispatch<React.SetStateAction<Record<string, Message[]>>> = useCallback(
+    (action) => {
+      setMessagesMapState((prev) => {
+        const next = typeof action === 'function' ? action(prev) : action;
+        storage.setMessagesMap(next);
+        return next;
+      });
+    },
+    []
+  );
+  const messagesMap = messagesMapState;
   const [activeTab, setActiveTab] = useState<ActiveTab>('chats');
   const [theme, setTheme] = useState<ThemeMode>(() => storage.getTheme());
   const [searchQuery, setSearchQuery] = useState('');
   const [inChatSearchQuery, setInChatSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
   const [replyingToMessage, setReplyingToMessage] = useState<ReplyPreview | null>(null);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [activeNotification, setActiveNotification] = useState<ToastNotificationData | null>(null);
   const [activeCall, setActiveCall] = useState<ActiveCallState | null>(null);
   const [callLogs] = useState<CallLog[]>([]);
   const [statuses] = useState<StatusItem[]>([]);
@@ -212,7 +244,31 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Helper to map backend message to frontend Message model
   const mapBackendMessage = useCallback(
-    (backendMsg: BackendMessagePayload, targetConvId: string): Message => {
+    (backendMsg: BackendMessagePayload & { reactions?: any[]; is_deleted?: boolean; reply_to?: any }, targetConvId: string): Message => {
+      const reactions = (backendMsg.reactions || []).map((r: any) => ({
+        emoji: r.emoji,
+        userId: String(r.user_id),
+        userName: r.user_name || `User ${r.user_id}`,
+      }));
+
+      const replyTo = backendMsg.reply_to
+        ? {
+            id: String(backendMsg.reply_to.id),
+            senderName: backendMsg.reply_to.sender_name || `User ${backendMsg.reply_to.sender_id}`,
+            text: backendMsg.reply_to.is_deleted ? 'This message was deleted' : backendMsg.reply_to.content,
+          }
+        : undefined;
+
+      const attachments = ((backendMsg as any).attachments || []).map((att: any) => ({
+        id: String(att.id),
+        type: att.type,
+        url: att.url,
+        name: att.name,
+        size: att.size,
+        mimeType: att.mimeType,
+        duration: att.duration,
+      }));
+
       return {
         id: String(backendMsg.id),
         conversationId: targetConvId,
@@ -220,6 +276,14 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         text: backendMsg.content,
         timestamp: formatMessageTime(backendMsg.created_at),
         status: (backendMsg.status as MessageStatus) || 'sent',
+        isEdited: Boolean(backendMsg.is_edited),
+        isDeleted: Boolean(backendMsg.is_deleted) || backendMsg.content === 'This message was deleted',
+        isForwarded: Boolean(backendMsg.is_forwarded),
+        forwardedFromName: backendMsg.forwarded_from_name || undefined,
+        reactions,
+        replyTo,
+        attachments: attachments.length > 0 ? attachments : undefined,
+        updatedAt: backendMsg.updated_at,
         createdAt: backendMsg.created_at,
       };
     },
@@ -231,6 +295,16 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const unsubStatus = webSocketService.on<WSSocketStatus>('SOCKET_STATUS', (status) => {
       console.log('[ChatContext] Persistent socket status:', status);
       setSocketStatus(status);
+
+      if (status === 'connected' && activeConversationIdRef.current) {
+        const activeConv = conversationsRef.current.find((c) => c.id === activeConversationIdRef.current);
+        if (activeConv && activeConv.type === 'direct') {
+          const targetId = getTargetUserIdFromConversation(currentUserRef.current.id, activeConv.participantIds);
+          if (targetId) {
+            webSocketService.fetchHistory(targetId, 1, 50);
+          }
+        }
+      }
     });
 
     const unsubNewMessage = webSocketService.on<BackendMessagePayload>('NEW_MESSAGE', (payload) => {
@@ -258,6 +332,25 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (isCurrentActive) {
           webSocketService.sendReadReceipt(payload.sender_id, [payload.id]);
           newMsg.status = 'read';
+        } else {
+          // Trigger real-time notification toast for incoming message when chat not active
+          const senderUser = allUsersRef.current.find((u) => String(u.id) === String(payload.sender_id));
+          const senderTitle = senderUser?.name || payload.sender_name || `User ${payload.sender_id}`;
+          setActiveNotification({
+            id: `msg_${payload.id}_${Date.now()}`,
+            type: 'new_message',
+            title: senderTitle,
+            body: payload.content,
+            avatar: senderUser?.avatar,
+            conversationId: convId,
+          });
+          showBrowserPushNotification(
+            senderTitle,
+            { body: payload.content, conversationId: convId },
+            (targetId) => {
+              if (targetId) selectConversation(targetId);
+            }
+          );
         }
       }
 
@@ -577,10 +670,250 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
     });
 
+    const unsubDeleteMessage = webSocketService.on<WSMessageDeleteEvent>('MESSAGE_DELETED', (event) => {
+      console.log('[ChatContext] Real-time MESSAGE_DELETED event received:', event);
+      const msgIdStr = String(event.message_id);
+
+      if (event.delete_type === 'everyone') {
+        storage.addDeletedForEveryone(msgIdStr);
+
+        setMessagesMap((prev) => {
+          let anyChanged = false;
+          const nextState: Record<string, Message[]> = {};
+
+          for (const [cId, list] of Object.entries(prev)) {
+            let listChanged = false;
+            const updatedList = list.map((m) => {
+              const mStr = String(m.id);
+              const mMatch = mStr.match(/\d+/);
+              const targetMatch = msgIdStr.match(/\d+/);
+              const isMatch = mStr === msgIdStr || (mMatch && targetMatch && mMatch[0] === targetMatch[0]);
+
+              if (isMatch) {
+                listChanged = true;
+                anyChanged = true;
+                return { ...m, isDeleted: true, text: 'This message was deleted' };
+              }
+              return m;
+            });
+
+            nextState[cId] = listChanged ? updatedList : list;
+          }
+
+          return anyChanged ? nextState : prev;
+        });
+
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.lastMessage) {
+              const lmStr = String(c.lastMessage.id);
+              const lmMatch = lmStr.match(/\d+/);
+              const targetMatch = msgIdStr.match(/\d+/);
+              const isMatch = lmStr === msgIdStr || (lmMatch && targetMatch && lmMatch[0] === targetMatch[0]);
+              if (isMatch) {
+                return {
+                  ...c,
+                  lastMessage: {
+                    ...c.lastMessage,
+                    isDeleted: true,
+                    text: 'This message was deleted',
+                  },
+                };
+              }
+            }
+            return c;
+          })
+        );
+      } else if (event.delete_type === 'me') {
+        storage.addDeletedForMe(msgIdStr);
+
+        setMessagesMap((prev) => {
+          let anyChanged = false;
+          const nextState: Record<string, Message[]> = {};
+
+          for (const [cId, list] of Object.entries(prev)) {
+            const targetMatch = msgIdStr.match(/\d+/);
+            const filteredList = list.filter((m) => {
+              const mStr = String(m.id);
+              const mMatch = mStr.match(/\d+/);
+              const isMatch = mStr === msgIdStr || (mMatch && targetMatch && mMatch[0] === targetMatch[0]);
+              return !isMatch;
+            });
+
+            if (filteredList.length !== list.length) {
+              anyChanged = true;
+              nextState[cId] = filteredList;
+            } else {
+              nextState[cId] = list;
+            }
+          }
+
+          return anyChanged ? nextState : prev;
+        });
+      }
+    });
+
+    const unsubEditMessage = webSocketService.on<WSMessageEditedEvent>('MESSAGE_EDITED', (event) => {
+      console.log('[ChatContext] Real-time MESSAGE_EDITED event received:', event);
+      const payload = event.data;
+      if (!payload || !payload.id) return;
+
+      const editedMsgIdStr = String(payload.id);
+      const targetMatch = editedMsgIdStr.match(/\d+/);
+
+      setMessagesMap((prev) => {
+        let anyChanged = false;
+        const nextState: Record<string, Message[]> = {};
+
+        for (const [cId, list] of Object.entries(prev)) {
+          let listChanged = false;
+          const updatedList = list.map((m) => {
+            const mStr = String(m.id);
+            const mMatch = mStr.match(/\d+/);
+            const isMatch = mStr === editedMsgIdStr || (mMatch && targetMatch && mMatch[0] === targetMatch[0]);
+
+            if (isMatch) {
+              listChanged = true;
+              anyChanged = true;
+              return {
+                ...m,
+                text: payload.content,
+                isEdited: true,
+                updatedAt: payload.updated_at,
+              };
+            }
+            return m;
+          });
+
+          nextState[cId] = listChanged ? updatedList : list;
+        }
+
+        return anyChanged ? nextState : prev;
+      });
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.lastMessage) {
+            const lmStr = String(c.lastMessage.id);
+            const lmMatch = lmStr.match(/\d+/);
+            const isMatch = lmStr === editedMsgIdStr || (lmMatch && targetMatch && lmMatch[0] === targetMatch[0]);
+            if (isMatch) {
+              return {
+                ...c,
+                lastMessage: {
+                  ...c.lastMessage,
+                  text: payload.content,
+                  isEdited: true,
+                  updatedAt: payload.updated_at,
+                },
+              };
+            }
+          }
+          return c;
+        })
+      );
+    });
+
+    const unsubReaction = webSocketService.on<WSMessageReactionEvent>('MESSAGE_REACTION_UPDATED', (event) => {
+      console.log('[ChatContext] Real-time MESSAGE_REACTION_UPDATED event received:', event);
+      const payload = event.data;
+      if (!payload || !payload.message_id) return;
+
+      const targetMsgIdStr = String(payload.message_id);
+      const targetMatch = targetMsgIdStr.match(/\d+/);
+
+      const newReactions = (payload.reactions || []).map((r: any) => ({
+        emoji: r.emoji,
+        userId: String(r.user_id),
+        userName: r.user_name || `User ${r.user_id}`,
+      }));
+
+      setMessagesMap((prev) => {
+        let anyChanged = false;
+        const nextState: Record<string, Message[]> = {};
+
+        for (const [cId, list] of Object.entries(prev)) {
+          let listChanged = false;
+          const updatedList = list.map((m) => {
+            const mStr = String(m.id);
+            const mMatch = mStr.match(/\d+/);
+            const isMatch = mStr === targetMsgIdStr || (mMatch && targetMatch && mMatch[0] === targetMatch[0]);
+
+            if (isMatch) {
+              listChanged = true;
+              anyChanged = true;
+
+              // If someone else reacted to my message, trigger real-time notification
+              if (String(m.senderId) === String(currentUserRef.current.id) && payload.user_id !== currentUserRef.current.id) {
+                const reacterName = payload.user_name || `User ${payload.user_id}`;
+                const emoji = payload.emoji || payload.reactions?.[0]?.emoji || '❤️';
+                const rxnTitle = `${reacterName} reacted ${emoji}`;
+                const rxnBody = `on your message: "${m.text}"`;
+                setActiveNotification({
+                  id: `rxn_${payload.message_id}_${Date.now()}`,
+                  type: 'reaction',
+                  title: rxnTitle,
+                  body: rxnBody,
+                  conversationId: m.conversationId,
+                });
+                showBrowserPushNotification(
+                  rxnTitle,
+                  { body: rxnBody, conversationId: m.conversationId },
+                  (targetId) => {
+                    if (targetId) selectConversation(targetId);
+                  }
+                );
+              }
+
+              return {
+                ...m,
+                reactions: newReactions,
+              };
+            }
+            return m;
+          });
+
+          nextState[cId] = listChanged ? updatedList : list;
+        }
+
+        return anyChanged ? nextState : prev;
+      });
+    });
+
+    const unsubTyping = webSocketService.on<WSTypingStatusEvent>('USER_TYPING', (event) => {
+      console.log('[ChatContext] Real-time USER_TYPING event received:', event);
+      const targetId = String(event.conversation_user_id || event.user_id);
+      const targetMatch = targetId.match(/\d+/);
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          const cMatch = String(c.id).match(/\d+/);
+          const pMatch = c.participantIds?.[0]?.match(/\d+/);
+          const isMatch =
+            c.id === targetId ||
+            (targetMatch && cMatch && targetMatch[0] === cMatch[0]) ||
+            (targetMatch && pMatch && targetMatch[0] === pMatch[0]);
+
+          if (isMatch) {
+            return {
+              ...c,
+              isTyping: event.is_typing,
+              typingUser: event.is_typing ? (event.user_name || 'Contact') : undefined,
+            };
+          }
+          return c;
+        })
+      );
+    });
+
     return () => {
       unsubStatus();
       unsubNewMessage();
       unsubMessageStatus();
+      unsubDeleteMessage();
+      unsubEditMessage();
+      unsubReaction();
+      unsubTyping();
       unsubHistory();
       unsubPresence();
       unsubProfileUpdate();
@@ -730,11 +1063,18 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       )
     );
 
+    const replyToId = replyingToMessage ? replyingToMessage.id : undefined;
     setReplyingToMessage(null);
 
+    const attachmentIds = attachments
+      ? attachments
+          .map((a) => (a.attachment_id ? a.attachment_id : parseInt(String(a.id).replace('att_', ''), 10)))
+          .filter((id) => !isNaN(id))
+      : undefined;
+
     // Send through real Django WebSocket
-    console.log(`[ChatContext] Sending WebSocket message to receiver ${targetUserId}:`, trimmed);
-    let sent = webSocketService.sendMessage(targetUserId, trimmed);
+    console.log(`[ChatContext] Sending WebSocket message to receiver ${targetUserId}:`, trimmed, attachmentIds);
+    let sent = webSocketService.sendMessage(targetUserId, trimmed, replyToId, attachmentIds);
     if (!sent) {
       const token = storage.getAuthToken();
       if (token && !webSocketService.isConnected()) {
@@ -742,7 +1082,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         webSocketService.connect(token);
         // Brief retry after initiating connection
         setTimeout(() => {
-          const retrySent = webSocketService.sendMessage(targetUserId, trimmed);
+          const retrySent = webSocketService.sendMessage(targetUserId, trimmed, replyToId, attachmentIds);
           if (!retrySent) {
             console.error('[ChatContext] Failed to dispatch message via WebSocket: Socket not connected.');
             setMessagesMap((prev) => ({
@@ -765,14 +1105,128 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const deleteMessage = async (messageId: string) => {
+  const editMessage = async (messageId: string, newText: string) => {
+    const trimmed = newText.trim();
+    if (!trimmed || !messageId) return;
+
+    webSocketService.editMessage(messageId, trimmed);
+
+    const targetMatch = messageId.match(/\d+/);
+    setMessagesMap((prev) => {
+      let anyChanged = false;
+      const nextState: Record<string, Message[]> = {};
+
+      for (const [cId, list] of Object.entries(prev)) {
+        let listChanged = false;
+        const updatedList = list.map((m) => {
+          const mStr = String(m.id);
+          const mMatch = mStr.match(/\d+/);
+          const isMatch = mStr === messageId || (mMatch && targetMatch && mMatch[0] === targetMatch[0]);
+
+          if (isMatch) {
+            listChanged = true;
+            anyChanged = true;
+            return {
+              ...m,
+              text: trimmed,
+              isEdited: true,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return m;
+        });
+
+        nextState[cId] = listChanged ? updatedList : list;
+      }
+
+      return anyChanged ? nextState : prev;
+    });
+
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.lastMessage) {
+          const lmStr = String(c.lastMessage.id);
+          const lmMatch = lmStr.match(/\d+/);
+          const isMatch = lmStr === messageId || (lmMatch && targetMatch && lmMatch[0] === targetMatch[0]);
+          if (isMatch) {
+            return {
+              ...c,
+              lastMessage: {
+                ...c.lastMessage,
+                text: trimmed,
+                isEdited: true,
+                updatedAt: new Date().toISOString(),
+              },
+            };
+          }
+        }
+        return c;
+      })
+    );
+
+    setEditingMessage(null);
+  };
+
+  const deleteMessage = async (messageId: string, deleteType: 'me' | 'everyone' = 'everyone') => {
     if (!activeConversationId) return;
-    setMessagesMap((prev) => ({
-      ...prev,
-      [activeConversationId]: (prev[activeConversationId] || []).map((m) =>
-        m.id === messageId ? { ...m, isDeleted: true, text: 'This message was deleted' } : m
-      ),
-    }));
+
+    const activeConv = conversations.find((c) => c.id === activeConversationId);
+    const targetUserId = activeConv
+      ? getTargetUserIdFromConversation(currentUser.id, activeConv.participantIds)
+      : null;
+
+    if (deleteType === 'me') {
+      storage.addDeletedForMe(messageId);
+      if (targetUserId) {
+        webSocketService.sendDeleteMessage(targetUserId, messageId, 'me');
+      }
+    } else {
+      storage.addDeletedForEveryone(messageId);
+      if (targetUserId) {
+        webSocketService.sendDeleteMessage(targetUserId, messageId, 'everyone');
+      }
+    }
+
+    setMessagesMap((prev) => {
+      const currentList = prev[activeConversationId] || [];
+      if (deleteType === 'me') {
+        return {
+          ...prev,
+          [activeConversationId]: currentList.filter((m) => m.id !== messageId),
+        };
+      } else {
+        return {
+          ...prev,
+          [activeConversationId]: currentList.map((m) =>
+            m.id === messageId ? { ...m, isDeleted: true, text: 'This message was deleted' } : m
+          ),
+        };
+      }
+    });
+
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== activeConversationId || !c.lastMessage) return c;
+        if (c.lastMessage.id === messageId) {
+          if (deleteType === 'me') {
+            const currentList = messagesMap[activeConversationId] || [];
+            const remaining = currentList.filter((m) => m.id !== messageId);
+            const newLastMsg = remaining.length > 0 ? remaining[remaining.length - 1] : undefined;
+            return { ...c, lastMessage: newLastMsg };
+          } else {
+            return {
+              ...c,
+              lastMessage: {
+                ...c.lastMessage,
+                isDeleted: true,
+                text: 'This message was deleted',
+              },
+            };
+          }
+        }
+        return c;
+      })
+    );
   };
 
   const toggleStarMessage = async (messageId: string) => {
@@ -787,6 +1241,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const addReaction = async (messageId: string, emoji: string) => {
     if (!activeConversationId) return;
+    webSocketService.sendReaction(messageId, emoji);
     setMessagesMap((prev) => ({
       ...prev,
       [activeConversationId]: (prev[activeConversationId] || []).map((m) => {
@@ -810,10 +1265,32 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }));
   };
 
+  const forwardMessage = async (messageId: string, targetUserIds: string | string[]) => {
+    webSocketService.sendForward(messageId, targetUserIds);
+  };
+
+  const sendTyping = (isTyping: boolean) => {
+    if (!activeConversationId) return;
+    const conv = conversations.find((c) => c.id === activeConversationId);
+    if (conv) {
+      const targetId = getTargetUserIdFromConversation(currentUser.id, conv.participantIds);
+      if (targetId) {
+        webSocketService.sendTyping(targetId, isTyping);
+      }
+    }
+  };
+
   const togglePin = async (id: string) => {
     await chatService.togglePinConversation(id);
     setConversations((prev) =>
       prev.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c))
+    );
+  };
+
+  const toggleArchive = async (id: string) => {
+    await chatService.toggleArchiveConversation(id);
+    setConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, archived: !c.archived } : c))
     );
   };
 
@@ -822,6 +1299,48 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setConversations((prev) =>
       prev.map((c) => (c.id === id ? { ...c, muted: !c.muted } : c))
     );
+  };
+
+  const blockUser = async (targetUserId: string) => {
+    await chatService.blockUser(targetUserId);
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id === targetUserId || c.participantIds.includes(targetUserId)) {
+          return { ...c, isBlocked: true };
+        }
+        return c;
+      })
+    );
+  };
+
+  const unblockUser = async (targetUserId: string) => {
+    await chatService.unblockUser(targetUserId);
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id === targetUserId || c.participantIds.includes(targetUserId)) {
+          return { ...c, isBlocked: false };
+        }
+        return c;
+      })
+    );
+  };
+
+  const reportUser = async (targetUserId: string, reason: string, description?: string) => {
+    await chatService.reportUser(targetUserId, reason, description);
+    setActiveNotification({
+      id: `note_${Date.now()}`,
+      type: 'info',
+      message: 'User reported successfully.',
+    });
+  };
+
+  const reportMessage = async (messageId: string, reason: string, description?: string) => {
+    await chatService.reportMessage(messageId, reason, description);
+    setActiveNotification({
+      id: `note_${Date.now()}`,
+      type: 'info',
+      message: 'Message reported successfully.',
+    });
   };
 
   const createNewChat = async (contact: User) => {
@@ -922,6 +1441,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         inChatSearchQuery,
         filterCategory,
         replyingToMessage,
+        editingMessage,
         activeCall,
         callLogs,
         statuses,
@@ -935,12 +1455,23 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setActiveTab,
         selectConversation,
         sendMessage,
+        editMessage,
         deleteMessage,
         toggleStarMessage,
         addReaction,
+        forwardMessage,
+        sendTyping,
+        activeNotification,
+        dismissNotification: () => setActiveNotification(null),
         setReplyTo: setReplyingToMessage,
+        setEditingMessage,
         togglePin,
+        toggleArchive,
         toggleMute,
+        blockUser,
+        unblockUser,
+        reportUser,
+        reportMessage,
         createNewChat,
         createNewGroup,
         updateUserProfile,

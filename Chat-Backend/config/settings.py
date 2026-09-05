@@ -1,8 +1,9 @@
 import os
-from pathlib import Path
 import environ
+from pathlib import Path
+from datetime import timedelta
+from django.core.exceptions import ImproperlyConfigured
 from corsheaders.defaults import default_headers, default_methods
-
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,13 +21,15 @@ if not SECRET_KEY:
     raise ImproperlyConfigured("The SECRET_KEY setting must not be empty. Set the SECRET_KEY environment variable.")
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
+    '*',
+] if DEBUG else [
     'localhost', 
     '127.0.0.1', 
     '[::1]', 
-    "footwork-vessel-guide.ngrok-free.dev",
     'sbchatwebpro.online',
     'www.sbchatwebpro.online',
-    ] if DEBUG else [])
+    'footwork-vessel-guide.ngrok-free.dev',
+])
 
 
 
@@ -68,7 +71,7 @@ CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS",
     default=["http://localhost:5173", "http://127.0.0.1:5173"] if DEBUG else []
 )
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOW_CREDENTIALS = True
 
 
@@ -101,11 +104,38 @@ WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
-}
+REDIS_URL = env('REDIS_URL', default=None)
+
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [{
+                    'address': REDIS_URL,
+                    'socket_timeout': None,
+                    'socket_connect_timeout': 5,
+                }],
+            },
+        },
+    }
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+        }
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
 
 
 if env('DB_HOST', default=None):
@@ -163,9 +193,7 @@ MAILERS = {
     },
 }
 
-from datetime import timedelta
-import os
-from django.core.exceptions import ImproperlyConfigured
+
 
 JWT_SECRET_KEY = env("JWT_SECRET_KEY", default=None)
 if not JWT_SECRET_KEY:
@@ -244,7 +272,7 @@ WEBRTC_TURN_SERVER = env("WEBRTC_TURN_SERVER", default=None)
 WEBRTC_TURN_USERNAME = env("WEBRTC_TURN_USERNAME", default=None)
 WEBRTC_TURN_CREDENTIAL = env("WEBRTC_TURN_CREDENTIAL", default=None)
 
-# Django Production Security Settings
+
 if not DEBUG:
     SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
     SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=True)

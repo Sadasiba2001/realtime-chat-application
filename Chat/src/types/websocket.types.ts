@@ -6,6 +6,18 @@ export interface BackendMessagePayload {
   receiver_id: number | string;
   content: string;
   status?: MessageStatus;
+  is_edited?: boolean;
+  is_deleted?: boolean;
+  reply_to?: {
+    id: number | string;
+    sender_id: number | string;
+    sender_name?: string;
+    content: string;
+    is_deleted?: boolean;
+  };
+  is_forwarded?: boolean;
+  forwarded_from_name?: string;
+  updated_at?: string;
   created_at: string;
 }
 
@@ -22,6 +34,8 @@ export type WSServerMessageType =
   | 'history'
   | 'presence'
   | 'message_status'
+  | 'message_deleted'
+  | 'message_edited'
   | 'error';
 
 export interface WSConnectionEvent {
@@ -106,12 +120,54 @@ export type WSVideoSignalingEvent =
   | WSVideoCallInitiatedEvent
   | WSVideoCallConnectedEvent;
 
+export interface WSMessageDeleteEvent {
+  type: 'message_deleted';
+  message_id: number | string;
+  delete_type: 'me' | 'everyone';
+  sender_id?: number | string;
+}
+
+export interface WSMessageEditedEvent {
+  type: 'message_edited';
+  data: BackendMessagePayload;
+}
+
+export interface BackendReactionData {
+  id: number | string;
+  emoji: string;
+  user_id: number | string;
+  user_name?: string;
+}
+
+export interface WSMessageReactionPayload {
+  message_id: number | string;
+  action: 'added' | 'removed' | 'updated';
+  emoji: string;
+  user_id: number | string;
+  sender_id: number | string;
+  receiver_id: number | string;
+  partner_id?: number | string;
+  reactions: BackendReactionData[];
+}
+
+export interface WSTypingStatusEvent {
+  type: 'typing_status';
+  user_id: number | string;
+  user_name?: string;
+  is_typing: boolean;
+  conversation_user_id?: number | string;
+}
+
 export type WSServerEvent =
   | WSConnectionEvent
   | WSMessageEvent
   | WSHistoryEvent
   | WSPresenceEvent
   | WSMessageStatusEvent
+  | WSMessageDeleteEvent
+  | WSMessageEditedEvent
+  | WSMessageReactionEvent
+  | WSTypingStatusEvent
   | WSProfileUpdateEvent
   | WSErrorEvent
   | WSVoiceSignalingEvent
@@ -159,6 +215,9 @@ export type WSEventType =
   | 'MESSAGE_STATUS_UPDATE'
   | 'MESSAGE_DELIVERED'
   | 'MESSAGE_READ'
+  | 'MESSAGE_DELETED'
+  | 'MESSAGE_EDITED'
+  | 'MESSAGE_REACTION_UPDATED'
   | 'USER_TYPING'
   | 'PRESENCE_CHANGE'
   | 'PROFILE_UPDATE'

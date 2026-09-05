@@ -34,6 +34,15 @@ export const MessageArea: React.FC<MessageAreaProps> = ({
     prevMessagesLengthRef.current = activeMessages.length;
   }, [activeMessages.length, activeConversation?.id]);
 
+  useEffect(() => {
+    if (inChatSearchMatchId) {
+      const targetEl = document.getElementById(`msg-${inChatSearchMatchId}`);
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [inChatSearchMatchId]);
+
   if (!activeConversation) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center select-none bg-[#eef2f6]/40 dark:bg-[#0b0f19]/40">
@@ -125,6 +134,20 @@ export const MessageArea: React.FC<MessageAreaProps> = ({
           </React.Fragment>
         );
       })}
+
+      {/* Real-time Typing Indicator Bubble */}
+      {activeConversation.isTyping && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/90 dark:bg-[#1a2234]/90 text-slate-500 dark:text-slate-400 text-xs w-max shadow-sm border border-slate-200 dark:border-white/10 animate-fade-in my-1">
+          <div className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+          <span className="font-medium text-slate-700 dark:text-slate-300">
+            {activeConversation.typingUser ? `${activeConversation.typingUser} is typing...` : 'typing...'}
+          </span>
+        </div>
+      )}
 
       <div ref={bottomRef} />
     </div>

@@ -4,8 +4,8 @@ import { useAuthStore } from '../store/useAuthStore';
 
 import { webSocketService } from './websocket.service';
 
-export const API_BASE_URL = import.meta.env.VITE_REMOTE_BACKEND_URL || '';
-export const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'wss://footwork-vessel-guide.ngrok-free.dev/ws';
+export const API_BASE_URL = import.meta.env.VITE_REMOTE_BACKEND_URL || import.meta.env.VITE_API_URL || '';
+export const WS_BASE_URL = import.meta.env.VITE_WS_URL || (API_BASE_URL ? `${API_BASE_URL.replace(/^http/, 'ws')}/ws` : '');
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -58,7 +58,12 @@ apiClient.interceptors.response.use(
         storage.removeAuthToken();
         useAuthStore.getState().clearAuth();
         webSocketService.disconnect();
-        if (typeof window !== 'undefined' && window.location.pathname !== '/auth') {
+        const isPublicRoute =
+          typeof window !== 'undefined' &&
+          (window.location.pathname === '/' ||
+            window.location.pathname === '/landing' ||
+            window.location.pathname === '/auth');
+        if (!isPublicRoute) {
           window.location.href = '/auth';
         }
         return Promise.reject(error);
@@ -82,14 +87,18 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const response = await apiClient.post('/api/v1/auth/token/refresh/');
+        const refreshToken = storage.getRefreshToken() || useAuthStore.getState().tokens.refresh;
+        const response = await apiClient.post('/api/v1/auth/token/refresh/', {
+          refresh: refreshToken,
+        });
         const dataObj = response.data?.data || response.data;
         const newAccess = dataObj?.access;
+        const newRefresh = dataObj?.refresh || refreshToken;
         if (!newAccess) {
           throw new Error('Refresh response missing access token');
         }
 
-        useAuthStore.getState().setTokens({ access: newAccess, refresh: null });
+        useAuthStore.getState().setTokens({ access: newAccess, refresh: newRefresh });
 
         // Update Authorization header on original request
         originalRequest.headers.Authorization = `Bearer ${newAccess}`;
@@ -104,7 +113,12 @@ apiClient.interceptors.response.use(
         storage.removeAuthToken();
         useAuthStore.getState().clearAuth();
         webSocketService.disconnect();
-        if (typeof window !== 'undefined' && window.location.pathname !== '/auth') {
+        const isPublicRoute =
+          typeof window !== 'undefined' &&
+          (window.location.pathname === '/' ||
+            window.location.pathname === '/landing' ||
+            window.location.pathname === '/auth');
+        if (!isPublicRoute) {
           window.location.href = '/auth';
         }
         return Promise.reject(refreshError);

@@ -11,6 +11,10 @@ import { MediaViewer } from './components/common/MediaViewer';
 import { NewChatModal } from './components/modals/NewChatModal';
 import { ProfileModal } from './components/modals/ProfileModal';
 import { SettingsModal } from './components/modals/SettingsModal';
+import { MuteModal } from './components/chat/MuteModal';
+import { ReportModal } from './components/chat/ReportModal';
+import { ReportMessageModal } from './components/chat/ReportMessageModal';
+import { ImagePreviewModal } from './components/chat/ImagePreviewModal';
 
 function App() {
   return (
@@ -30,6 +34,10 @@ function App() {
                 <NewChatModal />
                 <ProfileModal />
                 <SettingsModal />
+                <MuteModal />
+                <ReportModal />
+                <ReportMessageModal />
+                <ImagePreviewModal />
               </div>
             </VideoCallProvider>
           </VoiceCallProvider>

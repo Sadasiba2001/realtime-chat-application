@@ -1,5 +1,6 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
+import { LandingPage } from '../pages/LandingPage';
 import { AuthPage } from '../pages/AuthPage';
 import { ChatPage } from '../pages/ChatPage';
 import { StatusPage } from '../pages/StatusPage';
@@ -11,6 +12,11 @@ import { ProtectedRoute } from './ProtectedRoute';
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
+      {/* Landing Page */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/landing" element={<LandingPage />} />
+
+      {/* Authentication */}
       <Route path="/auth" element={<AuthPage />} />
 
       {/* Protected Routes */}
@@ -54,9 +60,6 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
-
-      {/* Redirect root / to /chat */}
-      <Route path="/" element={<Navigate to="/chat" replace />} />
 
       {/* 404 Fallback */}
       <Route path="*" element={<NotFoundPage />} />

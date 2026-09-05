@@ -1,14 +1,15 @@
 import React from 'react';
-import { X, Phone, Mail, Pin, VolumeX, ShieldAlert, ZoomIn } from 'lucide-react';
+import { X, Phone, Mail, Pin, VolumeX, ShieldAlert, ZoomIn, Flag } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { Avatar } from '../common/Avatar';
+import { SharedMediaSection } from './SharedMediaSection';
 
 interface ContactInfoDrawerProps {
   onClose: () => void;
 }
 
 export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ onClose }) => {
-  const { activeConversation, currentUser, togglePin, toggleMute, openModal } = useChat();
+  const { activeConversation, currentUser, togglePin, toggleMute, blockUser, unblockUser, openModal } = useChat();
 
   if (!activeConversation) return null;
 
@@ -124,6 +125,9 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ onClose })
           </div>
         )}
 
+        {/* Shared Media Section */}
+        <SharedMediaSection targetUserId={activeConversation.id} />
+
         {/* Action Toggles */}
         <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
           <button
@@ -137,7 +141,13 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ onClose })
           </button>
 
           <button
-            onClick={() => toggleMute(activeConversation.id)}
+            onClick={() => {
+              if (activeConversation.muted) {
+                toggleMute(activeConversation.id);
+              } else {
+                openModal('mute_chat', activeConversation);
+              }
+            }}
             className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-[#1a2234] hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-2xl transition-colors text-sm text-slate-800 dark:text-slate-200 border border-slate-200/60 dark:border-white/5"
           >
             <span className="flex items-center gap-2">
@@ -146,12 +156,35 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({ onClose })
             <span className="text-xs font-bold text-amber-500">{activeConversation.muted ? 'MUTED' : 'OFF'}</span>
           </button>
 
-          <button
-            onClick={() => alert('Contact blocked.')}
-            className="w-full flex items-center gap-2 px-4 py-3 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-2xl transition-colors text-sm text-rose-600 dark:text-rose-400 font-semibold border border-transparent hover:border-rose-200 dark:hover:border-rose-900/50"
-          >
-            <ShieldAlert className="w-4 h-4" /> Block Contact
-          </button>
+          {!isGroup && (
+            <>
+              <button
+                onClick={() => {
+                  const partnerId = otherParticipant?.id || activeConversation.id;
+                  if (activeConversation.isBlocked) {
+                    unblockUser(partnerId);
+                  } else {
+                    blockUser(partnerId);
+                  }
+                }}
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-2xl transition-colors text-sm text-rose-600 dark:text-rose-400 font-semibold border border-transparent hover:border-rose-200 dark:hover:border-rose-900/50"
+              >
+                <span className="flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4" /> {activeConversation.isBlocked ? 'Unblock Contact' : 'Block Contact'}
+                </span>
+                <span className="text-xs font-bold text-rose-500">{activeConversation.isBlocked ? 'BLOCKED' : ''}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  openModal('report_user', activeConversation);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-3 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-2xl transition-colors text-sm text-amber-600 dark:text-amber-400 font-semibold border border-transparent hover:border-amber-200 dark:hover:border-amber-900/50"
+              >
+                <Flag className="w-4 h-4 text-amber-500" /> Report Contact
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

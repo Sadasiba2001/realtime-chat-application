@@ -102,7 +102,9 @@ export const Avatar: React.FC<AvatarProps> = ({
         <img
           src={optimizedSrc}
           alt={name}
-          loading={size === 'sm' || size === 'md' ? 'lazy' : 'eager'}
+          crossOrigin="anonymous"
+          referrerPolicy="no-referrer"
+          decoding="async"
           className={`${sizeClasses[size]} rounded-full object-cover shadow-xs border border-gray-200 dark:border-gray-700/50`}
         />
       ) : (

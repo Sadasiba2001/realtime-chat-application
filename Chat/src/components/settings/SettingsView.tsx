@@ -11,6 +11,7 @@ import {
   Check,
 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
+import { requestBrowserNotificationPermission } from '../../utils/browserNotification.utils';
 import { Avatar } from '../common/Avatar';
 
 export const SettingsView: React.FC = () => {
@@ -138,7 +139,13 @@ export const SettingsView: React.FC = () => {
             <input
               type="checkbox"
               checked={notifications}
-              onChange={(e) => setNotifications(e.target.checked)}
+              onChange={async (e) => {
+                const val = e.target.checked;
+                setNotifications(val);
+                if (val) {
+                  await requestBrowserNotificationPermission();
+                }
+              }}
               className="w-5 h-5 accent-sky-600 rounded-md cursor-pointer"
             />
           </div>
