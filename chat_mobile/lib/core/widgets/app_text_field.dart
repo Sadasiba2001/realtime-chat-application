@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_radius.dart';
 import '../../app/theme/app_spacing.dart';
 import '../../app/theme/app_theme_extension.dart';
@@ -75,11 +76,15 @@ class AppTextField extends StatelessWidget {
           minLines: minLines,
           style: AppTypography.body.copyWith(
             color: enabled ? colors.textPrimary : colors.textDisabled,
+            fontWeight: FontWeight.w400,
           ),
           cursorColor: colors.brandPrimary,
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: AppTypography.body.copyWith(color: colors.textTertiary),
+            hintStyle: AppTypography.body.copyWith(
+              color: colors.textTertiary,
+              fontSize: 14,
+            ),
             errorText: errorText,
             prefixIcon: prefix,
             suffixIcon: suffix,
@@ -87,19 +92,19 @@ class AppTextField extends StatelessWidget {
             fillColor: enabled ? colors.surfaceSecondary : colors.backgroundSecondary,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.s16,
-              vertical: AppSpacing.s12,
+              vertical: AppSpacing.s14,
             ),
             border: OutlineInputBorder(
               borderRadius: AppRadius.medium,
-              borderSide: BorderSide(color: colors.borderSubtle, width: 1),
+              borderSide: BorderSide(color: colors.borderDefault, width: 1),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: AppRadius.medium,
-              borderSide: BorderSide(color: colors.borderSubtle, width: 1),
+              borderSide: BorderSide(color: colors.borderDefault, width: 1),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: AppRadius.medium,
-              borderSide: BorderSide(color: colors.brandPrimary, width: 1.5),
+              borderSide: const BorderSide(color: AppColors.brandPrimary, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: AppRadius.medium,
@@ -122,3 +127,4 @@ class AppTextField extends StatelessWidget {
     );
   }
 }
+

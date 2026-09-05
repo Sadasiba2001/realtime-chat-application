@@ -71,7 +71,7 @@ void main() {
     await tester.pumpWidget(const ChatApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Connect. Chat. Stay close.'), findsOneWidget);
+    expect(find.text('Connect. Chat. Belong.'), findsOneWidget);
     expect(find.text('Get Started'), findsOneWidget);
     expect(find.text('I already have an account'), findsOneWidget);
   });
@@ -115,7 +115,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify Chats header & conversations render
-    expect(find.text('SB Chats'), findsOneWidget);
+    expect(find.text('Chats'), findsWidgets);
     expect(find.text('Elena Rostova'), findsOneWidget);
     expect(find.text('Marcus Chen'), findsOneWidget);
   });
@@ -161,7 +161,7 @@ void main() {
     expect(ChatApp.themeModeNotifier.value, ThemeMode.system);
 
     // 2. Directly select Dark Theme from System Default
-    await tester.tap(find.text('Dark Theme (#252330)'));
+    await tester.tap(find.text('Dark Theme (#080D18)'));
     await tester.pumpAndSettle();
     expect(ChatApp.themeModeNotifier.value, ThemeMode.dark);
 
@@ -171,7 +171,7 @@ void main() {
     expect(ChatApp.themeModeNotifier.value, ThemeMode.light);
 
     // 4. Select Dark Theme from Light Theme
-    await tester.tap(find.text('Dark Theme (#252330)'));
+    await tester.tap(find.text('Dark Theme (#080D18)'));
     await tester.pumpAndSettle();
     expect(ChatApp.themeModeNotifier.value, ThemeMode.dark);
 

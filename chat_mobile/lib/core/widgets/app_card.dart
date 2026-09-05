@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/app_radius.dart';
+import '../../app/theme/app_shadows.dart';
 import '../../app/theme/app_spacing.dart';
 import '../../app/theme/app_theme_extension.dart';
 
@@ -58,18 +59,12 @@ class AppCard extends StatelessWidget {
     switch (variant) {
       case AppCardVariant.surface:
         bg = customBackgroundColor ?? colors.surfacePrimary;
-        border = Border.all(color: colors.borderSubtle, width: 1);
+        border = Border.all(color: colors.borderDefault, width: 1);
         break;
       case AppCardVariant.elevated:
         bg = customBackgroundColor ?? colors.surfaceElevated;
-        border = Border.all(color: colors.borderSubtle, width: 1);
-        shadows = [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ];
+        border = Border.all(color: colors.borderDefault, width: 1);
+        shadows = AppShadows.elevatedDark;
         break;
       case AppCardVariant.outlined:
         bg = customBackgroundColor ?? Colors.transparent;
@@ -97,6 +92,8 @@ class AppCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: effectiveRadius,
+          splashColor: colors.brandPrimary.withValues(alpha: 0.1),
+          highlightColor: colors.brandPrimary.withValues(alpha: 0.05),
           child: content,
         ),
       );
@@ -105,3 +102,4 @@ class AppCard extends StatelessWidget {
     return content;
   }
 }
+

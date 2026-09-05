@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_divider.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_icon_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 
@@ -22,7 +24,7 @@ class ContactItem {
   });
 }
 
-/// Body component for Contacts screen displaying searchable directory list.
+/// Body component for Contacts screen displaying searchable directory list with sections.
 class ContactsBody extends StatefulWidget {
   const ContactsBody({super.key});
 
@@ -35,11 +37,11 @@ class _ContactsBodyState extends State<ContactsBody> {
   String _searchQuery = '';
 
   static final List<ContactItem> _allContacts = [
-    const ContactItem(id: '7', name: 'Alex Rivera', status: 'Available for work', isOnline: false),
-    const ContactItem(id: '5', name: 'David Kim', status: 'In a meeting', isOnline: false),
     const ContactItem(id: '1', name: 'Elena Rostova', status: 'Design Systems Architect', isOnline: true),
     const ContactItem(id: '2', name: 'Marcus Chen', status: 'Coding Flutter & WebRTC', isOnline: true),
     const ContactItem(id: '6', name: 'Priya Patel', status: 'Security & Auth', isOnline: true),
+    const ContactItem(id: '7', name: 'Alex Rivera', status: 'Available for work', isOnline: false),
+    const ContactItem(id: '5', name: 'David Kim', status: 'In a meeting', isOnline: false),
     const ContactItem(id: '4', name: 'Sarah Jenkins', status: 'Product Lead', isOnline: false),
     const ContactItem(id: '8', name: 'Zack Miller', status: 'Offline', isOnline: false),
   ];
@@ -59,9 +61,14 @@ class _ContactsBodyState extends State<ContactsBody> {
         .toList();
   }
 
+  List<ContactItem> get _onlineContacts =>
+      _filteredContacts.where((c) => c.isOnline).toList();
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final contacts = _filteredContacts;
+    final online = _onlineContacts;
 
     return Column(
       children: [
@@ -76,61 +83,120 @@ class _ContactsBodyState extends State<ContactsBody> {
             controller: _searchController,
             hintText: 'Search contacts by name or role...',
             prefix: Icon(Icons.search_rounded, color: colors.textTertiary, size: 20),
+            suffix: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: Icon(Icons.clear_rounded, color: colors.textTertiary, size: 18),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
+                : null,
             onChanged: (val) => setState(() => _searchQuery = val),
           ),
         ),
         Expanded(
-          child: ListView.separated(
-            itemCount: _filteredContacts.length,
-            separatorBuilder: (context, index) => const AppDivider(indent: 76),
-            itemBuilder: (context, index) {
-              final contact = _filteredContacts[index];
-              return ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.s16,
-                  vertical: AppSpacing.s4,
-                ),
-                onTap: () {
-                  context.push('/chat/${contact.id}');
-                },
-                leading: AppAvatar(
-                  name: contact.name,
-                  size: 48,
-                  showOnlineIndicator: true,
-                  isOnline: contact.isOnline,
-                ),
-                title: Text(
-                  contact.name,
-                  style: AppTypography.labelLarge.copyWith(color: colors.textPrimary),
-                ),
-                subtitle: Text(
-                  contact.status,
-                  style: AppTypography.bodySmall.copyWith(color: colors.textSecondary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
+          child: contacts.isEmpty
+              ? AppEmptyState(
+                  icon: Icons.people_outline_rounded,
+                  title: 'No contacts found',
+                  description: 'Try searching with a different name or keyword.',
+                )
+              : ListView(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.s24),
                   children: [
-                    AppIconButton(
-                      icon: Icons.chat_bubble_outline_rounded,
-                      tooltip: 'Message',
-                      color: colors.brandPrimary,
-                      onPressed: () => context.push('/chat/${contact.id}'),
+                    if (_searchQuery.isEmpty && online.isNotEmpty) ...[
+                      _buildSectionHeader('ONLINE (${online.length})', colors),
+                      for (final contact in online) ...[
+                        _buildContactTile(contact, colors),
+                        const AppDivider(indent: 76),
+                      ],
+                      const SizedBox(height: AppSpacing.s12),
+                    ],
+                    _buildSectionHeader(
+                      _searchQuery.isEmpty ? 'ALL CONTACTS (${contacts.length})' : 'RESULTS',
+                      colors,
                     ),
-                    AppIconButton(
-                      icon: Icons.call_outlined,
-                      tooltip: 'Call',
-                      color: colors.textSecondary,
-                      onPressed: () {},
-                    ),
+                    for (final contact in contacts) ...[
+                      _buildContactTile(contact, colors),
+                      const AppDivider(indent: 76),
+                    ],
                   ],
                 ),
-              );
-            },
-          ),
         ),
       ],
     );
   }
+
+  Widget _buildSectionHeader(String title, dynamic colors) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s16,
+        AppSpacing.s8,
+        AppSpacing.s16,
+        AppSpacing.s6,
+      ),
+      child: Text(
+        title,
+        style: AppTypography.caption.copyWith(
+          color: colors.textTertiary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactTile(ContactItem contact, dynamic colors) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s16,
+        vertical: AppSpacing.s4,
+      ),
+      onTap: () {
+        context.push('/chat/${contact.id}');
+      },
+      leading: AppAvatar(
+        name: contact.name,
+        size: 48,
+        showOnlineIndicator: true,
+        isOnline: contact.isOnline,
+      ),
+      title: Text(
+        contact.name,
+        style: AppTypography.labelLarge.copyWith(
+          color: colors.textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Text(
+        contact.status,
+        style: AppTypography.bodySmall.copyWith(
+          color: colors.textSecondary,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppIconButton(
+            icon: Icons.chat_bubble_outline_rounded,
+            iconSize: 18,
+            tooltip: 'Message',
+            color: AppColors.brandPrimary,
+            onPressed: () => context.push('/chat/${contact.id}'),
+          ),
+          AppIconButton(
+            icon: Icons.call_outlined,
+            iconSize: 18,
+            tooltip: 'Call',
+            color: colors.textTertiary,
+            onPressed: () {},
+          ),
+        ],
+      ),
+    );
+  }
 }
+

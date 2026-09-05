@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
@@ -150,21 +151,24 @@ class _SignupFormState extends State<SignupForm> {
               // Server Error Alert Banner
               if (serverError != null && serverError.isNotEmpty && fieldErrors == null) ...[
                 Container(
-                  padding: const EdgeInsets.all(AppSpacing.s12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s16,
+                    vertical: AppSpacing.s12,
+                  ),
                   decoration: BoxDecoration(
-                    color: colors.errorSoft,
+                    color: AppColors.errorSoft,
                     borderRadius: AppRadius.medium,
-                    border: Border.all(color: colors.error.withValues(alpha: 0.3)),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline_rounded, color: colors.error, size: 20),
-                      const SizedBox(width: AppSpacing.s8),
+                      const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 20),
+                      const SizedBox(width: AppSpacing.s12),
                       Expanded(
                         child: Text(
                           serverError,
                           style: AppTypography.bodySmall.copyWith(
-                            color: colors.error,
+                            color: AppColors.error,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -213,7 +217,7 @@ class _SignupFormState extends State<SignupForm> {
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
                 errorText: emailError,
-                prefix: Icon(Icons.email_outlined, color: colors.textTertiary, size: 20),
+                prefix: Icon(Icons.mail_outline_rounded, color: colors.textTertiary, size: 20),
                 enabled: !isLoading,
                 onChanged: (_) {
                   if (_clientEmailError != null) setState(() => _clientEmailError = null);
@@ -292,7 +296,7 @@ class _SignupFormState extends State<SignupForm> {
                 isLoading: isLoading,
                 onPressed: isLoading ? null : _validateAndSubmit,
               ),
-              const SizedBox(height: AppSpacing.s20),
+              const SizedBox(height: AppSpacing.s24),
 
               // Navigation to Login
               Row(
@@ -307,8 +311,8 @@ class _SignupFormState extends State<SignupForm> {
                     child: Text(
                       'Log In',
                       style: AppTypography.labelLarge.copyWith(
-                        color: colors.brandPrimary,
-                        fontWeight: FontWeight.w600,
+                        color: AppColors.brandFocus,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),

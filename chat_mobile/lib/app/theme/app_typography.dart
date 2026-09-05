@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 /// Semantic typography definition prioritizing readability, contrast, and hierarchy.
 abstract final class AppTypography {
   static const TextStyle display = TextStyle(
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: FontWeight.w700,
-    letterSpacing: -0.8,
+    letterSpacing: -0.6,
     height: 1.25,
   );
 
   static const TextStyle headlineLarge = TextStyle(
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: FontWeight.w700,
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
     height: 1.3,
   );
 
@@ -71,4 +71,12 @@ abstract final class AppTypography {
     letterSpacing: 0.3,
     height: 1.3,
   );
+
+  static const TextStyle chatMessage = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w400,
+    letterSpacing: -0.1,
+    height: 1.42,
+  );
 }
+

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_radius.dart';
 import '../../app/theme/app_theme_extension.dart';
 import '../../app/theme/app_typography.dart';
@@ -43,8 +44,8 @@ class AppBadge extends StatelessWidget {
 
     switch (variant) {
       case AppBadgeVariant.brand:
-        bg = colors.brandPrimary;
-        fg = colors.textInverse;
+        bg = AppColors.brandPrimary;
+        fg = Colors.white;
         break;
       case AppBadgeVariant.neutral:
         bg = colors.surfaceSecondary;
@@ -82,8 +83,8 @@ class AppBadge extends StatelessWidget {
     if (displayText.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: AppRadius.pill,
@@ -93,7 +94,7 @@ class AppBadge extends StatelessWidget {
         displayText,
         style: AppTypography.caption.copyWith(
           color: fg,
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: FontWeight.w700,
           height: 1.1,
         ),
@@ -101,3 +102,4 @@ class AppBadge extends StatelessWidget {
     );
   }
 }
+

@@ -30,36 +30,58 @@ class AppAvatar extends StatelessWidget {
     return trimmed.substring(0, trimmed.length >= 2 ? 2 : 1).toUpperCase();
   }
 
-  Color _generateColorForName(String name) {
+  LinearGradient _generateGradientForName(String name) {
     final hash = name.codeUnits.fold(0, (prev, curr) => prev + curr);
-    final palette = [
-      const Color(0xFFA534B0), // Brand
-      const Color(0xFF3B82F6), // Blue
-      const Color(0xFF10B981), // Emerald
-      const Color(0xFFF59E0B), // Amber
-      const Color(0xFF8B5CF6), // Violet
-      const Color(0xFFEC4899), // Pink
-      const Color(0xFF06B6D4), // Cyan
-      const Color(0xFF6366F1), // Indigo
+    final palettes = [
+      const LinearGradient(
+        colors: [Color(0xFF6D28FF), Color(0xFF8B5CF6)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      const LinearGradient(
+        colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      const LinearGradient(
+        colors: [Color(0xFF059669), Color(0xFF34D399)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      const LinearGradient(
+        colors: [Color(0xFFD97706), Color(0xFFFBBF24)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      const LinearGradient(
+        colors: [Color(0xFFDB2777), Color(0xFFF472B6)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      const LinearGradient(
+        colors: [Color(0xFF4F46E5), Color(0xFF818CF8)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
     ];
-    return palette[hash % palette.length];
+    return palettes[hash % palettes.length];
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final initials = _getInitials();
-    final avatarColor = _generateColorForName(name);
+    final gradient = _generateGradientForName(name);
 
     Widget avatarCore = Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: avatarColor.withValues(alpha: 0.16),
+        gradient: gradient,
         border: Border.all(
-          color: colors.borderSubtle,
-          width: 1,
+          color: colors.borderDefault.withValues(alpha: 0.6),
+          width: 1.2,
         ),
       ),
       alignment: Alignment.center,
@@ -67,7 +89,7 @@ class AppAvatar extends StatelessWidget {
         initials,
         style: AppTypography.labelLarge.copyWith(
           fontSize: size * 0.38,
-          color: avatarColor,
+          color: Colors.white,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -77,7 +99,7 @@ class AppAvatar extends StatelessWidget {
       return avatarCore;
     }
 
-    final indicatorSize = (size * 0.28).clamp(9.0, 14.0);
+    final indicatorSize = (size * 0.28).clamp(10.0, 14.0);
 
     return Stack(
       clipBehavior: Clip.none,
@@ -103,3 +125,4 @@ class AppAvatar extends StatelessWidget {
     );
   }
 }
+

@@ -17,8 +17,8 @@ import '../../features/welcome/presentation/welcome_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final GlobalKey<NavigatorState> _chatsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'chats');
-final GlobalKey<NavigatorState> _callsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'calls');
 final GlobalKey<NavigatorState> _contactsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'contacts');
+final GlobalKey<NavigatorState> _callsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'calls');
 final GlobalKey<NavigatorState> _settingsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'settings');
 
 /// Central GoRouter configuration managing top-level routes, auth boundary, and bottom navigation shell.
@@ -113,20 +113,20 @@ abstract final class AppRouter {
               ],
             ),
             StatefulShellBranch(
-              navigatorKey: _callsNavigatorKey,
-              routes: [
-                GoRoute(
-                  path: '/main/calls',
-                  builder: (context, state) => const CallsScreen(),
-                ),
-              ],
-            ),
-            StatefulShellBranch(
               navigatorKey: _contactsNavigatorKey,
               routes: [
                 GoRoute(
                   path: '/main/contacts',
                   builder: (context, state) => const ContactsScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              navigatorKey: _callsNavigatorKey,
+              routes: [
+                GoRoute(
+                  path: '/main/calls',
+                  builder: (context, state) => const CallsScreen(),
                 ),
               ],
             ),
@@ -145,3 +145,4 @@ abstract final class AppRouter {
     );
   }
 }
+

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_gradients.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
@@ -10,7 +11,7 @@ import '../../../../core/widgets/app_scaffold.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/login_form.dart';
 
-/// Full login screen composed with AppScaffold, brand header, and LoginForm.
+/// Full login screen matching the SB Chat web authentication visual identity.
 class LoginScreen extends StatelessWidget {
   final AuthController authController;
 
@@ -32,39 +33,58 @@ class LoginScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: AppSpacing.s40),
+            const SizedBox(height: AppSpacing.s48),
 
-            // Logo & Header
+            // Logo & Ambient Glow Header
             Center(
-              child: Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  borderRadius: AppRadius.large,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.brandPrimary.withValues(alpha: 0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: AppGradients.purpleGlow,
                     ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: AppRadius.large,
-                  child: Image.asset(
-                    AppConstants.logoPath,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: colors.brandPrimary,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.chat_bubble_rounded,
-                        size: 36,
-                        color: Colors.white,
+                  ),
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      borderRadius: AppRadius.large,
+                      border: Border.all(
+                        color: AppColors.borderDefaultDark,
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.brandPrimary.withValues(alpha: 0.3),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: AppRadius.large,
+                      child: Image.asset(
+                        AppConstants.logoPath,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          decoration: const BoxDecoration(
+                            gradient: AppGradients.purpleGradient,
+                          ),
+                          alignment: Alignment.center,
+                          child: const Icon(
+                            Icons.chat_bubble_rounded,
+                            size: 36,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
             const SizedBox(height: AppSpacing.s24),
@@ -74,14 +94,14 @@ class LoginScreen extends StatelessWidget {
               style: AppTypography.display.copyWith(
                 color: colors.textPrimary,
                 fontSize: 26,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.s8),
 
             Text(
-              'Log in to continue chatting with your contacts',
+              'Sign in to continue to SB Chat',
               style: AppTypography.body.copyWith(
                 color: colors.textSecondary,
               ),
@@ -104,3 +124,4 @@ class LoginScreen extends StatelessWidget {
     );
   }
 }
+

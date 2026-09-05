@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../app/theme/app_gradients.dart';
 import '../../app/theme/app_radius.dart';
+import '../../app/theme/app_shadows.dart';
 import '../../app/theme/app_spacing.dart';
 import '../../app/theme/app_theme_extension.dart';
 import '../../app/theme/app_typography.dart';
@@ -8,8 +10,8 @@ enum _ButtonVariant { primary, secondary, tertiary, destructive }
 
 enum AppButtonSize { small, medium, large }
 
-/// Semantic, accessible action button with loading and full-width capabilities.
-class AppButton extends StatelessWidget {
+/// Semantic, accessible action button with brand gradient, loading states, and full-width capabilities.
+class AppButton extends StatefulWidget {
   final String text;
   final VoidCallback? onPressed;
   final _ButtonVariant _variant;
@@ -58,21 +60,28 @@ class AppButton extends StatelessWidget {
     this.isFullWidth = false,
   }) : _variant = _ButtonVariant.destructive;
 
+  @override
+  State<AppButton> createState() => _AppButtonState();
+}
+
+class _AppButtonState extends State<AppButton> {
+  bool _isPressed = false;
+
   double _getHeight() {
-    switch (size) {
+    switch (widget.size) {
       case AppButtonSize.small:
-        return 38.0;
+        return 40.0;
       case AppButtonSize.medium:
-        return 48.0; // Meets touch target guidelines
+        return 50.0;
       case AppButtonSize.large:
         return 56.0;
     }
   }
 
   EdgeInsetsGeometry _getPadding() {
-    switch (size) {
+    switch (widget.size) {
       case AppButtonSize.small:
-        return const EdgeInsets.symmetric(horizontal: AppSpacing.s12);
+        return const EdgeInsets.symmetric(horizontal: AppSpacing.s16);
       case AppButtonSize.medium:
         return const EdgeInsets.symmetric(horizontal: AppSpacing.s20);
       case AppButtonSize.large:
@@ -81,7 +90,7 @@ class AppButton extends StatelessWidget {
   }
 
   TextStyle _getTextStyle() {
-    switch (size) {
+    switch (widget.size) {
       case AppButtonSize.small:
         return AppTypography.label;
       case AppButtonSize.medium:
@@ -94,16 +103,23 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final isEnabled = onPressed != null && !isLoading;
+    final isEnabled = widget.onPressed != null && !widget.isLoading;
 
-    Color bg;
+    Color? bg;
+    Gradient? gradient;
     Color fg;
     BorderSide borderSide = BorderSide.none;
+    List<BoxShadow>? shadows;
 
-    switch (_variant) {
+    switch (widget._variant) {
       case _ButtonVariant.primary:
-        bg = isEnabled ? colors.brandPrimary : colors.brandSoft;
-        fg = isEnabled ? colors.textInverse : colors.textDisabled;
+        if (isEnabled) {
+          gradient = AppGradients.purpleGradient;
+          shadows = AppShadows.purpleGlow;
+        } else {
+          bg = colors.brandSoft;
+        }
+        fg = isEnabled ? Colors.white : colors.textDisabled;
         break;
       case _ButtonVariant.secondary:
         bg = isEnabled ? colors.surfaceSecondary : colors.backgroundSecondary;
@@ -121,10 +137,10 @@ class AppButton extends StatelessWidget {
     }
 
     Widget content = Row(
-      mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisSize: widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (isLoading) ...[
+        if (widget.isLoading) ...[
           SizedBox(
             width: 18,
             height: 18,
@@ -134,43 +150,60 @@ class AppButton extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.s8),
-        ] else if (icon != null) ...[
+        ] else if (widget.icon != null) ...[
           IconTheme(
             data: IconThemeData(color: fg, size: 18),
-            child: icon!,
+            child: widget.icon!,
           ),
           const SizedBox(width: AppSpacing.s8),
         ],
         Text(
-          text,
-          style: _getTextStyle().copyWith(color: fg),
+          widget.text,
+          style: _getTextStyle().copyWith(
+            color: fg,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
 
-    final button = Material(
-      color: bg,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.medium,
-        side: borderSide,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: isEnabled ? onPressed : null,
-        splashColor: colors.brandPressed.withValues(alpha: 0.15),
-        highlightColor: colors.brandPressed.withValues(alpha: 0.08),
-        child: Container(
-          height: _getHeight(),
-          padding: _getPadding(),
-          alignment: Alignment.center,
-          child: content,
+    final button = AnimatedScale(
+      scale: _isPressed && isEnabled ? 0.98 : 1.0,
+      duration: const Duration(milliseconds: 100),
+      child: Container(
+        height: _getHeight(),
+        decoration: BoxDecoration(
+          color: bg,
+          gradient: gradient,
+          borderRadius: AppRadius.medium,
+          border: borderSide != BorderSide.none ? Border.fromBorderSide(borderSide) : null,
+          boxShadow: shadows,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: AppRadius.medium,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: isEnabled ? widget.onPressed : null,
+            onHighlightChanged: (pressed) => setState(() => _isPressed = pressed),
+            splashColor: Colors.white.withValues(alpha: 0.15),
+            highlightColor: Colors.white.withValues(alpha: 0.08),
+            child: Padding(
+              padding: _getPadding(),
+              child: Center(
+                widthFactor: widget.isFullWidth ? null : 1.0,
+                child: content,
+              ),
+            ),
+          ),
         ),
       ),
     );
 
-    if (isFullWidth) {
+    if (widget.isFullWidth) {
       return SizedBox(width: double.infinity, child: button);
     }
     return button;
   }
 }
+

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_spacing.dart';
 import '../../../app/theme/app_theme_extension.dart';
-import '../../../core/widgets/app_header.dart';
+import '../../../app/theme/app_typography.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import 'widgets/calls_body.dart';
 
-/// Screen displaying the recent call logs, composed of [AppHeader] and [CallsBody].
+/// Screen displaying recent call history and quick call actions.
 class CallsScreen extends StatelessWidget {
   const CallsScreen({super.key});
 
@@ -16,13 +18,34 @@ class CallsScreen extends StatelessWidget {
     return AppScaffold(
       safeAreaTop: true,
       safeAreaBottom: false,
-      header: AppHeader(
-        title: 'Calls',
-        trailing: AppIconButton(
-          icon: Icons.add_ic_call_rounded,
-          tooltip: 'Start Call',
-          color: colors.brandPrimary,
-          onPressed: () {},
+      header: Container(
+        color: colors.surfacePrimary,
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s16,
+          AppSpacing.s12,
+          AppSpacing.s16,
+          AppSpacing.s12,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Calls',
+                style: AppTypography.headlineLarge.copyWith(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 22,
+                ),
+              ),
+            ),
+            AppIconButton(
+              icon: Icons.add_call,
+              iconSize: 20,
+              tooltip: 'New Call',
+              color: AppColors.brandPrimary,
+              onPressed: () {},
+            ),
+          ],
         ),
       ),
       body: const CallsBody(),

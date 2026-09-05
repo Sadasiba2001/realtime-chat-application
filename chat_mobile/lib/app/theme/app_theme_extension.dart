@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'app_gradients.dart';
 
-/// Custom ThemeExtension providing semantic color tokens.
+/// Custom ThemeExtension providing semantic color tokens and gradients.
 class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
   final Color brandPrimary;
+  final Color brandSecondary;
+  final Color brandAccent;
   final Color brandPressed;
   final Color brandSoft;
   final Color brandSubtle;
+  final LinearGradient brandGradient;
 
   final Color backgroundPrimary;
   final Color backgroundSecondary;
@@ -42,9 +46,12 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
 
   const AppColorsExtension({
     required this.brandPrimary,
+    required this.brandSecondary,
+    required this.brandAccent,
     required this.brandPressed,
     required this.brandSoft,
     required this.brandSubtle,
+    required this.brandGradient,
     required this.backgroundPrimary,
     required this.backgroundSecondary,
     required this.surfacePrimary,
@@ -74,9 +81,12 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
 
   static const AppColorsExtension light = AppColorsExtension(
     brandPrimary: AppColors.brandPrimary,
+    brandSecondary: AppColors.brandSecondary,
+    brandAccent: AppColors.brandAccent,
     brandPressed: AppColors.brandPressed,
     brandSoft: AppColors.brandSoftLight,
     brandSubtle: AppColors.brandSubtleLight,
+    brandGradient: AppGradients.purpleGradient,
     backgroundPrimary: AppColors.bgPrimaryLight,
     backgroundSecondary: AppColors.bgSecondaryLight,
     surfacePrimary: AppColors.surfacePrimaryLight,
@@ -106,9 +116,12 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
 
   static const AppColorsExtension dark = AppColorsExtension(
     brandPrimary: AppColors.brandPrimary,
+    brandSecondary: AppColors.brandSecondary,
+    brandAccent: AppColors.brandAccent,
     brandPressed: AppColors.brandPressed,
     brandSoft: AppColors.brandSoftDark,
     brandSubtle: AppColors.brandSubtleDark,
+    brandGradient: AppGradients.purpleGradient,
     backgroundPrimary: AppColors.bgPrimaryDark,
     backgroundSecondary: AppColors.bgSecondaryDark,
     surfacePrimary: AppColors.surfacePrimaryDark,
@@ -118,7 +131,7 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     textSecondary: AppColors.textSecondaryDark,
     textTertiary: AppColors.textTertiaryDark,
     textDisabled: AppColors.textDisabledDark,
-    textInverse: AppColors.textInverseDark,
+    textInverse: AppColors.textPrimaryDark,
     borderSubtle: AppColors.borderSubtleDark,
     borderDefault: AppColors.borderDefaultDark,
     borderStrong: AppColors.borderStrongDark,
@@ -139,9 +152,12 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
   @override
   ThemeExtension<AppColorsExtension> copyWith({
     Color? brandPrimary,
+    Color? brandSecondary,
+    Color? brandAccent,
     Color? brandPressed,
     Color? brandSoft,
     Color? brandSubtle,
+    LinearGradient? brandGradient,
     Color? backgroundPrimary,
     Color? backgroundSecondary,
     Color? surfacePrimary,
@@ -170,9 +186,12 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
   }) {
     return AppColorsExtension(
       brandPrimary: brandPrimary ?? this.brandPrimary,
+      brandSecondary: brandSecondary ?? this.brandSecondary,
+      brandAccent: brandAccent ?? this.brandAccent,
       brandPressed: brandPressed ?? this.brandPressed,
       brandSoft: brandSoft ?? this.brandSoft,
       brandSubtle: brandSubtle ?? this.brandSubtle,
+      brandGradient: brandGradient ?? this.brandGradient,
       backgroundPrimary: backgroundPrimary ?? this.backgroundPrimary,
       backgroundSecondary: backgroundSecondary ?? this.backgroundSecondary,
       surfacePrimary: surfacePrimary ?? this.surfacePrimary,
@@ -209,9 +228,12 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     if (other is! AppColorsExtension) return this;
     return AppColorsExtension(
       brandPrimary: Color.lerp(brandPrimary, other.brandPrimary, t)!,
+      brandSecondary: Color.lerp(brandSecondary, other.brandSecondary, t)!,
+      brandAccent: Color.lerp(brandAccent, other.brandAccent, t)!,
       brandPressed: Color.lerp(brandPressed, other.brandPressed, t)!,
       brandSoft: Color.lerp(brandSoft, other.brandSoft, t)!,
       brandSubtle: Color.lerp(brandSubtle, other.brandSubtle, t)!,
+      brandGradient: LinearGradient.lerp(brandGradient, other.brandGradient, t)!,
       backgroundPrimary: Color.lerp(backgroundPrimary, other.backgroundPrimary, t)!,
       backgroundSecondary: Color.lerp(backgroundSecondary, other.backgroundSecondary, t)!,
       surfacePrimary: Color.lerp(surfacePrimary, other.surfacePrimary, t)!,
@@ -245,6 +267,7 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
 extension AppThemeContext on BuildContext {
   AppColorsExtension get appColors {
     final colors = Theme.of(this).extension<AppColorsExtension>();
-    return colors ?? AppColorsExtension.light;
+    return colors ?? AppColorsExtension.dark;
   }
 }
+

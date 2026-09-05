@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_gradients.dart';
 import '../../../app/theme/app_radius.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../app/theme/app_theme_extension.dart';
@@ -9,110 +10,211 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_scaffold.dart';
 
-/// Polished welcome screen serving as initial onboarding launchpad.
-class WelcomeScreen extends StatelessWidget {
+/// Premium SB Chat welcome screen with ambient glow and animated hero entry.
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animController;
+  late final Animation<double> _fadeAnim;
+  late final Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _fadeAnim = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    );
+    _scaleAnim = Tween<double>(begin: 0.92, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+    _animController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
     return AppScaffold(
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
-        child: Column(
-          children: [
-            const Spacer(flex: 2),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
+          child: FadeTransition(
+            opacity: _fadeAnim,
+            child: ScaleTransition(
+              scale: _scaleAnim,
+              child: Column(
+                children: [
+                  const Spacer(flex: 3),
 
-            // Brand Logo container
-            Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                borderRadius: AppRadius.large,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.brandPrimary.withValues(alpha: 0.25),
-                    blurRadius: 28,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: AppRadius.large,
-                child: Image.asset(
-                  AppConstants.logoPath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: colors.brandPrimary,
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.chat_bubble_rounded,
-                      size: 48,
-                      color: Colors.white,
+                  // SB Chat Logo with ambient purple glow
+                  Center(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Ambient purple glow
+                        Container(
+                          width: 160,
+                          height: 160,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: AppGradients.purpleGlow,
+                          ),
+                        ),
+                        // Logo Card Container
+                        Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            borderRadius: AppRadius.extraLarge,
+                            border: Border.all(
+                              color: AppColors.borderDefaultDark,
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.brandPrimary.withValues(alpha: 0.35),
+                                blurRadius: 32,
+                                offset: const Offset(0, 12),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: AppRadius.extraLarge,
+                            child: Image.asset(
+                              AppConstants.logoPath,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                decoration: const BoxDecoration(
+                                  gradient: AppGradients.purpleGradient,
+                                ),
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  Icons.chat_bubble_rounded,
+                                  size: 48,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                  const SizedBox(height: AppSpacing.s32),
+
+                  // Brand name pill
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.brandPrimary.withValues(alpha: 0.12),
+                      borderRadius: AppRadius.pill,
+                      border: Border.all(
+                        color: AppColors.brandPrimary.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      'SB CHAT',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.brandFocus,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s16),
+
+                  // Headline tagline
+                  Text(
+                    AppConstants.appTagline,
+                    style: AppTypography.display.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.s12),
+
+                  // Supporting copy
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s8),
+                    child: Text(
+                      'Next-generation private messaging and crystal-clear voice communication designed for speed, security, and elegance.',
+                      style: AppTypography.body.copyWith(
+                        color: colors.textSecondary,
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
+                  const Spacer(flex: 4),
+
+                  // Primary CTA -> Signup
+                  AppButton.primary(
+                    text: 'Get Started',
+                    isFullWidth: true,
+                    size: AppButtonSize.large,
+                    onPressed: () => context.push('/signup'),
+                  ),
+                  const SizedBox(height: AppSpacing.s12),
+
+                  // Secondary CTA -> Login
+                  AppButton.secondary(
+                    text: 'I already have an account',
+                    isFullWidth: true,
+                    size: AppButtonSize.large,
+                    onPressed: () => context.push('/login'),
+                  ),
+
+                  const SizedBox(height: AppSpacing.s24),
+
+                  // Security footnote
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.lock_outline_rounded,
+                        size: 13,
+                        color: colors.textTertiary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'End-to-end encrypted • Zero telemetry logging',
+                        style: AppTypography.caption.copyWith(
+                          color: colors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.s16),
+                ],
               ),
             ),
-            const SizedBox(height: AppSpacing.s40),
-
-            // Short headline
-            Text(
-              AppConstants.appTagline,
-              style: AppTypography.display.copyWith(
-                color: colors.textPrimary,
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.s16),
-
-            // Supporting description
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s12),
-              child: Text(
-                'Experience high-fidelity, real-time messaging with crystal clear voice calls and private encrypted channels.',
-                style: AppTypography.bodyLarge.copyWith(
-                  color: colors.textSecondary,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-
-            const Spacer(flex: 3),
-
-            // Primary CTA -> Signup
-            AppButton.primary(
-              text: 'Get Started',
-              isFullWidth: true,
-              size: AppButtonSize.large,
-              onPressed: () => context.push('/signup'),
-            ),
-            const SizedBox(height: AppSpacing.s12),
-
-            // Secondary CTA -> Login
-            AppButton.secondary(
-              text: 'I already have an account',
-              isFullWidth: true,
-              size: AppButtonSize.large,
-              onPressed: () => context.push('/login'),
-            ),
-
-            const SizedBox(height: AppSpacing.s24),
-
-            Text(
-              'End-to-end encrypted • Zero telemetry logging',
-              style: AppTypography.caption.copyWith(
-                color: colors.textTertiary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.s16),
-          ],
+          ),
         ),
       ),
     );
   }
 }
+

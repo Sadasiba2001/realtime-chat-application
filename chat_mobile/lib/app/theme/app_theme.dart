@@ -6,7 +6,7 @@ import 'app_spacing.dart';
 import 'app_theme_extension.dart';
 import 'app_typography.dart';
 
-/// Central theme builder creating Light and Dark ThemeData.
+/// Central theme builder creating Light and Dark ThemeData for SB Chat.
 abstract final class AppTheme {
   static ThemeData get lightTheme {
     const colorExtension = AppColorsExtension.light;
@@ -16,7 +16,7 @@ abstract final class AppTheme {
       onPrimary: Colors.white,
       primaryContainer: AppColors.brandSoftLight,
       onPrimaryContainer: AppColors.brandPrimary,
-      secondary: AppColors.brandPrimary,
+      secondary: AppColors.brandSecondary,
       onSecondary: Colors.white,
       surface: AppColors.surfacePrimaryLight,
       onSurface: AppColors.textPrimaryLight,
@@ -30,7 +30,7 @@ abstract final class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.bgPrimaryLight,
       extensions: const [colorExtension],
-      fontFamily: null, // Default system font
+      fontFamily: null, // System modern font / Inter fallback
       textTheme: _buildTextTheme(AppColors.textPrimaryLight, AppColors.textSecondaryLight),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.bgPrimaryLight,
@@ -45,9 +45,9 @@ abstract final class AppTheme {
         iconTheme: IconThemeData(color: AppColors.textPrimaryLight, size: 24),
         titleTextStyle: TextStyle(
           color: AppColors.textPrimaryLight,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.2,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
         ),
       ),
       dividerTheme: const DividerThemeData(
@@ -77,7 +77,7 @@ abstract final class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.medium,
-          borderSide: BorderSide(color: AppColors.borderSubtleLight, width: 1),
+          borderSide: const BorderSide(color: AppColors.borderSubtleLight, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.medium,
@@ -99,10 +99,10 @@ abstract final class AppTheme {
       primary: AppColors.brandPrimary,
       onPrimary: Colors.white,
       primaryContainer: AppColors.brandSoftDark,
-      onPrimaryContainer: AppColors.brandPrimary,
-      secondary: AppColors.brandPrimary,
+      onPrimaryContainer: AppColors.brandFocus,
+      secondary: AppColors.brandSecondary,
       onSecondary: Colors.white,
-      surface: AppColors.surfacePrimaryDark, // #252330
+      surface: AppColors.surfacePrimaryDark,
       onSurface: AppColors.textPrimaryDark,
       error: AppColors.error,
       onError: Colors.white,
@@ -117,7 +117,7 @@ abstract final class AppTheme {
       fontFamily: null,
       textTheme: _buildTextTheme(AppColors.textPrimaryDark, AppColors.textSecondaryDark),
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.bgPrimaryDark,
+        backgroundColor: AppColors.surfacePrimaryDark,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
@@ -129,9 +129,9 @@ abstract final class AppTheme {
         iconTheme: IconThemeData(color: AppColors.textPrimaryDark, size: 24),
         titleTextStyle: TextStyle(
           color: AppColors.textPrimaryDark,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.2,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
         ),
       ),
       dividerTheme: const DividerThemeData(
@@ -146,14 +146,14 @@ abstract final class AppTheme {
         selectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         unselectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
         type: BottomNavigationBarType.fixed,
-        elevation: 8,
+        elevation: 0,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceSecondaryDark,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.s16,
-          vertical: AppSpacing.s12,
+          vertical: AppSpacing.s14,
         ),
         border: OutlineInputBorder(
           borderRadius: AppRadius.medium,
@@ -161,7 +161,7 @@ abstract final class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.medium,
-          borderSide: BorderSide(color: AppColors.borderSubtleDark, width: 1),
+          borderSide: const BorderSide(color: AppColors.borderDefaultDark, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.medium,
@@ -191,3 +191,4 @@ abstract final class AppTheme {
     );
   }
 }
+

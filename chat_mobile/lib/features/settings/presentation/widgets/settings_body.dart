@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../app/app.dart';
+import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
@@ -29,7 +30,7 @@ class SettingsBody extends StatelessWidget {
 
     final displayName = user?.name.isNotEmpty == true
         ? user!.name
-        : (user?.username.isNotEmpty == true ? user!.username : 'User');
+        : (user?.username.isNotEmpty == true ? user!.username : 'Alexander Wright');
     final subtitle = user != null
         ? '${user.email}${user.phoneNumber.isNotEmpty ? " • ${user.phoneNumber}" : ""}'
         : '+1 (555) 019-2834 • @alexwright';
@@ -40,14 +41,14 @@ class SettingsBody extends StatelessWidget {
         vertical: AppSpacing.s8,
       ),
       children: [
-        // Profile Card
+        // Profile Hero Card
         AppCard(
           padding: const EdgeInsets.all(AppSpacing.s16),
           child: Row(
             children: [
               AppAvatar(
                 name: displayName,
-                size: 58,
+                size: 60,
                 showOnlineIndicator: true,
                 isOnline: true,
               ),
@@ -58,11 +59,14 @@ class SettingsBody extends StatelessWidget {
                   children: [
                     Text(
                       displayName,
-                      style: AppTypography.headlineSmall.copyWith(color: colors.textPrimary),
+                      style: AppTypography.headlineSmall.copyWith(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       subtitle,
                       style: AppTypography.bodySmall.copyWith(color: colors.textSecondary),
@@ -72,21 +76,26 @@ class SettingsBody extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.qr_code_rounded, color: colors.textSecondary, size: 24),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.surfaceSecondary,
+                  borderRadius: AppRadius.small,
+                  border: Border.all(color: colors.borderDefault, width: 1),
+                ),
+                child: Icon(
+                  Icons.qr_code_2_rounded,
+                  color: AppColors.brandPrimary,
+                  size: 22,
+                ),
+              ),
             ],
           ),
         ),
         const SizedBox(height: AppSpacing.s20),
 
-        // Theme / Appearance Section
-        Text(
-          'APPEARANCE',
-          style: AppTypography.caption.copyWith(
-            color: colors.textTertiary,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.0,
-          ),
-        ),
+        // Appearance / Theme Section
+        _buildSectionHeader('APPEARANCE', colors),
         const SizedBox(height: AppSpacing.s8),
         ValueListenableBuilder<ThemeMode>(
           valueListenable: ChatApp.themeModeNotifier,
@@ -108,18 +117,18 @@ class SettingsBody extends StatelessWidget {
                   const AppDivider(),
                   _buildThemeOption(
                     context: context,
-                    title: 'Light Theme',
-                    icon: Icons.light_mode_rounded,
-                    isSelected: currentThemeMode == ThemeMode.light,
-                    onTap: () => ChatApp.setThemeMode(ThemeMode.light),
+                    title: 'Dark Theme (#080D18)',
+                    icon: Icons.dark_mode_rounded,
+                    isSelected: currentThemeMode == ThemeMode.dark,
+                    onTap: () => ChatApp.setThemeMode(ThemeMode.dark),
                   ),
                   const AppDivider(),
                   _buildThemeOption(
                     context: context,
-                    title: 'Dark Theme (#252330)',
-                    icon: Icons.dark_mode_rounded,
-                    isSelected: currentThemeMode == ThemeMode.dark,
-                    onTap: () => ChatApp.setThemeMode(ThemeMode.dark),
+                    title: 'Light Theme',
+                    icon: Icons.light_mode_rounded,
+                    isSelected: currentThemeMode == ThemeMode.light,
+                    onTap: () => ChatApp.setThemeMode(ThemeMode.light),
                   ),
                 ],
               ),
@@ -128,15 +137,8 @@ class SettingsBody extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.s20),
 
-        // General Settings Section
-        Text(
-          'PREFERENCES',
-          style: AppTypography.caption.copyWith(
-            color: colors.textTertiary,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.0,
-          ),
-        ),
+        // Preferences Section
+        _buildSectionHeader('PREFERENCES', colors),
         const SizedBox(height: AppSpacing.s8),
         AppCard(
           padding: const EdgeInsets.symmetric(
@@ -195,12 +197,23 @@ class SettingsBody extends StatelessWidget {
 
         Center(
           child: Text(
-            'Chat Mobile • v1.0.0 (Build 1)',
+            'SB Chat • v1.0.0 (Build 1)',
             style: AppTypography.caption.copyWith(color: colors.textTertiary),
           ),
         ),
         const SizedBox(height: AppSpacing.s20),
       ],
+    );
+  }
+
+  Widget _buildSectionHeader(String title, dynamic colors) {
+    return Text(
+      title,
+      style: AppTypography.caption.copyWith(
+        color: colors.textTertiary,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.0,
+      ),
     );
   }
 
@@ -211,12 +224,19 @@ class SettingsBody extends StatelessWidget {
         final colors = ctx.appColors;
         return AlertDialog(
           backgroundColor: colors.surfacePrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppRadius.large,
+            side: BorderSide(color: colors.borderDefault, width: 1),
+          ),
           title: Text(
             'Log Out',
-            style: AppTypography.headlineSmall.copyWith(color: colors.textPrimary),
+            style: AppTypography.headlineSmall.copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           content: Text(
-            'Are you sure you want to log out of your account?',
+            'Are you sure you want to log out of your SB Chat account?',
             style: AppTypography.body.copyWith(color: colors.textSecondary),
           ),
           actions: [
@@ -234,7 +254,7 @@ class SettingsBody extends StatelessWidget {
               },
               child: Text(
                 'Log Out',
-                style: AppTypography.labelLarge.copyWith(color: colors.error),
+                style: AppTypography.labelLarge.copyWith(color: AppColors.error),
               ),
             ),
           ],
@@ -259,19 +279,23 @@ class SettingsBody extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.s12),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: isSelected ? colors.brandPrimary : colors.textSecondary),
+            Icon(
+              icon,
+              size: 20,
+              color: isSelected ? AppColors.brandPrimary : colors.textSecondary,
+            ),
             const SizedBox(width: AppSpacing.s12),
             Expanded(
               child: Text(
                 title,
                 style: AppTypography.body.copyWith(
-                  color: isSelected ? colors.brandPrimary : colors.textPrimary,
+                  color: isSelected ? AppColors.brandPrimary : colors.textPrimary,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
             ),
             if (isSelected)
-              Icon(Icons.check_rounded, color: colors.brandPrimary, size: 20),
+              const Icon(Icons.check_rounded, color: AppColors.brandPrimary, size: 20),
           ],
         ),
       ),
@@ -302,7 +326,10 @@ class SettingsBody extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: AppTypography.body.copyWith(color: colors.textPrimary, fontWeight: FontWeight.w500),
+                    style: AppTypography.body.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -319,3 +346,4 @@ class SettingsBody extends StatelessWidget {
     );
   }
 }
+

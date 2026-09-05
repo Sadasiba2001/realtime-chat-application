@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_gradients.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
@@ -76,49 +78,55 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
-    return Column(
-      children: [
-        // Message Timeline
-        Expanded(
-          child: ListView(
-            controller: _scrollController,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.s16,
-              vertical: AppSpacing.s12,
-            ),
-            children: [
-              _buildDateDivider('Today', colors),
-              const SizedBox(height: AppSpacing.s16),
-              for (final message in _messages) ...[
-                _MessageBubble(message: message),
-                const SizedBox(height: AppSpacing.s8),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: AppGradients.darkCanvasGradient,
+      ),
+      child: Column(
+        children: [
+          // Message Timeline
+          Expanded(
+            child: ListView(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s16,
+                vertical: AppSpacing.s12,
+              ),
+              children: [
+                _buildDateDivider('Today', colors),
+                const SizedBox(height: AppSpacing.s16),
+                for (final message in _messages) ...[
+                  _MessageBubble(message: message),
+                  const SizedBox(height: AppSpacing.s8),
+                ],
+                const SizedBox(height: AppSpacing.s4),
+                _buildTypingIndicator(colors),
               ],
-              const SizedBox(height: AppSpacing.s4),
-              _buildTypingIndicator(colors),
-            ],
+            ),
           ),
-        ),
 
-        // Bottom Message Composer
-        _buildComposer(colors),
-      ],
+          // Bottom Message Composer
+          _buildComposer(colors),
+        ],
+      ),
     );
   }
 
   Widget _buildDateDivider(String label, dynamic colors) {
     return Center(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         decoration: BoxDecoration(
           color: colors.surfaceSecondary,
           borderRadius: AppRadius.pill,
-          border: Border.all(color: colors.borderSubtle, width: 1),
+          border: Border.all(color: colors.borderDefault, width: 1),
         ),
         child: Text(
           label,
           style: AppTypography.caption.copyWith(
             color: colors.textSecondary,
             fontWeight: FontWeight.w600,
+            fontSize: 11,
           ),
         ),
       ),
@@ -133,7 +141,7 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
         decoration: BoxDecoration(
           color: colors.chatBubbleIncoming,
           borderRadius: AppRadius.incomingBubble,
-          border: Border.all(color: colors.borderSubtle, width: 1),
+          border: Border.all(color: colors.borderDefault, width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -143,7 +151,7 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
               style: AppTypography.caption.copyWith(color: colors.textSecondary),
             ),
             const SizedBox(width: AppSpacing.s8),
-            _PulseDots(color: colors.brandPrimary),
+            _PulseDots(color: AppColors.brandPrimary),
           ],
         ),
       ),
@@ -160,7 +168,9 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
       ),
       decoration: BoxDecoration(
         color: colors.surfacePrimary,
-        border: Border(top: BorderSide(color: colors.borderSubtle, width: 1)),
+        border: Border(
+          top: BorderSide(color: colors.borderDefault.withValues(alpha: 0.6), width: 1),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -168,7 +178,8 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
           AppIconButton(
             icon: Icons.add_circle_outline_rounded,
             tooltip: 'Add attachment',
-            color: colors.textSecondary,
+            color: colors.textTertiary,
+            iconSize: 22,
             onPressed: () {},
           ),
           Expanded(
@@ -176,51 +187,94 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
               margin: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
               decoration: BoxDecoration(
                 color: colors.surfaceSecondary,
-                borderRadius: AppRadius.large,
-                border: Border.all(color: colors.borderSubtle, width: 1),
+                borderRadius: AppRadius.extraLarge,
+                border: Border.all(color: colors.borderDefault, width: 1),
               ),
-              child: TextField(
-                controller: _textController,
-                maxLines: 5,
-                minLines: 1,
-                textInputAction: TextInputAction.newline,
-                onChanged: (val) {
-                  final composing = val.trim().isNotEmpty;
-                  if (composing != _isComposing) {
-                    setState(() => _isComposing = composing);
-                  }
-                },
-                style: AppTypography.body.copyWith(color: colors.textPrimary),
-                cursorColor: colors.brandPrimary,
-                decoration: InputDecoration(
-                  hintText: 'Message...',
-                  hintStyle: AppTypography.body.copyWith(color: colors.textTertiary),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s16,
-                    vertical: AppSpacing.s12,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _textController,
+                      maxLines: 5,
+                      minLines: 1,
+                      textInputAction: TextInputAction.newline,
+                      onChanged: (val) {
+                        final composing = val.trim().isNotEmpty;
+                        if (composing != _isComposing) {
+                          setState(() => _isComposing = composing);
+                        }
+                      },
+                      style: AppTypography.body.copyWith(color: colors.textPrimary),
+                      cursorColor: AppColors.brandPrimary,
+                      decoration: InputDecoration(
+                        hintText: 'Type a message...',
+                        hintStyle: AppTypography.body.copyWith(color: colors.textTertiary),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.s16,
+                          vertical: AppSpacing.s12,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.sentiment_satisfied_alt_rounded,
+                      color: colors.textTertiary,
+                      size: 20,
+                    ),
+                    onPressed: () {},
+                  ),
+                ],
               ),
             ),
           ),
-          if (_isComposing)
-            AppIconButton.filled(
-              icon: Icons.send_rounded,
-              tooltip: 'Send',
-              onPressed: _sendMessage,
-              color: Colors.white,
-              backgroundColor: colors.brandPrimary,
-            )
-          else
-            AppIconButton(
-              icon: Icons.mic_none_rounded,
-              tooltip: 'Voice message',
-              color: colors.textSecondary,
-              onPressed: () {},
-            ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+            child: _isComposing
+                ? Container(
+                    key: const ValueKey('send_active'),
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: AppGradients.purpleGradient,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.brandPrimary.withValues(alpha: 0.4),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        onTap: _sendMessage,
+                        customBorder: const CircleBorder(),
+                        child: const Center(
+                          child: Icon(
+                            Icons.send_rounded,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : AppIconButton(
+                    key: const ValueKey('mic_inactive'),
+                    icon: Icons.mic_none_rounded,
+                    tooltip: 'Voice message',
+                    color: colors.textSecondary,
+                    onPressed: () {},
+                  ),
+          ),
         ],
       ),
     );
@@ -237,10 +291,6 @@ class _MessageBubble extends StatelessWidget {
     final colors = context.appColors;
     final isOutgoing = message.isOutgoing;
 
-    final bg = isOutgoing ? colors.chatBubbleOutgoing : colors.chatBubbleIncoming;
-    final fg = isOutgoing ? colors.textInverse : colors.textPrimary;
-    final timeColor = isOutgoing ? colors.textInverse.withValues(alpha: 0.7) : colors.textTertiary;
-
     return Align(
       alignment: isOutgoing ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
@@ -253,18 +303,27 @@ class _MessageBubble extends StatelessWidget {
             vertical: AppSpacing.s12,
           ),
           decoration: BoxDecoration(
-            color: bg,
+            color: isOutgoing ? null : colors.chatBubbleIncoming,
+            gradient: isOutgoing ? AppGradients.purpleGradient : null,
             borderRadius: isOutgoing ? AppRadius.outgoingBubble : AppRadius.incomingBubble,
-            border: isOutgoing ? null : Border.all(color: colors.borderSubtle, width: 1),
+            border: isOutgoing ? null : Border.all(color: colors.borderDefault, width: 1),
+            boxShadow: isOutgoing
+                ? [
+                    BoxShadow(
+                      color: AppColors.brandPrimary.withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             crossAxisAlignment: isOutgoing ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               Text(
                 message.text,
-                style: AppTypography.body.copyWith(
-                  color: fg,
-                  height: 1.4,
+                style: AppTypography.chatMessage.copyWith(
+                  color: isOutgoing ? Colors.white : colors.textPrimary,
                 ),
               ),
               const SizedBox(height: AppSpacing.s4),
@@ -274,8 +333,11 @@ class _MessageBubble extends StatelessWidget {
                   Text(
                     DateFormatter.formatMessageTime(message.timestamp),
                     style: AppTypography.caption.copyWith(
-                      color: timeColor,
+                      color: isOutgoing
+                          ? Colors.white.withValues(alpha: 0.75)
+                          : colors.textTertiary,
                       fontSize: 10,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   if (isOutgoing) ...[
@@ -285,7 +347,7 @@ class _MessageBubble extends StatelessWidget {
                           ? Icons.done_all_rounded
                           : Icons.done_rounded,
                       size: 14,
-                      color: timeColor,
+                      color: Colors.white.withValues(alpha: 0.85),
                     ),
                   ],
                 ],
@@ -321,3 +383,4 @@ class _PulseDots extends StatelessWidget {
     );
   }
 }
+

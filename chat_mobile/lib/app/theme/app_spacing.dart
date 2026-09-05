@@ -1,8 +1,11 @@
 /// Consistent spacing scale across the mobile application.
 abstract final class AppSpacing {
   static const double s4 = 4.0;
+  static const double s6 = 6.0;
   static const double s8 = 8.0;
+  static const double s10 = 10.0;
   static const double s12 = 12.0;
+  static const double s14 = 14.0;
   static const double s16 = 16.0;
   static const double s20 = 20.0;
   static const double s24 = 24.0;
@@ -14,3 +17,4 @@ abstract final class AppSpacing {
   // Minimum accessible touch target
   static const double minTouchTarget = 48.0;
 }
+

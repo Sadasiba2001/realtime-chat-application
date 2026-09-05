@@ -20,14 +20,14 @@ class MainShellScreen extends StatelessWidget {
       badgeCount: 3,
     ),
     AppBottomNavbarItem(
-      icon: Icons.call_outlined,
-      activeIcon: Icons.call_rounded,
-      label: 'Calls',
-    ),
-    AppBottomNavbarItem(
       icon: Icons.people_outline_rounded,
       activeIcon: Icons.people_rounded,
       label: 'Contacts',
+    ),
+    AppBottomNavbarItem(
+      icon: Icons.call_outlined,
+      activeIcon: Icons.call_rounded,
+      label: 'Calls',
     ),
     AppBottomNavbarItem(
       icon: Icons.settings_outlined,
@@ -58,3 +58,4 @@ class MainShellScreen extends StatelessWidget {
     );
   }
 }
+
