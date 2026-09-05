@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../app/app.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../app/theme/sb_icons.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
@@ -84,8 +84,8 @@ class SettingsBody extends StatelessWidget {
                   border: Border.all(color: colors.borderDefault, width: 1),
                 ),
                 child: Icon(
-                  Icons.qr_code_2_rounded,
-                  color: AppColors.brandPrimary,
+                  SBIcons.qrCode,
+                  color: colors.brandPrimary,
                   size: 22,
                 ),
               ),
@@ -110,7 +110,7 @@ class SettingsBody extends StatelessWidget {
                   _buildThemeOption(
                     context: context,
                     title: 'System Default',
-                    icon: Icons.brightness_auto_rounded,
+                    icon: SBIcons.autoMode,
                     isSelected: currentThemeMode == ThemeMode.system,
                     onTap: () => ChatApp.setThemeMode(ThemeMode.system),
                   ),
@@ -118,7 +118,7 @@ class SettingsBody extends StatelessWidget {
                   _buildThemeOption(
                     context: context,
                     title: 'Dark Theme (#080D18)',
-                    icon: Icons.dark_mode_rounded,
+                    icon: SBIcons.darkMode,
                     isSelected: currentThemeMode == ThemeMode.dark,
                     onTap: () => ChatApp.setThemeMode(ThemeMode.dark),
                   ),
@@ -126,7 +126,7 @@ class SettingsBody extends StatelessWidget {
                   _buildThemeOption(
                     context: context,
                     title: 'Light Theme',
-                    icon: Icons.light_mode_rounded,
+                    icon: SBIcons.lightMode,
                     isSelected: currentThemeMode == ThemeMode.light,
                     onTap: () => ChatApp.setThemeMode(ThemeMode.light),
                   ),
@@ -151,7 +151,7 @@ class SettingsBody extends StatelessWidget {
                 context: context,
                 title: 'Notifications & Sounds',
                 subtitle: 'Messages, group tones, call alerts',
-                icon: Icons.notifications_none_rounded,
+                icon: SBIcons.notifications,
                 onTap: () {},
               ),
               const AppDivider(),
@@ -159,7 +159,7 @@ class SettingsBody extends StatelessWidget {
                 context: context,
                 title: 'Privacy & Security',
                 subtitle: 'Biometrics, end-to-end encryption, blocklist',
-                icon: Icons.security_rounded,
+                icon: SBIcons.security,
                 onTap: () {},
               ),
               const AppDivider(),
@@ -167,7 +167,7 @@ class SettingsBody extends StatelessWidget {
                 context: context,
                 title: 'Data & Storage',
                 subtitle: 'Network usage, auto-download, media cache',
-                icon: Icons.pie_chart_outline_rounded,
+                icon: SBIcons.storage,
                 onTap: () {},
               ),
               const AppDivider(),
@@ -175,7 +175,7 @@ class SettingsBody extends StatelessWidget {
                 context: context,
                 title: 'Chat Backup & Sync',
                 subtitle: 'Encrypted cloud backup',
-                icon: Icons.cloud_outlined,
+                icon: SBIcons.cloud,
                 onTap: () {},
               ),
             ],
@@ -187,7 +187,7 @@ class SettingsBody extends StatelessWidget {
         if (controller != null) ...[
           AppButton.destructive(
             text: 'Log Out',
-            icon: const Icon(Icons.logout_rounded, size: 18),
+            icon: const Icon(SBIcons.logout, size: 18),
             isFullWidth: true,
             isLoading: controller.state is AuthLoading,
             onPressed: () => _confirmLogout(context, controller),
@@ -254,7 +254,7 @@ class SettingsBody extends StatelessWidget {
               },
               child: Text(
                 'Log Out',
-                style: AppTypography.labelLarge.copyWith(color: AppColors.error),
+                style: AppTypography.labelLarge.copyWith(color: colors.error),
               ),
             ),
           ],
@@ -282,20 +282,20 @@ class SettingsBody extends StatelessWidget {
             Icon(
               icon,
               size: 20,
-              color: isSelected ? AppColors.brandPrimary : colors.textSecondary,
+              color: isSelected ? colors.brandPrimary : colors.textSecondary,
             ),
             const SizedBox(width: AppSpacing.s12),
             Expanded(
               child: Text(
                 title,
                 style: AppTypography.body.copyWith(
-                  color: isSelected ? AppColors.brandPrimary : colors.textPrimary,
+                  color: isSelected ? colors.brandPrimary : colors.textPrimary,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_rounded, color: AppColors.brandPrimary, size: 20),
+              Icon(SBIcons.check, color: colors.brandPrimary, size: 20),
           ],
         ),
       ),
@@ -339,11 +339,10 @@ class SettingsBody extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: colors.textTertiary, size: 20),
+            Icon(SBIcons.chevronRight, color: colors.textTertiary, size: 20),
           ],
         ),
       ),
     );
   }
 }
-

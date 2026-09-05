@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../app/theme/sb_icons.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_divider.dart';
@@ -73,7 +73,7 @@ class CallsBody extends StatelessWidget {
 
     if (_mockCalls.isEmpty) {
       return const AppEmptyState(
-        icon: Icons.call_outlined,
+        icon: SBIcons.callsOutline,
         title: 'No recent calls',
         description: 'Start a voice or video call with your contacts.',
       );
@@ -85,8 +85,8 @@ class CallsBody extends StatelessWidget {
       itemBuilder: (context, index) {
         final call = _mockCalls[index];
         final statusColor = call.isMissed
-            ? AppColors.error
-            : (call.isOutgoing ? AppColors.brandPrimary : AppColors.success);
+            ? colors.error
+            : (call.isOutgoing ? colors.brandPrimary : colors.success);
 
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(
@@ -97,7 +97,7 @@ class CallsBody extends StatelessWidget {
           title: Text(
             call.name,
             style: AppTypography.labelLarge.copyWith(
-              color: call.isMissed ? AppColors.error : colors.textPrimary,
+              color: call.isMissed ? colors.error : colors.textPrimary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -105,8 +105,8 @@ class CallsBody extends StatelessWidget {
             children: [
               Icon(
                 call.isOutgoing
-                    ? Icons.call_made_rounded
-                    : (call.isMissed ? Icons.call_missed_rounded : Icons.call_received_rounded),
+                    ? SBIcons.callOutgoing
+                    : (call.isMissed ? SBIcons.callMissed : SBIcons.callIncoming),
                 size: 14,
                 color: statusColor,
               ),
@@ -120,9 +120,9 @@ class CallsBody extends StatelessWidget {
             ],
           ),
           trailing: AppIconButton(
-            icon: call.isVideo ? Icons.videocam_outlined : Icons.phone_outlined,
+            icon: call.isVideo ? SBIcons.videoCall : SBIcons.voiceCall,
             iconSize: 20,
-            color: AppColors.brandPrimary,
+            color: colors.brandPrimary,
             tooltip: call.isVideo ? 'Start video call' : 'Start voice call',
             onPressed: () {},
           ),
@@ -131,4 +131,3 @@ class CallsBody extends StatelessWidget {
     );
   }
 }
-

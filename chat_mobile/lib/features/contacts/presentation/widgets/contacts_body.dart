@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../app/theme/sb_icons.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_divider.dart';
 import '../../../../core/widgets/app_empty_state.dart';
@@ -82,10 +82,10 @@ class _ContactsBodyState extends State<ContactsBody> {
           child: AppTextField(
             controller: _searchController,
             hintText: 'Search contacts by name or role...',
-            prefix: Icon(Icons.search_rounded, color: colors.textTertiary, size: 20),
+            prefix: Icon(SBIcons.search, color: colors.textTertiary, size: 20),
             suffix: _searchQuery.isNotEmpty
                 ? IconButton(
-                    icon: Icon(Icons.clear_rounded, color: colors.textTertiary, size: 18),
+                    icon: Icon(SBIcons.clear, color: colors.textTertiary, size: 18),
                     onPressed: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
@@ -98,7 +98,7 @@ class _ContactsBodyState extends State<ContactsBody> {
         Expanded(
           child: contacts.isEmpty
               ? AppEmptyState(
-                  icon: Icons.people_outline_rounded,
+                  icon: SBIcons.contactsOutline,
                   title: 'No contacts found',
                   description: 'Try searching with a different name or keyword.',
                 )
@@ -181,14 +181,14 @@ class _ContactsBodyState extends State<ContactsBody> {
         mainAxisSize: MainAxisSize.min,
         children: [
           AppIconButton(
-            icon: Icons.chat_bubble_outline_rounded,
+            icon: SBIcons.chatsOutline,
             iconSize: 18,
             tooltip: 'Message',
-            color: AppColors.brandPrimary,
+            color: colors.brandPrimary,
             onPressed: () => context.push('/chat/${contact.id}'),
           ),
           AppIconButton(
-            icon: Icons.call_outlined,
+            icon: SBIcons.voiceCall,
             iconSize: 18,
             tooltip: 'Call',
             color: colors.textTertiary,
@@ -199,4 +199,3 @@ class _ContactsBodyState extends State<ContactsBody> {
     );
   }
 }
-

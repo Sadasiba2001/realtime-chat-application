@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../app/theme/sb_icons.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text.dart';
 import '../../../../core/widgets/app_text_field.dart';
@@ -73,12 +73,15 @@ class _SignupFormState extends State<SignupForm> {
     bool hasError = false;
 
     if (name.isEmpty) {
-      _clientNameError = 'Full name is required.';
+      _clientNameError = 'Full Name is required.';
       hasError = true;
     }
 
     if (username.isEmpty) {
       _clientUsernameError = 'Username is required.';
+      hasError = true;
+    } else if (username.length < 3) {
+      _clientUsernameError = 'Username must be at least 3 characters.';
       hasError = true;
     }
 
@@ -101,7 +104,7 @@ class _SignupFormState extends State<SignupForm> {
     if (confirmPassword.isEmpty) {
       _clientConfirmPasswordError = 'Please confirm your password.';
       hasError = true;
-    } else if (confirmPassword != password) {
+    } else if (password != confirmPassword) {
       _clientConfirmPasswordError = 'Passwords do not match.';
       hasError = true;
     }
@@ -115,8 +118,8 @@ class _SignupFormState extends State<SignupForm> {
       name: name,
       username: username,
       email: email,
-      phoneNumber: phone,
       password: password,
+      phoneNumber: phone,
     );
   }
 
@@ -141,7 +144,7 @@ class _SignupFormState extends State<SignupForm> {
         final usernameError = _clientUsernameError ?? fieldErrors?['username'];
         final emailError = _clientEmailError ?? fieldErrors?['email'];
         final passwordError = _clientPasswordError ?? fieldErrors?['password'];
-        final confirmPasswordError = _clientConfirmPasswordError;
+        final confirmPasswordError = _clientConfirmPasswordError ?? fieldErrors?['confirm_password'] ?? fieldErrors?['password_confirm'];
 
         return Form(
           key: _formKey,
@@ -156,19 +159,19 @@ class _SignupFormState extends State<SignupForm> {
                     vertical: AppSpacing.s12,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.errorSoft,
+                    color: colors.errorSoft,
                     borderRadius: AppRadius.medium,
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                    border: Border.all(color: colors.error.withValues(alpha: 0.4)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 20),
+                      Icon(SBIcons.error, color: colors.error, size: 20),
                       const SizedBox(width: AppSpacing.s12),
                       Expanded(
                         child: Text(
                           serverError,
                           style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.error,
+                            color: colors.error,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -179,7 +182,7 @@ class _SignupFormState extends State<SignupForm> {
                 const SizedBox(height: AppSpacing.s16),
               ],
 
-              // Full Name
+              // Name Field
               AppTextField(
                 controller: _nameController,
                 label: 'Full Name',
@@ -194,7 +197,7 @@ class _SignupFormState extends State<SignupForm> {
               ),
               const SizedBox(height: AppSpacing.s16),
 
-              // Username
+              // Username Field
               AppTextField(
                 controller: _usernameController,
                 label: 'Username',
@@ -209,11 +212,11 @@ class _SignupFormState extends State<SignupForm> {
               ),
               const SizedBox(height: AppSpacing.s16),
 
-              // Email
+              // Email Field
               AppTextField(
                 controller: _emailController,
                 label: 'Email',
-                hintText: 'name@example.com',
+                hintText: 'john@example.com',
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
                 errorText: emailError,
@@ -225,27 +228,27 @@ class _SignupFormState extends State<SignupForm> {
               ),
               const SizedBox(height: AppSpacing.s16),
 
-              // Phone Number (Optional)
+              // Phone Number Field (Optional)
               AppTextField(
                 controller: _phoneController,
                 label: 'Phone Number (Optional)',
                 hintText: '+1 234 567 8900',
                 keyboardType: TextInputType.phone,
                 textInputAction: TextInputAction.next,
-                prefix: Icon(Icons.phone_outlined, color: colors.textTertiary, size: 20),
+                prefix: Icon(SBIcons.voiceCall, color: colors.textTertiary, size: 20),
                 enabled: !isLoading,
               ),
               const SizedBox(height: AppSpacing.s16),
 
-              // Password
+              // Password Field
               AppTextField(
                 controller: _passwordController,
                 label: 'Password',
-                hintText: 'Minimum 6 characters',
+                hintText: 'Min. 6 characters',
                 obscureText: _obscurePassword,
                 textInputAction: TextInputAction.next,
                 errorText: passwordError,
-                prefix: Icon(Icons.lock_outline_rounded, color: colors.textTertiary, size: 20),
+                prefix: Icon(SBIcons.lock, color: colors.textTertiary, size: 20),
                 suffix: IconButton(
                   icon: Icon(
                     _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -261,15 +264,15 @@ class _SignupFormState extends State<SignupForm> {
               ),
               const SizedBox(height: AppSpacing.s16),
 
-              // Confirm Password
+              // Confirm Password Field
               AppTextField(
                 controller: _confirmPasswordController,
                 label: 'Confirm Password',
-                hintText: 'Re-enter your password',
+                hintText: 'Repeat password',
                 obscureText: _obscureConfirmPassword,
                 textInputAction: TextInputAction.done,
                 errorText: confirmPasswordError,
-                prefix: Icon(Icons.lock_reset_rounded, color: colors.textTertiary, size: 20),
+                prefix: Icon(SBIcons.lock, color: colors.textTertiary, size: 20),
                 suffix: IconButton(
                   icon: Icon(
                     _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -288,7 +291,7 @@ class _SignupFormState extends State<SignupForm> {
               ),
               const SizedBox(height: AppSpacing.s24),
 
-              // Sign Up Button
+              // Create Account Button
               AppButton.primary(
                 text: 'Create Account',
                 size: AppButtonSize.large,
@@ -311,7 +314,7 @@ class _SignupFormState extends State<SignupForm> {
                     child: Text(
                       'Log In',
                       style: AppTypography.labelLarge.copyWith(
-                        color: AppColors.brandFocus,
+                        color: colors.brandPrimary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),

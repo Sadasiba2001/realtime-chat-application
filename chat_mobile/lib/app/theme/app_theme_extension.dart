@@ -2,22 +2,16 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'app_gradients.dart';
 
-/// Custom ThemeExtension providing semantic color tokens and gradients.
+/// Semantic, theme-aware color extension for SB Chat.
 class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
-  final Color brandPrimary;
-  final Color brandSecondary;
-  final Color brandAccent;
-  final Color brandPressed;
-  final Color brandSoft;
-  final Color brandSubtle;
-  final LinearGradient brandGradient;
-
   final Color backgroundPrimary;
   final Color backgroundSecondary;
-
   final Color surfacePrimary;
   final Color surfaceSecondary;
   final Color surfaceElevated;
+  final Color inputSurface;
+  final Color borderDefault;
+  final Color borderSubtle;
 
   final Color textPrimary;
   final Color textSecondary;
@@ -25,198 +19,174 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
   final Color textDisabled;
   final Color textInverse;
 
-  final Color borderSubtle;
-  final Color borderDefault;
-  final Color borderStrong;
+  final Color brandPrimary;
+  final Color brandSecondary;
+  final Color brandFocus;
+  final Color brandSoft;
+
+  final Color chatBubbleIncoming;
+  final Color chatBubbleOutgoing;
+  final Color chatBubbleOutgoingText;
 
   final Color success;
-  final Color successSoft;
   final Color warning;
-  final Color warningSoft;
   final Color error;
   final Color errorSoft;
-  final Color info;
-  final Color infoSoft;
 
-  final Color chatBubbleOutgoing;
-  final Color chatBubbleIncoming;
-
-  final Color onlineIndicator;
-  final Color offlineIndicator;
+  final Gradient brandGradient;
+  final Gradient canvasGradient;
+  final Gradient glowGradient;
 
   const AppColorsExtension({
-    required this.brandPrimary,
-    required this.brandSecondary,
-    required this.brandAccent,
-    required this.brandPressed,
-    required this.brandSoft,
-    required this.brandSubtle,
-    required this.brandGradient,
     required this.backgroundPrimary,
     required this.backgroundSecondary,
     required this.surfacePrimary,
     required this.surfaceSecondary,
     required this.surfaceElevated,
+    required this.inputSurface,
+    required this.borderDefault,
+    required this.borderSubtle,
     required this.textPrimary,
     required this.textSecondary,
     required this.textTertiary,
     required this.textDisabled,
     required this.textInverse,
-    required this.borderSubtle,
-    required this.borderDefault,
-    required this.borderStrong,
+    required this.brandPrimary,
+    required this.brandSecondary,
+    required this.brandFocus,
+    required this.brandSoft,
+    required this.chatBubbleIncoming,
+    required this.chatBubbleOutgoing,
+    required this.chatBubbleOutgoingText,
     required this.success,
-    required this.successSoft,
     required this.warning,
-    required this.warningSoft,
     required this.error,
     required this.errorSoft,
-    required this.info,
-    required this.infoSoft,
-    required this.chatBubbleOutgoing,
-    required this.chatBubbleIncoming,
-    required this.onlineIndicator,
-    required this.offlineIndicator,
+    required this.brandGradient,
+    required this.canvasGradient,
+    required this.glowGradient,
   });
 
-  static const AppColorsExtension light = AppColorsExtension(
-    brandPrimary: AppColors.brandPrimary,
-    brandSecondary: AppColors.brandSecondary,
-    brandAccent: AppColors.brandAccent,
-    brandPressed: AppColors.brandPressed,
-    brandSoft: AppColors.brandSoftLight,
-    brandSubtle: AppColors.brandSubtleLight,
+  /// SB Dark Theme foundation
+  static const AppColorsExtension dark = AppColorsExtension(
+    backgroundPrimary: AppColors.darkCanvas,
+    backgroundSecondary: AppColors.darkSurface,
+    surfacePrimary: AppColors.darkSurface,
+    surfaceSecondary: AppColors.darkSurface2,
+    surfaceElevated: AppColors.darkElevated,
+    inputSurface: AppColors.darkInput,
+    borderDefault: AppColors.darkBorder,
+    borderSubtle: Color(0x1F263149),
+    textPrimary: AppColors.darkTextPrimary,
+    textSecondary: AppColors.darkTextSecondary,
+    textTertiary: AppColors.darkTextMuted,
+    textDisabled: AppColors.darkTextDisabled,
+    textInverse: AppColors.lightTextPrimary,
+    brandPrimary: AppColors.darkPurplePrimary,
+    brandSecondary: AppColors.darkPurpleSecondary,
+    brandFocus: AppColors.darkPurpleBright,
+    brandSoft: AppColors.darkPurpleSoft,
+    chatBubbleIncoming: AppColors.darkSurface2,
+    chatBubbleOutgoing: AppColors.darkPurplePrimary,
+    chatBubbleOutgoingText: Colors.white,
+    success: AppColors.darkSuccess,
+    warning: AppColors.darkWarning,
+    error: AppColors.darkError,
+    errorSoft: Color(0x26EF4444),
     brandGradient: AppGradients.purpleGradient,
-    backgroundPrimary: AppColors.bgPrimaryLight,
-    backgroundSecondary: AppColors.bgSecondaryLight,
-    surfacePrimary: AppColors.surfacePrimaryLight,
-    surfaceSecondary: AppColors.surfaceSecondaryLight,
-    surfaceElevated: AppColors.surfaceElevatedLight,
-    textPrimary: AppColors.textPrimaryLight,
-    textSecondary: AppColors.textSecondaryLight,
-    textTertiary: AppColors.textTertiaryLight,
-    textDisabled: AppColors.textDisabledLight,
-    textInverse: AppColors.textInverseLight,
-    borderSubtle: AppColors.borderSubtleLight,
-    borderDefault: AppColors.borderDefaultLight,
-    borderStrong: AppColors.borderStrongLight,
-    success: AppColors.success,
-    successSoft: AppColors.successSoft,
-    warning: AppColors.warning,
-    warningSoft: AppColors.warningSoft,
-    error: AppColors.error,
-    errorSoft: AppColors.errorSoft,
-    info: AppColors.info,
-    infoSoft: AppColors.infoSoft,
-    chatBubbleOutgoing: AppColors.chatBubbleOutgoing,
-    chatBubbleIncoming: AppColors.chatBubbleIncomingLight,
-    onlineIndicator: AppColors.onlineIndicator,
-    offlineIndicator: AppColors.offlineIndicator,
+    canvasGradient: AppGradients.darkCanvasGradient,
+    glowGradient: AppGradients.purpleGlow,
   );
 
-  static const AppColorsExtension dark = AppColorsExtension(
-    brandPrimary: AppColors.brandPrimary,
-    brandSecondary: AppColors.brandSecondary,
-    brandAccent: AppColors.brandAccent,
-    brandPressed: AppColors.brandPressed,
-    brandSoft: AppColors.brandSoftDark,
-    brandSubtle: AppColors.brandSubtleDark,
-    brandGradient: AppGradients.purpleGradient,
-    backgroundPrimary: AppColors.bgPrimaryDark,
-    backgroundSecondary: AppColors.bgSecondaryDark,
-    surfacePrimary: AppColors.surfacePrimaryDark,
-    surfaceSecondary: AppColors.surfaceSecondaryDark,
-    surfaceElevated: AppColors.surfaceElevatedDark,
-    textPrimary: AppColors.textPrimaryDark,
-    textSecondary: AppColors.textSecondaryDark,
-    textTertiary: AppColors.textTertiaryDark,
-    textDisabled: AppColors.textDisabledDark,
-    textInverse: AppColors.textPrimaryDark,
-    borderSubtle: AppColors.borderSubtleDark,
-    borderDefault: AppColors.borderDefaultDark,
-    borderStrong: AppColors.borderStrongDark,
-    success: AppColors.success,
-    successSoft: AppColors.brandSoftDark,
-    warning: AppColors.warning,
-    warningSoft: AppColors.brandSoftDark,
-    error: AppColors.error,
-    errorSoft: AppColors.brandSoftDark,
-    info: AppColors.info,
-    infoSoft: AppColors.brandSoftDark,
-    chatBubbleOutgoing: AppColors.chatBubbleOutgoing,
-    chatBubbleIncoming: AppColors.chatBubbleIncomingDark,
-    onlineIndicator: AppColors.onlineIndicator,
-    offlineIndicator: AppColors.offlineIndicator,
+  /// SB Light Theme foundation (tinted cool lavender / blue-gray)
+  static const AppColorsExtension light = AppColorsExtension(
+    backgroundPrimary: AppColors.lightCanvas,
+    backgroundSecondary: AppColors.lightCanvasSecondary,
+    surfacePrimary: AppColors.lightSurface,
+    surfaceSecondary: AppColors.lightInput,
+    surfaceElevated: AppColors.lightElevated,
+    inputSurface: AppColors.lightInput,
+    borderDefault: AppColors.lightBorder,
+    borderSubtle: Color(0x1AD9DCE7),
+    textPrimary: AppColors.lightTextPrimary,
+    textSecondary: AppColors.lightTextSecondary,
+    textTertiary: AppColors.lightTextMuted,
+    textDisabled: AppColors.lightTextDisabled,
+    textInverse: Colors.white,
+    brandPrimary: AppColors.lightPurplePrimary,
+    brandSecondary: AppColors.lightPurpleSecondary,
+    brandFocus: AppColors.lightPurpleSecondary,
+    brandSoft: AppColors.lightPurpleSoft,
+    chatBubbleIncoming: AppColors.lightIncomingBubble,
+    chatBubbleOutgoing: AppColors.lightPurplePrimary,
+    chatBubbleOutgoingText: Colors.white,
+    success: AppColors.lightSuccess,
+    warning: AppColors.lightWarning,
+    error: AppColors.lightError,
+    errorSoft: Color(0x26DC2626),
+    brandGradient: AppGradients.lightPurpleGradient,
+    canvasGradient: AppGradients.lightCanvasGradient,
+    glowGradient: AppGradients.lightPurpleGlow,
   );
 
   @override
   ThemeExtension<AppColorsExtension> copyWith({
-    Color? brandPrimary,
-    Color? brandSecondary,
-    Color? brandAccent,
-    Color? brandPressed,
-    Color? brandSoft,
-    Color? brandSubtle,
-    LinearGradient? brandGradient,
     Color? backgroundPrimary,
     Color? backgroundSecondary,
     Color? surfacePrimary,
     Color? surfaceSecondary,
     Color? surfaceElevated,
+    Color? inputSurface,
+    Color? borderDefault,
+    Color? borderSubtle,
     Color? textPrimary,
     Color? textSecondary,
     Color? textTertiary,
     Color? textDisabled,
     Color? textInverse,
-    Color? borderSubtle,
-    Color? borderDefault,
-    Color? borderStrong,
+    Color? brandPrimary,
+    Color? brandSecondary,
+    Color? brandFocus,
+    Color? brandSoft,
+    Color? chatBubbleIncoming,
+    Color? chatBubbleOutgoing,
+    Color? chatBubbleOutgoingText,
     Color? success,
-    Color? successSoft,
     Color? warning,
-    Color? warningSoft,
     Color? error,
     Color? errorSoft,
-    Color? info,
-    Color? infoSoft,
-    Color? chatBubbleOutgoing,
-    Color? chatBubbleIncoming,
-    Color? onlineIndicator,
-    Color? offlineIndicator,
+    Gradient? brandGradient,
+    Gradient? canvasGradient,
+    Gradient? glowGradient,
   }) {
     return AppColorsExtension(
-      brandPrimary: brandPrimary ?? this.brandPrimary,
-      brandSecondary: brandSecondary ?? this.brandSecondary,
-      brandAccent: brandAccent ?? this.brandAccent,
-      brandPressed: brandPressed ?? this.brandPressed,
-      brandSoft: brandSoft ?? this.brandSoft,
-      brandSubtle: brandSubtle ?? this.brandSubtle,
-      brandGradient: brandGradient ?? this.brandGradient,
       backgroundPrimary: backgroundPrimary ?? this.backgroundPrimary,
       backgroundSecondary: backgroundSecondary ?? this.backgroundSecondary,
       surfacePrimary: surfacePrimary ?? this.surfacePrimary,
       surfaceSecondary: surfaceSecondary ?? this.surfaceSecondary,
       surfaceElevated: surfaceElevated ?? this.surfaceElevated,
+      inputSurface: inputSurface ?? this.inputSurface,
+      borderDefault: borderDefault ?? this.borderDefault,
+      borderSubtle: borderSubtle ?? this.borderSubtle,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textTertiary: textTertiary ?? this.textTertiary,
       textDisabled: textDisabled ?? this.textDisabled,
       textInverse: textInverse ?? this.textInverse,
-      borderSubtle: borderSubtle ?? this.borderSubtle,
-      borderDefault: borderDefault ?? this.borderDefault,
-      borderStrong: borderStrong ?? this.borderStrong,
+      brandPrimary: brandPrimary ?? this.brandPrimary,
+      brandSecondary: brandSecondary ?? this.brandSecondary,
+      brandFocus: brandFocus ?? this.brandFocus,
+      brandSoft: brandSoft ?? this.brandSoft,
+      chatBubbleIncoming: chatBubbleIncoming ?? this.chatBubbleIncoming,
+      chatBubbleOutgoing: chatBubbleOutgoing ?? this.chatBubbleOutgoing,
+      chatBubbleOutgoingText: chatBubbleOutgoingText ?? this.chatBubbleOutgoingText,
       success: success ?? this.success,
-      successSoft: successSoft ?? this.successSoft,
       warning: warning ?? this.warning,
-      warningSoft: warningSoft ?? this.warningSoft,
       error: error ?? this.error,
       errorSoft: errorSoft ?? this.errorSoft,
-      info: info ?? this.info,
-      infoSoft: infoSoft ?? this.infoSoft,
-      chatBubbleOutgoing: chatBubbleOutgoing ?? this.chatBubbleOutgoing,
-      chatBubbleIncoming: chatBubbleIncoming ?? this.chatBubbleIncoming,
-      onlineIndicator: onlineIndicator ?? this.onlineIndicator,
-      offlineIndicator: offlineIndicator ?? this.offlineIndicator,
+      brandGradient: brandGradient ?? this.brandGradient,
+      canvasGradient: canvasGradient ?? this.canvasGradient,
+      glowGradient: glowGradient ?? this.glowGradient,
     );
   }
 
@@ -227,47 +197,38 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
   ) {
     if (other is! AppColorsExtension) return this;
     return AppColorsExtension(
-      brandPrimary: Color.lerp(brandPrimary, other.brandPrimary, t)!,
-      brandSecondary: Color.lerp(brandSecondary, other.brandSecondary, t)!,
-      brandAccent: Color.lerp(brandAccent, other.brandAccent, t)!,
-      brandPressed: Color.lerp(brandPressed, other.brandPressed, t)!,
-      brandSoft: Color.lerp(brandSoft, other.brandSoft, t)!,
-      brandSubtle: Color.lerp(brandSubtle, other.brandSubtle, t)!,
-      brandGradient: LinearGradient.lerp(brandGradient, other.brandGradient, t)!,
       backgroundPrimary: Color.lerp(backgroundPrimary, other.backgroundPrimary, t)!,
       backgroundSecondary: Color.lerp(backgroundSecondary, other.backgroundSecondary, t)!,
       surfacePrimary: Color.lerp(surfacePrimary, other.surfacePrimary, t)!,
       surfaceSecondary: Color.lerp(surfaceSecondary, other.surfaceSecondary, t)!,
       surfaceElevated: Color.lerp(surfaceElevated, other.surfaceElevated, t)!,
+      inputSurface: Color.lerp(inputSurface, other.inputSurface, t)!,
+      borderDefault: Color.lerp(borderDefault, other.borderDefault, t)!,
+      borderSubtle: Color.lerp(borderSubtle, other.borderSubtle, t)!,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textTertiary: Color.lerp(textTertiary, other.textTertiary, t)!,
       textDisabled: Color.lerp(textDisabled, other.textDisabled, t)!,
       textInverse: Color.lerp(textInverse, other.textInverse, t)!,
-      borderSubtle: Color.lerp(borderSubtle, other.borderSubtle, t)!,
-      borderDefault: Color.lerp(borderDefault, other.borderDefault, t)!,
-      borderStrong: Color.lerp(borderStrong, other.borderStrong, t)!,
+      brandPrimary: Color.lerp(brandPrimary, other.brandPrimary, t)!,
+      brandSecondary: Color.lerp(brandSecondary, other.brandSecondary, t)!,
+      brandFocus: Color.lerp(brandFocus, other.brandFocus, t)!,
+      brandSoft: Color.lerp(brandSoft, other.brandSoft, t)!,
+      chatBubbleIncoming: Color.lerp(chatBubbleIncoming, other.chatBubbleIncoming, t)!,
+      chatBubbleOutgoing: Color.lerp(chatBubbleOutgoing, other.chatBubbleOutgoing, t)!,
+      chatBubbleOutgoingText: Color.lerp(chatBubbleOutgoingText, other.chatBubbleOutgoingText, t)!,
       success: Color.lerp(success, other.success, t)!,
-      successSoft: Color.lerp(successSoft, other.successSoft, t)!,
       warning: Color.lerp(warning, other.warning, t)!,
-      warningSoft: Color.lerp(warningSoft, other.warningSoft, t)!,
       error: Color.lerp(error, other.error, t)!,
       errorSoft: Color.lerp(errorSoft, other.errorSoft, t)!,
-      info: Color.lerp(info, other.info, t)!,
-      infoSoft: Color.lerp(infoSoft, other.infoSoft, t)!,
-      chatBubbleOutgoing: Color.lerp(chatBubbleOutgoing, other.chatBubbleOutgoing, t)!,
-      chatBubbleIncoming: Color.lerp(chatBubbleIncoming, other.chatBubbleIncoming, t)!,
-      onlineIndicator: Color.lerp(onlineIndicator, other.onlineIndicator, t)!,
-      offlineIndicator: Color.lerp(offlineIndicator, other.offlineIndicator, t)!,
+      brandGradient: t < 0.5 ? brandGradient : other.brandGradient,
+      canvasGradient: t < 0.5 ? canvasGradient : other.canvasGradient,
+      glowGradient: t < 0.5 ? glowGradient : other.glowGradient,
     );
   }
 }
 
-/// Helper extension on BuildContext for quick access to app theme tokens.
-extension AppThemeContext on BuildContext {
-  AppColorsExtension get appColors {
-    final colors = Theme.of(this).extension<AppColorsExtension>();
-    return colors ?? AppColorsExtension.dark;
-  }
+extension AppColorsContextExtension on BuildContext {
+  AppColorsExtension get appColors =>
+      Theme.of(this).extension<AppColorsExtension>() ?? AppColorsExtension.dark;
 }
-

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../app/theme/app_theme_extension.dart';
 import '../../../app/theme/app_typography.dart';
+import '../../../app/theme/sb_icons.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import 'widgets/contacts_body.dart';
@@ -39,10 +39,10 @@ class ContactsScreen extends StatelessWidget {
               ),
             ),
             AppIconButton(
-              icon: Icons.person_add_alt_1_rounded,
+              icon: SBIcons.addContact,
               iconSize: 22,
               tooltip: 'Add Contact',
-              color: AppColors.brandPrimary,
+              color: colors.brandPrimary,
               onPressed: () {},
             ),
           ],
@@ -52,4 +52,3 @@ class ContactsScreen extends StatelessWidget {
     );
   }
 }
-

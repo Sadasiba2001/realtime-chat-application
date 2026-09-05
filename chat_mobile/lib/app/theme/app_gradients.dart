@@ -1,43 +1,63 @@
 import 'package:flutter/material.dart';
+import 'app_colors.dart';
 
 /// Refined gradients for SB Chat brand elements, buttons, active chips, and message bubbles.
 abstract final class AppGradients {
-  /// Primary purple brand gradient (#6D28FF -> #8B5CF6)
+  /// Primary purple brand gradient (#6D3CFF -> #8B5CF6)
   static const LinearGradient purpleGradient = LinearGradient(
     colors: [
-      Color(0xFF6D28FF),
-      Color(0xFF8B5CF6),
+      AppColors.darkPurplePrimary,
+      AppColors.darkPurpleSecondary,
     ],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  /// Subtle purple glow gradient for hero accents and active indicators
-  static const RadialGradient purpleGlow = RadialGradient(
+  /// Light theme purple gradient (#6841E8 -> #7C5CE8)
+  static const LinearGradient lightPurpleGradient = LinearGradient(
     colors: [
-      Color(0x386D28FF),
-      Color(0x006D28FF),
+      AppColors.lightPurplePrimary,
+      AppColors.lightPurpleSecondary,
     ],
-    radius: 0.85,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
   );
 
-  /// Ambient dark background gradient for chat rooms
+  /// Subtle dark canvas gradient for timeline and backdrops
   static const LinearGradient darkCanvasGradient = LinearGradient(
     colors: [
       Color(0xFF080D18),
-      Color(0xFF0B1220),
+      Color(0xFF0C1322),
     ],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
-  /// Elevated card surface gradient for subtle depth
-  static const LinearGradient surfaceElevatedGradient = LinearGradient(
+  /// Subtle light canvas gradient for timeline and backdrops
+  static const LinearGradient lightCanvasGradient = LinearGradient(
     colors: [
-      Color(0xFF141D2E),
-      Color(0xFF192338),
+      Color(0xFFF3F4F8),
+      Color(0xFFECEEF5),
     ],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  /// Radial ambient glow effect behind avatars and hero cards
+  static const RadialGradient purpleGlow = RadialGradient(
+    colors: [
+      Color(0x556D3CFF),
+      Color(0x006D3CFF),
+    ],
+    radius: 0.85,
+  );
+
+  /// Subtle light glow
+  static const RadialGradient lightPurpleGlow = RadialGradient(
+    colors: [
+      Color(0x356841E8),
+      Color(0x006841E8),
+    ],
+    radius: 0.85,
   );
 }

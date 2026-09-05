@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../app/theme/app_colors.dart';
-import '../../../app/theme/app_gradients.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../app/theme/app_theme_extension.dart';
 import '../../../app/theme/app_typography.dart';
+import '../../../app/theme/sb_icons.dart';
 import '../../../core/widgets/app_avatar.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_scaffold.dart';
@@ -48,10 +47,10 @@ class ChatListScreen extends StatelessWidget {
               ),
             ),
             AppIconButton(
-              icon: Icons.edit_square,
+              icon: SBIcons.newChat,
               iconSize: 20,
               tooltip: 'New message',
-              color: AppColors.brandPrimary,
+              color: colors.brandPrimary,
               onPressed: () {},
             ),
           ],
@@ -62,10 +61,10 @@ class ChatListScreen extends StatelessWidget {
         height: 56,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: AppGradients.purpleGradient,
+          gradient: colors.brandGradient,
           boxShadow: [
             BoxShadow(
-              color: AppColors.brandPrimary.withValues(alpha: 0.4),
+              color: colors.brandPrimary.withValues(alpha: 0.4),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -79,7 +78,7 @@ class ChatListScreen extends StatelessWidget {
             customBorder: const CircleBorder(),
             child: const Center(
               child: Icon(
-                Icons.add_comment_rounded,
+                SBIcons.addChat,
                 color: Colors.white,
                 size: 24,
               ),
@@ -91,4 +90,3 @@ class ChatListScreen extends StatelessWidget {
     );
   }
 }
-

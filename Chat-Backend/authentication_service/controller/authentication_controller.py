@@ -113,9 +113,7 @@ def register(request):
 @permission_classes([AllowAny])
 @throttle_classes([LoginRateThrottle])
 def login(request):
-    print("\n>>> LOGIN ENDPOINT HIT IN BACKEND <<<", flush=True)
-    print(f">>> Request Data: {request.data}", flush=True)
-
+    
     serializer = LoginSerializer(data=request.data)
     if not serializer.is_valid():
         print(f">>> Serializer Invalid: {serializer.errors}", flush=True)

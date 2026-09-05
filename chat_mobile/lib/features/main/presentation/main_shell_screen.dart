@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/app_theme_extension.dart';
+import '../../../app/theme/sb_icons.dart';
 import '../../../core/widgets/app_bottom_navbar.dart';
 
 /// Main Application Shell hosting the persistent bottom navigation bar.
@@ -14,24 +15,24 @@ class MainShellScreen extends StatelessWidget {
 
   static const List<AppBottomNavbarItem> _navItems = [
     AppBottomNavbarItem(
-      icon: Icons.chat_bubble_outline_rounded,
-      activeIcon: Icons.chat_bubble_rounded,
+      icon: SBIcons.chatsOutline,
+      activeIcon: SBIcons.chatsFilled,
       label: 'Chats',
       badgeCount: 3,
     ),
     AppBottomNavbarItem(
-      icon: Icons.people_outline_rounded,
-      activeIcon: Icons.people_rounded,
+      icon: SBIcons.contactsOutline,
+      activeIcon: SBIcons.contactsFilled,
       label: 'Contacts',
     ),
     AppBottomNavbarItem(
-      icon: Icons.call_outlined,
-      activeIcon: Icons.call_rounded,
+      icon: SBIcons.callsOutline,
+      activeIcon: SBIcons.callsFilled,
       label: 'Calls',
     ),
     AppBottomNavbarItem(
-      icon: Icons.settings_outlined,
-      activeIcon: Icons.settings_rounded,
+      icon: SBIcons.settingsOutline,
+      activeIcon: SBIcons.settingsFilled,
       label: 'Settings',
     ),
   ];
@@ -58,4 +59,3 @@ class MainShellScreen extends StatelessWidget {
     );
   }
 }
-

@@ -1,81 +1,85 @@
 import 'package:flutter/material.dart';
 
-/// Semantic color tokens for SB Chat Mobile Design System.
-/// Primary Purple: #6D3CFF / #6D28FF
-/// Deep Navy Canvas: #080D18
-/// Layered Surfaces: #0F1726, #141D2E, #192338
+/// Semantic color tokens for the SB Chat Mobile Design System.
+///
+/// Features two intentionally designed first-class theme foundations:
+/// 1. **SB Dark**: Deep navy canvas (#080D18) with layered neutral surfaces & purple accents.
+/// 2. **SB Light**: Sophisticated tinted canvas (#F3F4F8) with soft lavender/blue-gray hierarchy.
 abstract final class AppColors {
-  // Brand foundation
-  static const Color brandPrimary = Color(0xFF6D3CFF);
-  static const Color brandSecondary = Color(0xFF8B5CF6);
-  static const Color brandAccent = Color(0xFF7C3AED);
-  static const Color brandPressed = Color(0xFF5B2EE0);
-  static const Color brandHover = Color(0xFF7C3AED);
-  static const Color brandFocus = Color(0xFFA78BFA);
+  // -------------------------------------------------------------
+  // SB DARK FOUNDATION
+  // -------------------------------------------------------------
+  static const Color darkCanvas = Color(0xFF080D18);
+  static const Color darkSurface = Color(0xFF0F1726);
+  static const Color darkSurface2 = Color(0xFF141D2E);
+  static const Color darkElevated = Color(0xFF192338);
+  static const Color darkInput = Color(0xFF111A2A);
+  static const Color darkBorder = Color(0xFF263149);
 
-  // Brand tints
-  static const Color brandSoftLight = Color(0xFFF1EDFE);
-  static const Color brandSoftDark = Color(0xFF1F1836);
-  static const Color brandSubtleLight = Color(0xFFF8F6FF);
-  static const Color brandSubtleDark = Color(0xFF151024);
+  static const Color darkTextPrimary = Color(0xFFF4F7FB);
+  static const Color darkTextSecondary = Color(0xFFAAB4C5);
+  static const Color darkTextMuted = Color(0xFF69768A);
+  static const Color darkTextDisabled = Color(0xFF465267);
 
-  // Neutral Backgrounds - Light
-  static const Color bgPrimaryLight = Color(0xFFF8FAFC);
-  static const Color bgSecondaryLight = Color(0xFFF1F5F9);
+  static const Color darkPurplePrimary = Color(0xFF6D3CFF);
+  static const Color darkPurpleSecondary = Color(0xFF8B5CF6);
+  static const Color darkPurpleBright = Color(0xFF7C3AED);
+  static const Color darkPurpleSoft = Color(0x2A6D3CFF);
 
-  // Neutral Backgrounds - Dark (SB Chat Deep Navy canvas)
-  static const Color bgPrimaryDark = Color(0xFF080D18);
-  static const Color bgSecondaryDark = Color(0xFF0C1322);
+  static const Color darkSuccess = Color(0xFF22C55E);
+  static const Color darkWarning = Color(0xFFF59E0B);
+  static const Color darkError = Color(0xFFEF4444);
 
-  // Surfaces - Light
-  static const Color surfacePrimaryLight = Color(0xFFFFFFFF);
-  static const Color surfaceSecondaryLight = Color(0xFFF8FAFC);
-  static const Color surfaceElevatedLight = Color(0xFFFFFFFF);
+  // -------------------------------------------------------------
+  // SB LIGHT FOUNDATION
+  // -------------------------------------------------------------
+  static const Color lightCanvas = Color(0xFFF3F4F8);
+  static const Color lightCanvasSecondary = Color(0xFFECEEF5);
+  static const Color lightSurface = Color(0xFFF8F9FC);
+  static const Color lightElevated = Color(0xFFFFFFFF);
+  static const Color lightInput = Color(0xFFE9EBF3);
+  static const Color lightBorder = Color(0xFFD9DCE7);
 
-  // Surfaces - Dark (Layered Navy)
-  static const Color surfacePrimaryDark = Color(0xFF0F1726);
-  static const Color surfaceSecondaryDark = Color(0xFF141D2E);
-  static const Color surfaceElevatedDark = Color(0xFF192338);
+  static const Color lightTextPrimary = Color(0xFF172033);
+  static const Color lightTextSecondary = Color(0xFF596276);
+  static const Color lightTextMuted = Color(0xFF858DA0);
+  static const Color lightTextDisabled = Color(0xFFAEB4C1);
 
-  // Typography - Light
-  static const Color textPrimaryLight = Color(0xFF0F172A);
-  static const Color textSecondaryLight = Color(0xFF475569);
-  static const Color textTertiaryLight = Color(0xFF94A3B8);
-  static const Color textDisabledLight = Color(0xFFCBD5E1);
-  static const Color textInverseLight = Color(0xFFFFFFFF);
+  static const Color lightPurplePrimary = Color(0xFF6841E8);
+  static const Color lightPurpleSecondary = Color(0xFF7C5CE8);
+  static const Color lightPurpleSoft = Color(0xFFEEE9FF);
 
-  // Typography - Dark
-  static const Color textPrimaryDark = Color(0xFFF8FAFC);
-  static const Color textSecondaryDark = Color(0xFFA7B0C0);
-  static const Color textTertiaryDark = Color(0xFF68758A);
-  static const Color textDisabledDark = Color(0xFF3B4559);
-  static const Color textInverseDark = Color(0xFF080D18);
+  static const Color lightOutgoingBubble = Color(0xFFE7DEFF);
+  static const Color lightIncomingBubble = Color(0xFFE8EBF2);
 
-  // Borders - Light
-  static const Color borderSubtleLight = Color(0xFFE2E8F0);
-  static const Color borderDefaultLight = Color(0xFFCBD5E1);
-  static const Color borderStrongLight = Color(0xFF94A3B8);
+  static const Color lightSuccess = Color(0xFF16A34A);
+  static const Color lightWarning = Color(0xFFD97706);
+  static const Color lightError = Color(0xFFDC2626);
 
-  // Borders - Dark (Subtle Navy borders)
-  static const Color borderSubtleDark = Color(0xFF1E293B);
-  static const Color borderDefaultDark = Color(0xFF263149);
-  static const Color borderStrongDark = Color(0xFF334155);
+  // -------------------------------------------------------------
+  // DEFAULT ALIASES & COMPATIBILITY HELPERS
+  // -------------------------------------------------------------
+  static const Color brandPrimary = darkPurplePrimary;
+  static const Color brandSecondary = darkPurpleSecondary;
+  static const Color brandFocus = darkPurpleBright;
+  static const Color brandSoft = darkPurpleSoft;
 
-  // Semantic Status
-  static const Color success = Color(0xFF22C55E);
-  static const Color successSoft = Color(0xFF143026);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color warningSoft = Color(0xFF322714);
-  static const Color error = Color(0xFFEF4444);
-  static const Color errorSoft = Color(0xFF33161A);
-  static const Color info = Color(0xFF3B82F6);
-  static const Color infoSoft = Color(0xFF12243C);
+  static const Color backgroundPrimaryDark = darkCanvas;
+  static const Color surfacePrimaryDark = darkSurface;
+  static const Color surfaceSecondaryDark = darkSurface2;
+  static const Color surfaceElevatedDark = darkElevated;
+  static const Color borderDefaultDark = darkBorder;
 
-  // Chat Specific
-  static const Color chatBubbleOutgoing = Color(0xFF6D3CFF);
-  static const Color chatBubbleIncomingLight = Color(0xFFF1F5F9);
-  static const Color chatBubbleIncomingDark = Color(0xFF141D2E);
+  static const Color backgroundPrimaryLight = lightCanvas;
+  static const Color surfacePrimaryLight = lightSurface;
+  static const Color surfaceSecondaryLight = lightInput;
+  static const Color borderDefaultLight = lightBorder;
 
   static const Color onlineIndicator = Color(0xFF22C55E);
-  static const Color offlineIndicator = Color(0xFF64748B);
+  static const Color offlineIndicator = Color(0xFF69768A);
+
+  static const Color success = darkSuccess;
+  static const Color warning = darkWarning;
+  static const Color error = darkError;
+  static const Color errorSoft = Color(0x26EF4444);
 }

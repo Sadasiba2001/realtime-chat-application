@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_gradients.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../app/theme/sb_icons.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/login_form.dart';
 
-/// Full login screen matching the SB Chat web authentication visual identity.
+/// Full login screen matching the SB Chat authentication visual identity.
 class LoginScreen extends StatelessWidget {
   final AuthController authController;
 
@@ -43,9 +42,9 @@ class LoginScreen extends StatelessWidget {
                   Container(
                     width: 120,
                     height: 120,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: AppGradients.purpleGlow,
+                      gradient: colors.glowGradient,
                     ),
                   ),
                   Container(
@@ -54,12 +53,12 @@ class LoginScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: AppRadius.large,
                       border: Border.all(
-                        color: AppColors.borderDefaultDark,
+                        color: colors.borderDefault,
                         width: 1.2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.brandPrimary.withValues(alpha: 0.3),
+                          color: colors.brandPrimary.withValues(alpha: 0.3),
                           blurRadius: 24,
                           offset: const Offset(0, 8),
                         ),
@@ -71,12 +70,12 @@ class LoginScreen extends StatelessWidget {
                         AppConstants.logoPath,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Container(
-                          decoration: const BoxDecoration(
-                            gradient: AppGradients.purpleGradient,
+                          decoration: BoxDecoration(
+                            gradient: colors.brandGradient,
                           ),
                           alignment: Alignment.center,
                           child: const Icon(
-                            Icons.chat_bubble_rounded,
+                            SBIcons.chatsFilled,
                             size: 36,
                             color: Colors.white,
                           ),
@@ -124,4 +123,3 @@ class LoginScreen extends StatelessWidget {
     );
   }
 }
-

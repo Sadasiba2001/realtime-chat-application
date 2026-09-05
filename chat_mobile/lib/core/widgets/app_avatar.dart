@@ -34,7 +34,7 @@ class AppAvatar extends StatelessWidget {
     final hash = name.codeUnits.fold(0, (prev, curr) => prev + curr);
     final palettes = [
       const LinearGradient(
-        colors: [Color(0xFF6D28FF), Color(0xFF8B5CF6)],
+        colors: [Color(0xFF6D3CFF), Color(0xFF8B5CF6)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
@@ -125,4 +125,3 @@ class AppAvatar extends StatelessWidget {
     );
   }
 }
-

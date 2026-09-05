@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_radius.dart';
 import '../../app/theme/app_spacing.dart';
 import '../../app/theme/app_theme_extension.dart';
@@ -89,7 +88,7 @@ class AppTextField extends StatelessWidget {
             prefixIcon: prefix,
             suffixIcon: suffix,
             filled: true,
-            fillColor: enabled ? colors.surfaceSecondary : colors.backgroundSecondary,
+            fillColor: enabled ? colors.inputSurface : colors.backgroundSecondary,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.s16,
               vertical: AppSpacing.s14,
@@ -104,7 +103,7 @@ class AppTextField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: AppRadius.medium,
-              borderSide: const BorderSide(color: AppColors.brandPrimary, width: 1.5),
+              borderSide: BorderSide(color: colors.brandPrimary, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: AppRadius.medium,
@@ -127,4 +126,3 @@ class AppTextField extends StatelessWidget {
     );
   }
 }
-

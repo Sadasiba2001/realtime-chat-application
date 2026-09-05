@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_gradients.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../app/theme/sb_icons.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/app_scaffold.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/signup_form.dart';
 
-/// Full registration screen matching the SB Chat web authentication visual identity.
+/// Full registration screen matching the SB Chat authentication visual identity.
 class SignupScreen extends StatelessWidget {
   final AuthController authController;
 
@@ -43,9 +42,9 @@ class SignupScreen extends StatelessWidget {
                   Container(
                     width: 100,
                     height: 100,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: AppGradients.purpleGlow,
+                      gradient: colors.glowGradient,
                     ),
                   ),
                   Container(
@@ -54,12 +53,12 @@ class SignupScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: AppRadius.large,
                       border: Border.all(
-                        color: AppColors.borderDefaultDark,
+                        color: colors.borderDefault,
                         width: 1.2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.brandPrimary.withValues(alpha: 0.3),
+                          color: colors.brandPrimary.withValues(alpha: 0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 6),
                         ),
@@ -71,12 +70,12 @@ class SignupScreen extends StatelessWidget {
                         AppConstants.logoPath,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Container(
-                          decoration: const BoxDecoration(
-                            gradient: AppGradients.purpleGradient,
+                          decoration: BoxDecoration(
+                            gradient: colors.brandGradient,
                           ),
                           alignment: Alignment.center,
                           child: const Icon(
-                            Icons.person_add_rounded,
+                            SBIcons.addContact,
                             size: 32,
                             color: Colors.white,
                           ),
@@ -124,4 +123,3 @@ class SignupScreen extends StatelessWidget {
     );
   }
 }
-

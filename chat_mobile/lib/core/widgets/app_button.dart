@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../app/theme/app_gradients.dart';
 import '../../app/theme/app_radius.dart';
 import '../../app/theme/app_shadows.dart';
 import '../../app/theme/app_spacing.dart';
@@ -114,7 +113,7 @@ class _AppButtonState extends State<AppButton> {
     switch (widget._variant) {
       case _ButtonVariant.primary:
         if (isEnabled) {
-          gradient = AppGradients.purpleGradient;
+          gradient = colors.brandGradient;
           shadows = AppShadows.purpleGlow;
         } else {
           bg = colors.brandSoft;
@@ -206,4 +205,3 @@ class _AppButtonState extends State<AppButton> {
     return button;
   }
 }
-

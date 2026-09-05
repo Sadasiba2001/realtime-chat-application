@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_gradients.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../app/theme/sb_icons.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_badge.dart';
@@ -83,10 +82,10 @@ class _ChatListBodyState extends State<ChatListBody> {
           child: AppTextField(
             controller: _searchController,
             hintText: 'Search chats or messages...',
-            prefix: Icon(Icons.search_rounded, color: colors.textTertiary, size: 20),
+            prefix: Icon(SBIcons.search, color: colors.textTertiary, size: 20),
             suffix: _searchQuery.isNotEmpty
                 ? IconButton(
-                    icon: Icon(Icons.clear_rounded, color: colors.textTertiary, size: 18),
+                    icon: Icon(SBIcons.clear, color: colors.textTertiary, size: 18),
                     onPressed: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
@@ -122,11 +121,11 @@ class _ChatListBodyState extends State<ChatListBody> {
         Expanded(
           child: _filteredConversations.isEmpty
               ? AppEmptyState(
-                  icon: Icons.chat_bubble_outline_rounded,
+                  icon: SBIcons.chatsOutline,
                   title: _searchQuery.isNotEmpty ? 'No chats found' : 'No conversations',
                   description: _searchQuery.isNotEmpty
                       ? 'Try searching with different keywords.'
-                      : 'Start a conversation with someone.',
+                      : 'Start a conversation and connect with someone.',
                 )
               : ListView.separated(
                   itemCount: _filteredConversations.length,
@@ -156,11 +155,10 @@ class _ChatListBodyState extends State<ChatListBody> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          gradient: isSelected ? AppGradients.purpleGradient : null,
-          color: isSelected ? null : colors.surfaceSecondary,
+          color: isSelected ? colors.brandSoft : colors.surfaceSecondary,
           borderRadius: AppRadius.pill,
           border: Border.all(
-            color: isSelected ? Colors.transparent : colors.borderDefault,
+            color: isSelected ? colors.brandPrimary.withValues(alpha: 0.5) : colors.borderDefault,
             width: 1,
           ),
         ),
@@ -168,7 +166,7 @@ class _ChatListBodyState extends State<ChatListBody> {
         child: Text(
           label,
           style: AppTypography.caption.copyWith(
-            color: isSelected ? Colors.white : colors.textSecondary,
+            color: isSelected ? colors.brandPrimary : colors.textSecondary,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             fontSize: 12,
           ),
@@ -196,8 +194,8 @@ class _ConversationRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        splashColor: AppColors.brandPrimary.withValues(alpha: 0.1),
-        highlightColor: AppColors.brandPrimary.withValues(alpha: 0.05),
+        splashColor: colors.brandPrimary.withValues(alpha: 0.08),
+        highlightColor: colors.brandPrimary.withValues(alpha: 0.04),
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.s16,
@@ -235,7 +233,7 @@ class _ConversationRow extends StatelessWidget {
                         Text(
                           DateFormatter.formatConversationDate(conversation.timestamp),
                           style: AppTypography.caption.copyWith(
-                            color: hasUnread ? AppColors.brandFocus : colors.textTertiary,
+                            color: hasUnread ? colors.brandPrimary : colors.textTertiary,
                             fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
                             fontSize: 11,
                           ),
@@ -259,7 +257,7 @@ class _ConversationRow extends StatelessWidget {
                         if (conversation.isMuted) ...[
                           const SizedBox(width: AppSpacing.s8),
                           Icon(
-                            Icons.volume_off_rounded,
+                            SBIcons.muted,
                             size: 16,
                             color: colors.textTertiary,
                           ),
@@ -280,4 +278,3 @@ class _ConversationRow extends StatelessWidget {
     );
   }
 }
-

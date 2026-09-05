@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_spacing.dart';
 import '../../app/theme/app_theme_extension.dart';
 import '../../app/theme/app_typography.dart';
+import '../../app/theme/sb_icons.dart';
 import 'app_badge.dart';
 
 /// Configuration data class for an item in [AppBottomNavbar].
@@ -20,7 +20,7 @@ class AppBottomNavbarItem {
   });
 }
 
-/// Reusable, presentation-only bottom navigation bar for SB Chat.
+/// Reusable bottom navigation bar for SB Chat with subtle active capsules.
 class AppBottomNavbar extends StatelessWidget {
   final int currentIndex;
   final List<AppBottomNavbarItem> items;
@@ -42,7 +42,7 @@ class AppBottomNavbar extends StatelessWidget {
         color: colors.surfacePrimary,
         border: Border(
           top: BorderSide(
-            color: colors.borderDefault.withValues(alpha: 0.6),
+            color: colors.borderDefault,
             width: 1,
           ),
         ),
@@ -82,7 +82,7 @@ class _NavbarItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final effectiveColor = isSelected ? AppColors.brandPrimary : colors.textTertiary;
+    final effectiveColor = isSelected ? colors.brandPrimary : colors.textTertiary;
 
     return Expanded(
       child: InkWell(
@@ -90,7 +90,7 @@ class _NavbarItemWidget extends StatelessWidget {
         splashColor: Colors.transparent,
         highlightColor: Colors.transparent,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s8),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s6),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -103,13 +103,13 @@ class _NavbarItemWidget extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.brandPrimary.withValues(alpha: 0.14)
+                          ? colors.brandPrimary.withValues(alpha: 0.12)
                           : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(
                       isSelected ? item.activeIcon : item.icon,
-                      size: 22,
+                      size: SBIcons.sizeNavigation,
                       color: effectiveColor,
                     ),
                   ),
@@ -137,4 +137,3 @@ class _NavbarItemWidget extends StatelessWidget {
     );
   }
 }
-

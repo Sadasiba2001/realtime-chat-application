@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../app/theme/sb_icons.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text.dart';
 import '../../../../core/widgets/app_text_field.dart';
@@ -109,19 +109,19 @@ class _LoginFormState extends State<LoginForm> {
                     vertical: AppSpacing.s12,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.errorSoft,
+                    color: colors.errorSoft,
                     borderRadius: AppRadius.medium,
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                    border: Border.all(color: colors.error.withValues(alpha: 0.4)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 20),
+                      Icon(SBIcons.error, color: colors.error, size: 20),
                       const SizedBox(width: AppSpacing.s12),
                       Expanded(
                         child: Text(
                           serverError,
                           style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.error,
+                            color: colors.error,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -156,7 +156,7 @@ class _LoginFormState extends State<LoginForm> {
                 obscureText: _obscurePassword,
                 textInputAction: TextInputAction.done,
                 errorText: passwordError,
-                prefix: Icon(Icons.lock_outline_rounded, color: colors.textTertiary, size: 20),
+                prefix: Icon(SBIcons.lock, color: colors.textTertiary, size: 20),
                 suffix: IconButton(
                   icon: Icon(
                     _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -196,7 +196,7 @@ class _LoginFormState extends State<LoginForm> {
                     child: Text(
                       'Sign Up',
                       style: AppTypography.labelLarge.copyWith(
-                        color: AppColors.brandFocus,
+                        color: colors.brandPrimary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -210,4 +210,3 @@ class _LoginFormState extends State<LoginForm> {
     );
   }
 }
-

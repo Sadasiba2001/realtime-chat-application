@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_gradients.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../app/theme/sb_icons.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/widgets/app_icon_button.dart';
 import '../../models/mock_chat_models.dart';
+import 'chat_wallpaper.dart';
 
 /// Body component for Chat Room hosting the message timeline and composer bar.
 class ChatRoomBody extends StatefulWidget {
@@ -78,10 +78,7 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: AppGradients.darkCanvasGradient,
-      ),
+    return ChatWallpaper(
       child: Column(
         children: [
           // Message Timeline
@@ -151,7 +148,7 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
               style: AppTypography.caption.copyWith(color: colors.textSecondary),
             ),
             const SizedBox(width: AppSpacing.s8),
-            _PulseDots(color: AppColors.brandPrimary),
+            _PulseDots(color: colors.brandPrimary),
           ],
         ),
       ),
@@ -169,14 +166,14 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
       decoration: BoxDecoration(
         color: colors.surfacePrimary,
         border: Border(
-          top: BorderSide(color: colors.borderDefault.withValues(alpha: 0.6), width: 1),
+          top: BorderSide(color: colors.borderDefault, width: 1),
         ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           AppIconButton(
-            icon: Icons.add_circle_outline_rounded,
+            icon: SBIcons.attach,
             tooltip: 'Add attachment',
             color: colors.textTertiary,
             iconSize: 22,
@@ -186,7 +183,7 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
               decoration: BoxDecoration(
-                color: colors.surfaceSecondary,
+                color: colors.inputSurface,
                 borderRadius: AppRadius.extraLarge,
                 border: Border.all(color: colors.borderDefault, width: 1),
               ),
@@ -206,7 +203,7 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
                         }
                       },
                       style: AppTypography.body.copyWith(color: colors.textPrimary),
-                      cursorColor: AppColors.brandPrimary,
+                      cursorColor: colors.brandPrimary,
                       decoration: InputDecoration(
                         hintText: 'Type a message...',
                         hintStyle: AppTypography.body.copyWith(color: colors.textTertiary),
@@ -222,7 +219,7 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
                   ),
                   IconButton(
                     icon: Icon(
-                      Icons.sentiment_satisfied_alt_rounded,
+                      SBIcons.emoji,
                       color: colors.textTertiary,
                       size: 20,
                     ),
@@ -242,10 +239,10 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
                     height: 44,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: AppGradients.purpleGradient,
+                      gradient: colors.brandGradient,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.brandPrimary.withValues(alpha: 0.4),
+                          color: colors.brandPrimary.withValues(alpha: 0.4),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -259,7 +256,7 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
                         customBorder: const CircleBorder(),
                         child: const Center(
                           child: Icon(
-                            Icons.send_rounded,
+                            SBIcons.send,
                             size: 18,
                             color: Colors.white,
                           ),
@@ -269,7 +266,7 @@ class _ChatRoomBodyState extends State<ChatRoomBody> {
                   )
                 : AppIconButton(
                     key: const ValueKey('mic_inactive'),
-                    icon: Icons.mic_none_rounded,
+                    icon: SBIcons.mic,
                     tooltip: 'Voice message',
                     color: colors.textSecondary,
                     onPressed: () {},
@@ -304,13 +301,13 @@ class _MessageBubble extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: isOutgoing ? null : colors.chatBubbleIncoming,
-            gradient: isOutgoing ? AppGradients.purpleGradient : null,
+            gradient: isOutgoing ? colors.brandGradient : null,
             borderRadius: isOutgoing ? AppRadius.outgoingBubble : AppRadius.incomingBubble,
             border: isOutgoing ? null : Border.all(color: colors.borderDefault, width: 1),
             boxShadow: isOutgoing
                 ? [
                     BoxShadow(
-                      color: AppColors.brandPrimary.withValues(alpha: 0.25),
+                      color: colors.brandPrimary.withValues(alpha: 0.25),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -323,7 +320,7 @@ class _MessageBubble extends StatelessWidget {
               Text(
                 message.text,
                 style: AppTypography.chatMessage.copyWith(
-                  color: isOutgoing ? Colors.white : colors.textPrimary,
+                  color: isOutgoing ? colors.chatBubbleOutgoingText : colors.textPrimary,
                 ),
               ),
               const SizedBox(height: AppSpacing.s4),
@@ -334,7 +331,7 @@ class _MessageBubble extends StatelessWidget {
                     DateFormatter.formatMessageTime(message.timestamp),
                     style: AppTypography.caption.copyWith(
                       color: isOutgoing
-                          ? Colors.white.withValues(alpha: 0.75)
+                          ? colors.chatBubbleOutgoingText.withValues(alpha: 0.75)
                           : colors.textTertiary,
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
@@ -344,10 +341,10 @@ class _MessageBubble extends StatelessWidget {
                     const SizedBox(width: 4),
                     Icon(
                       message.status == MessageDeliveryStatus.read
-                          ? Icons.done_all_rounded
-                          : Icons.done_rounded,
+                          ? SBIcons.read
+                          : SBIcons.delivered,
                       size: 14,
-                      color: Colors.white.withValues(alpha: 0.85),
+                      color: colors.chatBubbleOutgoingText.withValues(alpha: 0.85),
                     ),
                   ],
                 ],
@@ -383,4 +380,3 @@ class _PulseDots extends StatelessWidget {
     );
   }
 }
-

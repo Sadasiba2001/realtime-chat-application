@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../app/theme/app_colors.dart';
-import '../../../app/theme/app_gradients.dart';
 import '../../../app/theme/app_radius.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../app/theme/app_theme_extension.dart';
 import '../../../app/theme/app_typography.dart';
+import '../../../app/theme/sb_icons.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_scaffold.dart';
@@ -66,7 +65,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 children: [
                   const Spacer(flex: 3),
 
-                  // SB Chat Logo with ambient purple glow
+                  // SB Chat Logo with ambient glow
                   Center(
                     child: Stack(
                       alignment: Alignment.center,
@@ -75,9 +74,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         Container(
                           width: 160,
                           height: 160,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: AppGradients.purpleGlow,
+                            gradient: colors.glowGradient,
                           ),
                         ),
                         // Logo Card Container
@@ -87,12 +86,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           decoration: BoxDecoration(
                             borderRadius: AppRadius.extraLarge,
                             border: Border.all(
-                              color: AppColors.borderDefaultDark,
+                              color: colors.borderDefault,
                               width: 1.2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.brandPrimary.withValues(alpha: 0.35),
+                                color: colors.brandPrimary.withValues(alpha: 0.35),
                                 blurRadius: 32,
                                 offset: const Offset(0, 12),
                               ),
@@ -104,12 +103,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               AppConstants.logoPath,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) => Container(
-                                decoration: const BoxDecoration(
-                                  gradient: AppGradients.purpleGradient,
+                                decoration: BoxDecoration(
+                                  gradient: colors.brandGradient,
                                 ),
                                 alignment: Alignment.center,
                                 child: const Icon(
-                                  Icons.chat_bubble_rounded,
+                                  SBIcons.chatsFilled,
                                   size: 48,
                                   color: Colors.white,
                                 ),
@@ -126,17 +125,17 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                     decoration: BoxDecoration(
-                      color: AppColors.brandPrimary.withValues(alpha: 0.12),
+                      color: colors.brandPrimary.withValues(alpha: 0.12),
                       borderRadius: AppRadius.pill,
                       border: Border.all(
-                        color: AppColors.brandPrimary.withValues(alpha: 0.3),
+                        color: colors.brandPrimary.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
                     child: Text(
                       'SB CHAT',
                       style: AppTypography.caption.copyWith(
-                        color: AppColors.brandFocus,
+                        color: colors.brandPrimary,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.5,
                       ),
@@ -194,8 +193,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.lock_outline_rounded,
-                        size: 13,
+                        SBIcons.lock,
+                        size: 14,
                         color: colors.textTertiary,
                       ),
                       const SizedBox(width: 6),
@@ -217,4 +216,3 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     );
   }
 }
-

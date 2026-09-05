@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../app/theme/app_theme_extension.dart';
 import '../../../app/theme/app_typography.dart';
+import '../../../app/theme/sb_icons.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import 'widgets/calls_body.dart';
@@ -39,10 +39,10 @@ class CallsScreen extends StatelessWidget {
               ),
             ),
             AppIconButton(
-              icon: Icons.add_call,
+              icon: SBIcons.newCall,
               iconSize: 20,
               tooltip: 'New Call',
-              color: AppColors.brandPrimary,
+              color: colors.brandPrimary,
               onPressed: () {},
             ),
           ],

@@ -3,6 +3,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
 import '../../../../app/theme/app_typography.dart';
+import '../../../../app/theme/sb_icons.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_divider.dart';
 import '../../../../core/widgets/app_icon_button.dart';
@@ -44,7 +45,7 @@ class ChatRoomHeader extends StatelessWidget {
             child: Row(
               children: [
                 AppIconButton(
-                  icon: Icons.arrow_back_ios_new_rounded,
+                  icon: SBIcons.back,
                   iconSize: 18,
                   tooltip: 'Back',
                   color: colors.textPrimary,
@@ -103,21 +104,21 @@ class ChatRoomHeader extends StatelessWidget {
                   ),
                 ),
                 AppIconButton(
-                  icon: Icons.phone_outlined,
+                  icon: SBIcons.voiceCall,
                   iconSize: 20,
                   tooltip: 'Voice Call',
-                  color: AppColors.brandPrimary,
+                  color: colors.brandPrimary,
                   onPressed: onVoiceCall ?? () {},
                 ),
                 AppIconButton(
-                  icon: Icons.videocam_outlined,
+                  icon: SBIcons.videoCall,
                   iconSize: 22,
                   tooltip: 'Video Call',
-                  color: AppColors.brandPrimary,
+                  color: colors.brandPrimary,
                   onPressed: onVideoCall ?? () {},
                 ),
                 AppIconButton(
-                  icon: Icons.more_vert_rounded,
+                  icon: SBIcons.moreVert,
                   iconSize: 20,
                   tooltip: 'More options',
                   color: colors.textSecondary,
@@ -132,4 +133,3 @@ class ChatRoomHeader extends StatelessWidget {
     );
   }
 }
-
