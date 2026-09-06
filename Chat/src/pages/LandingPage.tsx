@@ -143,7 +143,7 @@ export const LandingPage: React.FC = () => {
   return (
     <div
       onMouseMove={handleMouseMove}
-      className="min-h-screen w-full bg-[#090414] text-white overflow-x-hidden font-sans relative select-none"
+      className="h-screen w-full bg-[#090414] text-white overflow-x-hidden overflow-y-auto font-sans relative select-none scroll-smooth"
     >
       {/* Background Lighting & Particle Grid */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">

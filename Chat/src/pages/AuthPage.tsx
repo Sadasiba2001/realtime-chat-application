@@ -27,7 +27,7 @@ export const AuthPage: React.FC = () => {
   return (
     <div
       onMouseMove={handleMouseMove}
-      className="min-h-screen w-full relative flex flex-col items-center justify-center bg-[#0d061f] overflow-x-hidden overflow-y-auto select-none py-6 sm:py-8 lg:py-12"
+      className="h-screen w-full relative flex flex-col items-center justify-center bg-[#0d061f] overflow-x-hidden overflow-y-auto select-none py-6 sm:py-8 lg:py-12"
     >
       {/* Surreal Atmospheric Landscape Background with Parallax */}
       <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#0a0418] via-[#1d073b] to-[#46146e]">
