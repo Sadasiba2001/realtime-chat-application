@@ -80,6 +80,7 @@ class CallsBody extends StatelessWidget {
     }
 
     return ListView.separated(
+      padding: const EdgeInsets.only(bottom: 120),
       itemCount: _mockCalls.length,
       separatorBuilder: (context, index) => const AppDivider(indent: 76),
       itemBuilder: (context, index) {

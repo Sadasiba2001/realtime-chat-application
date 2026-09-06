@@ -115,7 +115,7 @@ class AppAvatar extends StatelessWidget {
               color: isOnline ? AppColors.onlineIndicator : AppColors.offlineIndicator,
               shape: BoxShape.circle,
               border: Border.all(
-                color: colors.surfacePrimary,
+                color: colors.backgroundPrimary,
                 width: 2,
               ),
             ),

@@ -4,7 +4,7 @@ import '../../../app/theme/app_theme_extension.dart';
 import '../../../app/theme/sb_icons.dart';
 import '../../../core/widgets/app_bottom_navbar.dart';
 
-/// Main Application Shell hosting the persistent bottom navigation bar.
+/// Main Application Shell hosting the floating persistent bottom navigation bar.
 class MainShellScreen extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -50,6 +50,7 @@ class MainShellScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
+      extendBody: true,
       body: navigationShell,
       bottomNavigationBar: AppBottomNavbar(
         currentIndex: navigationShell.currentIndex,

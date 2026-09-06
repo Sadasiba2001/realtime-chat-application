@@ -8,7 +8,7 @@ import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import 'widgets/chat_list_body.dart';
 
-/// Screen displaying the active conversations list with filter chips and search.
+/// Screen displaying the active conversations list with unified continuous surface.
 class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
 
@@ -19,19 +19,20 @@ class ChatListScreen extends StatelessWidget {
     return AppScaffold(
       safeAreaTop: true,
       safeAreaBottom: false,
+      backgroundColor: colors.backgroundPrimary,
       header: Container(
-        color: colors.surfacePrimary,
+        color: colors.backgroundPrimary,
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.s16,
           AppSpacing.s12,
           AppSpacing.s16,
-          AppSpacing.s12,
+          AppSpacing.s8,
         ),
         child: Row(
           children: [
             const AppAvatar(
               name: 'Alexander Wright',
-              size: 40,
+              size: 42,
               showOnlineIndicator: true,
               isOnline: true,
             ),
@@ -41,14 +42,14 @@ class ChatListScreen extends StatelessWidget {
                 'Chats',
                 style: AppTypography.headlineLarge.copyWith(
                   color: colors.textPrimary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 25,
                 ),
               ),
             ),
             AppIconButton(
               icon: SBIcons.newChat,
-              iconSize: 20,
+              iconSize: 22,
               tooltip: 'New message',
               color: colors.brandPrimary,
               onPressed: () {},
@@ -56,31 +57,37 @@ class ChatListScreen extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: colors.brandGradient,
-          boxShadow: [
-            BoxShadow(
-              color: colors.brandPrimary.withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom + 76,
+          right: 2,
         ),
-        child: Material(
-          color: Colors.transparent,
-          shape: const CircleBorder(),
-          child: InkWell(
-            onTap: () {},
-            customBorder: const CircleBorder(),
-            child: const Center(
-              child: Icon(
-                SBIcons.addChat,
-                color: Colors.white,
-                size: 24,
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: colors.brandGradient,
+            boxShadow: [
+              BoxShadow(
+                color: colors.brandPrimary.withValues(alpha: 0.35),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: () {},
+              customBorder: const CircleBorder(),
+              child: const Center(
+                child: Icon(
+                  SBIcons.addChat,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
             ),
           ),

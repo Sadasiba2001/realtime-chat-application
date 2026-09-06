@@ -24,6 +24,18 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
   final Color brandFocus;
   final Color brandSoft;
 
+  // Filter Bar Tokens
+  final Color filterOuterBg;
+  final Color filterActiveCapsule;
+  final Color filterActiveText;
+
+  // Floating Nav Tokens
+  final Color navOuterBg;
+  final Color navActiveCapsule;
+  final Color navActiveIcon;
+  final Color navActiveLabel;
+  final Color navInactive;
+
   final Color chatBubbleIncoming;
   final Color chatBubbleOutgoing;
   final Color chatBubbleOutgoingText;
@@ -55,6 +67,14 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     required this.brandSecondary,
     required this.brandFocus,
     required this.brandSoft,
+    required this.filterOuterBg,
+    required this.filterActiveCapsule,
+    required this.filterActiveText,
+    required this.navOuterBg,
+    required this.navActiveCapsule,
+    required this.navActiveIcon,
+    required this.navActiveLabel,
+    required this.navInactive,
     required this.chatBubbleIncoming,
     required this.chatBubbleOutgoing,
     required this.chatBubbleOutgoingText,
@@ -86,6 +106,14 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     brandSecondary: AppColors.darkPurpleSecondary,
     brandFocus: AppColors.darkPurpleBright,
     brandSoft: AppColors.darkPurpleSoft,
+    filterOuterBg: AppColors.darkFilterOuterBg,
+    filterActiveCapsule: AppColors.darkFilterActiveCapsule,
+    filterActiveText: AppColors.darkFilterActiveText,
+    navOuterBg: AppColors.darkNavOuterBg,
+    navActiveCapsule: AppColors.darkNavActiveCapsule,
+    navActiveIcon: AppColors.darkNavActiveIcon,
+    navActiveLabel: AppColors.darkNavActiveLabel,
+    navInactive: AppColors.darkNavInactive,
     chatBubbleIncoming: AppColors.darkSurface2,
     chatBubbleOutgoing: AppColors.darkPurplePrimary,
     chatBubbleOutgoingText: Colors.white,
@@ -117,6 +145,14 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     brandSecondary: AppColors.lightPurpleSecondary,
     brandFocus: AppColors.lightPurpleSecondary,
     brandSoft: AppColors.lightPurpleSoft,
+    filterOuterBg: AppColors.lightFilterOuterBg,
+    filterActiveCapsule: AppColors.lightFilterActiveCapsule,
+    filterActiveText: AppColors.lightFilterActiveText,
+    navOuterBg: AppColors.lightNavOuterBg,
+    navActiveCapsule: AppColors.lightNavActiveCapsule,
+    navActiveIcon: AppColors.lightNavActiveIcon,
+    navActiveLabel: AppColors.lightNavActiveLabel,
+    navInactive: AppColors.lightNavInactive,
     chatBubbleIncoming: AppColors.lightIncomingBubble,
     chatBubbleOutgoing: AppColors.lightPurplePrimary,
     chatBubbleOutgoingText: Colors.white,
@@ -148,6 +184,14 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     Color? brandSecondary,
     Color? brandFocus,
     Color? brandSoft,
+    Color? filterOuterBg,
+    Color? filterActiveCapsule,
+    Color? filterActiveText,
+    Color? navOuterBg,
+    Color? navActiveCapsule,
+    Color? navActiveIcon,
+    Color? navActiveLabel,
+    Color? navInactive,
     Color? chatBubbleIncoming,
     Color? chatBubbleOutgoing,
     Color? chatBubbleOutgoingText,
@@ -177,6 +221,14 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
       brandSecondary: brandSecondary ?? this.brandSecondary,
       brandFocus: brandFocus ?? this.brandFocus,
       brandSoft: brandSoft ?? this.brandSoft,
+      filterOuterBg: filterOuterBg ?? this.filterOuterBg,
+      filterActiveCapsule: filterActiveCapsule ?? this.filterActiveCapsule,
+      filterActiveText: filterActiveText ?? this.filterActiveText,
+      navOuterBg: navOuterBg ?? this.navOuterBg,
+      navActiveCapsule: navActiveCapsule ?? this.navActiveCapsule,
+      navActiveIcon: navActiveIcon ?? this.navActiveIcon,
+      navActiveLabel: navActiveLabel ?? this.navActiveLabel,
+      navInactive: navInactive ?? this.navInactive,
       chatBubbleIncoming: chatBubbleIncoming ?? this.chatBubbleIncoming,
       chatBubbleOutgoing: chatBubbleOutgoing ?? this.chatBubbleOutgoing,
       chatBubbleOutgoingText: chatBubbleOutgoingText ?? this.chatBubbleOutgoingText,
@@ -214,6 +266,14 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
       brandSecondary: Color.lerp(brandSecondary, other.brandSecondary, t)!,
       brandFocus: Color.lerp(brandFocus, other.brandFocus, t)!,
       brandSoft: Color.lerp(brandSoft, other.brandSoft, t)!,
+      filterOuterBg: Color.lerp(filterOuterBg, other.filterOuterBg, t)!,
+      filterActiveCapsule: Color.lerp(filterActiveCapsule, other.filterActiveCapsule, t)!,
+      filterActiveText: Color.lerp(filterActiveText, other.filterActiveText, t)!,
+      navOuterBg: Color.lerp(navOuterBg, other.navOuterBg, t)!,
+      navActiveCapsule: Color.lerp(navActiveCapsule, other.navActiveCapsule, t)!,
+      navActiveIcon: Color.lerp(navActiveIcon, other.navActiveIcon, t)!,
+      navActiveLabel: Color.lerp(navActiveLabel, other.navActiveLabel, t)!,
+      navInactive: Color.lerp(navInactive, other.navInactive, t)!,
       chatBubbleIncoming: Color.lerp(chatBubbleIncoming, other.chatBubbleIncoming, t)!,
       chatBubbleOutgoing: Color.lerp(chatBubbleOutgoing, other.chatBubbleOutgoing, t)!,
       chatBubbleOutgoingText: Color.lerp(chatBubbleOutgoingText, other.chatBubbleOutgoingText, t)!,

@@ -18,8 +18,9 @@ class CallsScreen extends StatelessWidget {
     return AppScaffold(
       safeAreaTop: true,
       safeAreaBottom: false,
+      backgroundColor: colors.backgroundPrimary,
       header: Container(
-        color: colors.surfacePrimary,
+        color: colors.backgroundPrimary,
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.s16,
           AppSpacing.s12,
@@ -33,8 +34,8 @@ class CallsScreen extends StatelessWidget {
                 'Calls',
                 style: AppTypography.headlineLarge.copyWith(
                   color: colors.textPrimary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 25,
                 ),
               ),
             ),

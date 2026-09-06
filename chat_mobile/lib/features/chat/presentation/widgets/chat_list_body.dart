@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/app_theme_extension.dart';
 import '../../../../app/theme/app_typography.dart';
@@ -12,10 +11,11 @@ import '../../../../core/widgets/app_divider.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../models/mock_chat_models.dart';
+import 'sb_chat_filter_bar.dart';
 
 enum ChatFilter { all, unread, pinned, groups, archived }
 
-/// Body content for ChatList screen containing search input, horizontal filter chips, and conversation rows.
+/// Body content for ChatList screen containing search input, unified segmented filter bar, and conversation rows.
 class ChatListBody extends StatefulWidget {
   const ChatListBody({super.key});
 
@@ -34,6 +34,9 @@ class _ChatListBodyState extends State<ChatListBody> {
     _searchController.dispose();
     super.dispose();
   }
+
+  int get _unreadCount => _conversations.where((c) => c.unreadCount > 0).length;
+  int get _groupsCount => _conversations.where((c) => c.isGroup).length;
 
   List<ChatConversation> get _filteredConversations {
     List<ChatConversation> list = _conversations;
@@ -69,20 +72,28 @@ class _ChatListBodyState extends State<ChatListBody> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
+    final filterItems = [
+      const SBChatFilterItem(label: 'All Chats', keyId: ChatFilter.all),
+      SBChatFilterItem(label: 'Unread', keyId: ChatFilter.unread, count: _unreadCount),
+      const SBChatFilterItem(label: 'Pinned', keyId: ChatFilter.pinned),
+      SBChatFilterItem(label: 'Groups', keyId: ChatFilter.groups, count: _groupsCount),
+      const SBChatFilterItem(label: 'Archived', keyId: ChatFilter.archived),
+    ];
+
     return Column(
       children: [
         // Search Input Bar
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.s16,
-            AppSpacing.s4,
+            AppSpacing.s2,
             AppSpacing.s16,
-            AppSpacing.s8,
+            AppSpacing.s10,
           ),
           child: AppTextField(
             controller: _searchController,
             hintText: 'Search chats or messages...',
-            prefix: Icon(SBIcons.search, color: colors.textTertiary, size: 20),
+            prefix: Icon(SBIcons.search, color: colors.textTertiary, size: 22),
             suffix: _searchQuery.isNotEmpty
                 ? IconButton(
                     icon: Icon(SBIcons.clear, color: colors.textTertiary, size: 18),
@@ -96,26 +107,13 @@ class _ChatListBodyState extends State<ChatListBody> {
           ),
         ),
 
-        // Filter Chips Row
-        SizedBox(
-          height: 38,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16),
-            children: [
-              _buildFilterChip('All', ChatFilter.all),
-              const SizedBox(width: AppSpacing.s8),
-              _buildFilterChip('Unread', ChatFilter.unread),
-              const SizedBox(width: AppSpacing.s8),
-              _buildFilterChip('Pinned', ChatFilter.pinned),
-              const SizedBox(width: AppSpacing.s8),
-              _buildFilterChip('Groups', ChatFilter.groups),
-              const SizedBox(width: AppSpacing.s8),
-              _buildFilterChip('Archived', ChatFilter.archived),
-            ],
-          ),
+        // Unified Segmented Filter Bar
+        SBChatFilterBar(
+          filters: filterItems,
+          selectedFilter: _activeFilter,
+          onFilterSelected: (val) => setState(() => _activeFilter = val as ChatFilter),
         ),
-        const SizedBox(height: AppSpacing.s8),
+        const SizedBox(height: AppSpacing.s10),
 
         // Conversation List
         Expanded(
@@ -128,8 +126,9 @@ class _ChatListBodyState extends State<ChatListBody> {
                       : 'Start a conversation and connect with someone.',
                 )
               : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(0, 4, 0, 160), // Generous clearance for floating nav & FAB
                   itemCount: _filteredConversations.length,
-                  separatorBuilder: (context, index) => const AppDivider(indent: 76),
+                  separatorBuilder: (context, index) => const AppDivider(indent: 80),
                   itemBuilder: (context, index) {
                     final conversation = _filteredConversations[index];
                     return _ConversationRow(
@@ -142,36 +141,6 @@ class _ChatListBodyState extends State<ChatListBody> {
                 ),
         ),
       ],
-    );
-  }
-
-  Widget _buildFilterChip(String label, ChatFilter filter) {
-    final isSelected = _activeFilter == filter;
-    final colors = context.appColors;
-
-    return GestureDetector(
-      onTap: () => setState(() => _activeFilter = filter),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? colors.brandSoft : colors.surfaceSecondary,
-          borderRadius: AppRadius.pill,
-          border: Border.all(
-            color: isSelected ? colors.brandPrimary.withValues(alpha: 0.5) : colors.borderDefault,
-            width: 1,
-          ),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: AppTypography.caption.copyWith(
-            color: isSelected ? colors.brandPrimary : colors.textSecondary,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            fontSize: 12,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -199,13 +168,14 @@ class _ConversationRow extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.s16,
-            vertical: AppSpacing.s12,
+            vertical: 13.0,
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               AppAvatar(
                 name: conversation.name,
-                size: 50,
+                size: 52,
                 showOnlineIndicator: !conversation.isGroup,
                 isOnline: conversation.isOnline,
               ),
@@ -220,10 +190,10 @@ class _ConversationRow extends StatelessWidget {
                         Expanded(
                           child: Text(
                             conversation.name,
-                            style: AppTypography.labelLarge.copyWith(
+                            style: AppTypography.headlineSmall.copyWith(
                               color: colors.textPrimary,
                               fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w600,
-                              fontSize: 15,
+                              fontSize: 16.5,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -234,13 +204,13 @@ class _ConversationRow extends StatelessWidget {
                           DateFormatter.formatConversationDate(conversation.timestamp),
                           style: AppTypography.caption.copyWith(
                             color: hasUnread ? colors.brandPrimary : colors.textTertiary,
-                            fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
-                            fontSize: 11,
+                            fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w500,
+                            fontSize: 13.0,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 4.5),
                     Row(
                       children: [
                         Expanded(
@@ -249,6 +219,7 @@ class _ConversationRow extends StatelessWidget {
                             style: AppTypography.bodySmall.copyWith(
                               color: hasUnread ? colors.textPrimary : colors.textSecondary,
                               fontWeight: hasUnread ? FontWeight.w500 : FontWeight.w400,
+                              fontSize: 14.5,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

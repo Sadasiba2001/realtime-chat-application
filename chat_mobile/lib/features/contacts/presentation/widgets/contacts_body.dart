@@ -103,7 +103,7 @@ class _ContactsBodyState extends State<ContactsBody> {
                   description: 'Try searching with a different name or keyword.',
                 )
               : ListView(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.s24),
+                  padding: const EdgeInsets.only(bottom: 120),
                   children: [
                     if (_searchQuery.isEmpty && online.isNotEmpty) ...[
                       _buildSectionHeader('ONLINE (${online.length})', colors),

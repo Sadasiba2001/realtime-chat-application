@@ -36,9 +36,11 @@ class SettingsBody extends StatelessWidget {
         : '+1 (555) 019-2834 • @alexwright';
 
     return ListView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.s16,
-        vertical: AppSpacing.s8,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s16,
+        AppSpacing.s8,
+        AppSpacing.s16,
+        96,
       ),
       children: [
         // Profile Hero Card
