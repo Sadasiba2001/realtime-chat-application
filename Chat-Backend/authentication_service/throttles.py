@@ -47,3 +47,26 @@ class HistoryRateThrottle(SimpleRateThrottle):
             'scope': self.scope,
             'ident': ident
         }
+
+
+class PasswordResetRateThrottle(SimpleRateThrottle):
+    scope = 'password_reset'
+    def get_cache_key(self, request, view):
+        email = request.data.get('email', '') if hasattr(request, 'data') else ''
+        ident = email.strip().lower() if email else self.get_ident(request)
+        return self.cache_format % {
+            'scope': self.scope,
+            'ident': ident
+        }
+
+
+class VerificationRateThrottle(SimpleRateThrottle):
+    scope = 'verify_email'
+    def get_cache_key(self, request, view):
+        email = request.data.get('email', '') if hasattr(request, 'data') else ''
+        ident = email.strip().lower() if email else self.get_ident(request)
+        return self.cache_format % {
+            'scope': self.scope,
+            'ident': ident
+        }
+

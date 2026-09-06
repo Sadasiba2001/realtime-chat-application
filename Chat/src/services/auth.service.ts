@@ -155,6 +155,36 @@ class AuthService {
   async searchUsers(query: string) {
     return userService.searchUsers(query);
   }
+
+  async verifyEmail(token: string): Promise<{ status: boolean; message: string; data?: any }> {
+    const response = await apiClient.post(API_ENDPOINTS.AUTH.VERIFY_EMAIL, { token });
+    return response.data;
+  }
+
+  async resendVerification(email: string): Promise<{ status: boolean; message: string }> {
+    const response = await apiClient.post(API_ENDPOINTS.AUTH.RESEND_VERIFICATION, { email });
+    return response.data;
+  }
+
+  async forgotPassword(email: string): Promise<{ status: boolean; message: string }> {
+    const response = await apiClient.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
+    return response.data;
+  }
+
+  async verifyResetToken(token: string): Promise<{ status: boolean; message: string }> {
+    const response = await apiClient.post(API_ENDPOINTS.AUTH.VERIFY_RESET_TOKEN, { token });
+    return response.data;
+  }
+
+  async resetPassword(token: string, newPassword: string, confirmPassword?: string): Promise<{ status: boolean; message: string }> {
+    const response = await apiClient.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, {
+      token,
+      new_password: newPassword,
+      confirm_password: confirmPassword || newPassword,
+    });
+    return response.data;
+  }
 }
 
 export const authService = new AuthService();
+

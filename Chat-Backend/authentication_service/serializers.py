@@ -53,6 +53,7 @@ class UserResponseSerializer(serializers.ModelSerializer):
             "profile_image_url",
             "avatar",
             "is_active",
+            "is_email_verified",
             "status",
             "last_seen",
             "created_at",
@@ -97,4 +98,58 @@ class UserSearchResponseSerializer(serializers.ModelSerializer):
     def get_status(self, obj):
         from chatting_service.services.presence_service import PresenceService
         return "online" if PresenceService().is_user_online(obj.id) else "offline"
+
+
+class VerifyEmailSerializer(serializers.Serializer):
+    token = serializers.CharField(required=True, allow_blank=False)
+
+    def validate_token(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Verification token is required.")
+        return value.strip()
+
+
+class ResendVerificationSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Email cannot be empty.")
+        return value.strip().lower()
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Email cannot be empty.")
+        return value.strip().lower()
+
+
+class VerifyResetTokenSerializer(serializers.Serializer):
+    token = serializers.CharField(required=True, allow_blank=False)
+
+    def validate_token(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Reset token is required.")
+        return value.strip()
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    token = serializers.CharField(required=True, allow_blank=False)
+    new_password = serializers.CharField(required=True, write_only=True, min_length=6)
+    confirm_password = serializers.CharField(required=False, write_only=True, allow_blank=True)
+
+    def validate_token(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Reset token is required.")
+        return value.strip()
+
+    def validate(self, data):
+        if "confirm_password" in data and data["confirm_password"]:
+            if data["new_password"] != data["confirm_password"]:
+                raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+        return data
+
 

@@ -1,18 +1,28 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Loader2, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface LoginFormProps {
   onSuccess: () => void;
   onToggleView?: () => void;
+  onForgotPassword?: () => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onToggleView }) => {
+export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onToggleView, onForgotPassword }) => {
   const { login, isLoading, error, clearError } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
-  const [forgotMsg, setForgotMsg] = useState(false);
+
+  const handleForgotPassword = () => {
+    if (onForgotPassword) {
+      onForgotPassword();
+    } else {
+      navigate('/forgot-password');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,15 +42,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onToggleView })
         <div className="p-3 text-xs text-rose-200 bg-rose-950/70 border border-rose-500/40 rounded-2xl flex items-center justify-between backdrop-blur-xs">
           <span>{error}</span>
           <button type="button" onClick={clearError} className="font-bold ml-2 text-rose-300 hover:text-white">
-            ×
-          </button>
-        </div>
-      )}
-
-      {forgotMsg && (
-        <div className="p-2.5 text-xs text-purple-200 bg-purple-900/60 border border-purple-400/30 rounded-2xl flex items-center justify-between">
-          <span>Password reset link sent to your registered email!</span>
-          <button type="button" onClick={() => setForgotMsg(false)} className="font-bold ml-2 text-purple-300">
             ×
           </button>
         </div>
@@ -101,8 +102,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onToggleView })
 
         <button
           type="button"
-          onClick={() => setForgotMsg(true)}
-          className="text-purple-300/70 hover:text-purple-200 hover:underline transition-all text-[11px] sm:text-xs"
+          onClick={handleForgotPassword}
+          className="text-purple-300/70 hover:text-purple-200 hover:underline transition-all text-[11px] cursor-pointer"
         >
           Forgot Password?
         </button>

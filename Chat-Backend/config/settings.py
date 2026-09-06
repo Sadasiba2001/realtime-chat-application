@@ -31,6 +31,7 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
     'footwork-vessel-guide.ngrok-free.dev',
 ])
 
+FRONTEND_BASE_URL = env('FRONTEND_BASE_URL', default='https://sbchatwebpro.online' if not DEBUG else 'http://localhost:5173')
 
 
 INSTALLED_APPS = [
@@ -47,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'authentication_service',
+    'email_service',
     'chatting_service',
     'voice_calling',
     'video_calling',
@@ -187,9 +189,27 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 
+# Email Configuration (Django 6+ MAILERS)
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='SB Chat <no-reply@sbchatwebpro.online>')
+
+_EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+_EMAIL_BACKEND = env(
+    'EMAIL_BACKEND',
+    default='django.core.mail.backends.smtp.EmailBackend' if (_EMAIL_HOST_USER or not DEBUG) else 'django.core.mail.backends.console.EmailBackend'
+)
+
 MAILERS = {
     'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+        'BACKEND': _EMAIL_BACKEND,
+        'OPTIONS': {
+            'host': env('EMAIL_HOST', default='smtp.gmail.com'),
+            'port': env.int('EMAIL_PORT', default=587),
+            'username': _EMAIL_HOST_USER,
+            'password': env('EMAIL_HOST_PASSWORD', default=''),
+            'use_tls': env.bool('EMAIL_USE_TLS', default=True),
+            'use_ssl': env.bool('EMAIL_USE_SSL', default=False),
+            'timeout': env.int('EMAIL_TIMEOUT', default=10),
+        },
     },
 }
 
@@ -216,6 +236,8 @@ REST_FRAMEWORK = {
         'refresh': env('THROTTLE_REFRESH_RATE', default='10/minute'),
         'search': env('THROTTLE_SEARCH_RATE', default='30/minute'),
         'history': env('THROTTLE_HISTORY_RATE', default='60/minute'),
+        'password_reset': env('THROTTLE_PASSWORD_RESET_RATE', default='5/minute'),
+        'verify_email': env('THROTTLE_VERIFY_EMAIL_RATE', default='10/minute'),
     }
 }
 

@@ -596,4 +596,217 @@ class UserSearchAPITests(APITestCase):
             mock_destroy.assert_called_once_with(f"sb-chat/profiles/user_{self.current_user.id}", invalidate=True)
 
 
+from datetime import timedelta
+import hashlib
+import re
+from django.utils import timezone
+from django.core import mail
+from authentication_service.models import AuthToken, TokenType
+
+
+@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
+class EmailVerificationAndPasswordResetTests(APITestCase):
+    def setUp(self):
+        mail.outbox.clear()
+        self.register_url = "/api/v1/auth/register/"
+        self.login_url = "/api/v1/auth/login/"
+        self.verify_email_url = "/api/v1/auth/verify-email/"
+        self.resend_verification_url = "/api/v1/auth/resend-verification/"
+        self.forgot_password_url = "/api/v1/auth/password/forgot/"
+        self.verify_reset_token_url = "/api/v1/auth/password/verify-token/"
+        self.reset_password_url = "/api/v1/auth/password/reset/"
+
+    def test_registration_creates_unverified_account_and_sends_email(self):
+        """User registration creates account with is_email_verified=False and sends verification email."""
+        payload = {
+            "name": "Dev User",
+            "username": "devuser",
+            "email": "dev.user@example.com",
+            "password": "DevUser@12345",
+        }
+        res = self.client.post(self.register_url, payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        user = User.objects.get(email="dev.user@example.com")
+        self.assertFalse(user.is_email_verified)
+
+        # Check mail outbox
+        self.assertEqual(len(mail.outbox), 1)
+        sent_mail = mail.outbox[0]
+        self.assertEqual(sent_mail.to, ["dev.user@example.com"])
+        self.assertEqual(sent_mail.subject, "Verify your SB Chat email address")
+        self.assertIn("verify-email/", sent_mail.body)
+
+        # Extract raw token from email link
+        match = re.search(r"verify-email/([A-Za-z0-9_\-]+)", sent_mail.body)
+        self.assertIsNotNone(match)
+        raw_token = match.group(1)
+
+        # Ensure raw token is NOT in database
+        self.assertFalse(AuthToken.objects.filter(token_hash=raw_token).exists())
+
+        # Ensure SHA-256 hash is in database
+        token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+        token_obj = AuthToken.objects.get(token_hash=token_hash)
+        self.assertEqual(token_obj.user, user)
+        self.assertEqual(token_obj.token_type, TokenType.EMAIL_VERIFICATION)
+        self.assertTrue(token_obj.is_valid)
+
+    def test_email_verification_success_and_invalidation(self):
+        """Valid token successfully verifies account and marks token as used."""
+        user = User.objects.create_user(
+            email="verify.me@example.com",
+            username="verifyme",
+            name="Verify Me",
+            password="Verify@12345",
+        )
+        self.assertFalse(user.is_email_verified)
+
+        token_obj, raw_token = AuthToken.generate_token(user, TokenType.EMAIL_VERIFICATION, expiry_minutes=10)
+
+        # Submit verification token
+        res = self.client.post(self.verify_email_url, {"token": raw_token}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(res.data["status"])
+        self.assertEqual(res.data["message"], "Email verified successfully.")
+
+        user.refresh_from_db()
+        self.assertTrue(user.is_email_verified)
+
+        token_obj.refresh_from_db()
+        self.assertIsNotNone(token_obj.used_at)
+        self.assertFalse(token_obj.is_valid)
+
+        # Reusing token must fail
+        reuse_res = self.client.post(self.verify_email_url, {"token": raw_token}, format="json")
+        self.assertEqual(reuse_res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(reuse_res.data["status"])
+
+    def test_email_verification_expired_and_invalid_token(self):
+        """Expired or nonexistent tokens are rejected."""
+        user = User.objects.create_user(
+            email="expired.token@example.com",
+            username="expiredtoken",
+            name="Expired Token User",
+            password="Expired@12345",
+        )
+        token_obj, raw_token = AuthToken.generate_token(user, TokenType.EMAIL_VERIFICATION, expiry_minutes=10)
+
+        # Artificially expire token
+        token_obj.expires_at = timezone.now() - timedelta(minutes=1)
+        token_obj.save()
+
+        res = self.client.post(self.verify_email_url, {"token": raw_token}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Test completely bogus token
+        bogus_res = self.client.post(self.verify_email_url, {"token": "completely-invalid-token"}, format="json")
+        self.assertEqual(bogus_res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_resend_verification_email(self):
+        """Resend verification issues a new link and invalidates older unused tokens."""
+        user = User.objects.create_user(
+            email="resend.user@example.com",
+            username="resenduser",
+            name="Resend User",
+            password="Resend@12345",
+        )
+        token_obj1, raw_token1 = AuthToken.generate_token(user, TokenType.EMAIL_VERIFICATION, expiry_minutes=10)
+
+        mail.outbox.clear()
+        res = self.client.post(self.resend_verification_url, {"email": "resend.user@example.com"}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(res.data["status"])
+        self.assertEqual(len(mail.outbox), 1)
+
+        # Old token is now invalidated
+        token_obj1.refresh_from_db()
+        self.assertIsNotNone(token_obj1.used_at)
+        self.assertFalse(token_obj1.is_valid)
+
+        # Nonexistent email returns identical generic message
+        mail.outbox.clear()
+        res_nonexistent = self.client.post(self.resend_verification_url, {"email": "nobody@example.com"}, format="json")
+        self.assertEqual(res_nonexistent.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_forgot_password_and_reset_flow(self):
+        """Complete password reset flow from request to token validation and reset."""
+        user = User.objects.create_user(
+            email="forgot.pass@example.com",
+            username="forgotpass",
+            name="Forgot Pass",
+            password="OldPassword@12345",
+        )
+
+        # 1. Request forgot password
+        res = self.client.post(self.forgot_password_url, {"email": "forgot.pass@example.com"}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(res.data["status"])
+        self.assertEqual(
+            res.data["message"],
+            "If an account exists for this email, a password reset link has been sent."
+        )
+
+        self.assertEqual(len(mail.outbox), 1)
+        sent_mail = mail.outbox[0]
+        self.assertEqual(sent_mail.to, ["forgot.pass@example.com"])
+        self.assertEqual(sent_mail.subject, "Reset your SB Chat password")
+        self.assertIn("reset-password/", sent_mail.body)
+
+        # Extract raw token
+        match = re.search(r"reset-password/([A-Za-z0-9_\-]+)", sent_mail.body)
+        self.assertIsNotNone(match)
+        raw_token = match.group(1)
+
+        # 2. Verify token is active
+        verify_res = self.client.post(self.verify_reset_token_url, {"token": raw_token}, format="json")
+        self.assertEqual(verify_res.status_code, status.HTTP_200_OK)
+        self.assertTrue(verify_res.data["status"])
+
+        # 3. Submit new password
+        reset_res = self.client.post(
+            self.reset_password_url,
+            {
+                "token": raw_token,
+                "new_password": "NewPassword@99999",
+                "confirm_password": "NewPassword@99999",
+            },
+            format="json"
+        )
+        self.assertEqual(reset_res.status_code, status.HTTP_200_OK)
+        self.assertTrue(reset_res.data["status"])
+        self.assertEqual(reset_res.data["message"], "Password has been reset successfully.")
+
+        # 4. Verify old password no longer works
+        old_login = self.client.post(self.login_url, {"email": "forgot.pass@example.com", "password": "OldPassword@12345"}, format="json")
+        self.assertEqual(old_login.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(old_login.data["status"])
+
+        # 5. Verify new password works
+        new_login = self.client.post(self.login_url, {"email": "forgot.pass@example.com", "password": "NewPassword@99999"}, format="json")
+        self.assertEqual(new_login.status_code, status.HTTP_200_OK)
+        self.assertTrue(new_login.data["status"])
+
+        # 6. Verify token cannot be reused
+        reuse_reset = self.client.post(
+            self.reset_password_url,
+            {"token": raw_token, "new_password": "AnotherPassword@111"},
+            format="json"
+        )
+        self.assertEqual(reuse_reset.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_forgot_password_enumeration_protection(self):
+        """Nonexistent email returns identical generic response without leaking existence."""
+        res = self.client.post(self.forgot_password_url, {"email": "nonexistent.user@example.com"}, format="json")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(res.data["status"])
+        self.assertEqual(
+            res.data["message"],
+            "If an account exists for this email, a password reset link has been sent."
+        )
+        self.assertEqual(len(mail.outbox), 0)
+
+
+
 
