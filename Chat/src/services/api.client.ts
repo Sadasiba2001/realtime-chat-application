@@ -58,11 +58,14 @@ apiClient.interceptors.response.use(
         storage.removeAuthToken();
         useAuthStore.getState().clearAuth();
         webSocketService.disconnect();
+        const path = typeof window !== 'undefined' ? window.location.pathname : '';
         const isPublicRoute =
-          typeof window !== 'undefined' &&
-          (window.location.pathname === '/' ||
-            window.location.pathname === '/landing' ||
-            window.location.pathname === '/auth');
+          path === '/' ||
+          path === '/landing' ||
+          path === '/auth' ||
+          path.startsWith('/verify-email') ||
+          path === '/forgot-password' ||
+          path.startsWith('/reset-password');
         if (!isPublicRoute) {
           window.location.href = '/auth';
         }
@@ -113,11 +116,14 @@ apiClient.interceptors.response.use(
         storage.removeAuthToken();
         useAuthStore.getState().clearAuth();
         webSocketService.disconnect();
+        const path = typeof window !== 'undefined' ? window.location.pathname : '';
         const isPublicRoute =
-          typeof window !== 'undefined' &&
-          (window.location.pathname === '/' ||
-            window.location.pathname === '/landing' ||
-            window.location.pathname === '/auth');
+          path === '/' ||
+          path === '/landing' ||
+          path === '/auth' ||
+          path.startsWith('/verify-email') ||
+          path === '/forgot-password' ||
+          path.startsWith('/reset-password');
         if (!isPublicRoute) {
           window.location.href = '/auth';
         }

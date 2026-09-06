@@ -1,0 +1,18 @@
+SB Chat - Verify your email address
+========================================
+
+{% if user_name %}Hello {{ user_name }},{% else %}Hello,{% endif %}
+
+Thanks for creating your SB Chat account.
+
+Please verify your email address by clicking the link below:
+
+{{ verification_url }}
+
+This link expires in {{ expires_in_minutes }} minutes.
+
+If you did not create this account, you can safely ignore this email.
+
+----------------------------------------
+(c) SB Chat. All rights reserved.
+This is an automated message, please do not reply.

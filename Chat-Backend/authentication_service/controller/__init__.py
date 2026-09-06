@@ -6,6 +6,11 @@ from .authentication_controller import (
     token_verify,
     get_users,
     get_user_by_id,
+    verify_email,
+    resend_verification,
+    forgot_password,
+    verify_reset_token,
+    reset_password,
 )
 from .user_controller import (
     search_users,
@@ -21,8 +26,12 @@ __all__ = [
     "token_verify",
     "get_users",
     "get_user_by_id",
+    "verify_email",
+    "resend_verification",
+    "forgot_password",
+    "verify_reset_token",
+    "reset_password",
     "search_users",
     "manage_profile_image",
     "UserSearchPagination",
 ]
-

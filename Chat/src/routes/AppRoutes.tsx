@@ -2,6 +2,9 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { LandingPage } from '../pages/LandingPage';
 import { AuthPage } from '../pages/AuthPage';
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
+import { VerifyEmailPage } from '../pages/VerifyEmailPage';
+import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { ChatPage } from '../pages/ChatPage';
 import { StatusPage } from '../pages/StatusPage';
 import { CallsPage } from '../pages/CallsPage';
@@ -16,8 +19,13 @@ export const AppRoutes: React.FC = () => {
       <Route path="/" element={<LandingPage />} />
       <Route path="/landing" element={<LandingPage />} />
 
-      {/* Authentication */}
+      {/* Authentication & Account Recovery */}
       <Route path="/auth" element={<AuthPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
       {/* Protected Routes */}
       <Route

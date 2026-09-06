@@ -12,9 +12,21 @@ from authentication_service.serializers import (
     LoginSerializer,
     UserRegisterSerializer,
     UserResponseSerializer,
+    VerifyEmailSerializer,
+    ResendVerificationSerializer,
+    ForgotPasswordSerializer,
+    VerifyResetTokenSerializer,
+    ResetPasswordSerializer,
 )
 from authentication_service.services import AuthenticationService
-from authentication_service.throttles import LoginRateThrottle, RegisterRateThrottle, RefreshRateThrottle, SearchRateThrottle
+from authentication_service.throttles import (
+    LoginRateThrottle,
+    RegisterRateThrottle,
+    RefreshRateThrottle,
+    SearchRateThrottle,
+    PasswordResetRateThrottle,
+    VerificationRateThrottle,
+)
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -361,3 +373,192 @@ def get_user_by_id(request, user_id):
         },
         status=status.HTTP_200_OK,
     )
+
+
+@api_view(["POST", "GET"])
+@permission_classes([AllowAny])
+@throttle_classes([VerificationRateThrottle])
+def verify_email(request, token=None):
+    """
+    Verifies user's email address using a single-use 10-minute token.
+    Token can be provided as a URL parameter, query parameter, or JSON body.
+    """
+    token_value = token or request.query_params.get("token") or (request.data.get("token") if hasattr(request, "data") else None)
+    serializer = VerifyEmailSerializer(data={"token": token_value})
+
+    if not serializer.is_valid():
+        return Response(
+            {
+                "status": False,
+                "message": "Verification token is required.",
+                "errors": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    auth_service = AuthenticationService()
+    try:
+        user = auth_service.verify_email(serializer.validated_data["token"])
+        return Response(
+            {
+                "status": True,
+                "message": "Email verified successfully.",
+                "data": {
+                    "email": user.email,
+                    "is_email_verified": user.is_email_verified,
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+    except ValueError as exc:
+        return Response(
+            {
+                "status": False,
+                "message": str(exc),
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@throttle_classes([VerificationRateThrottle])
+def resend_verification(request):
+    """
+    Resends verification email with a new 10-minute link.
+    Protected against email enumeration.
+    """
+    serializer = ResendVerificationSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(
+            {
+                "status": False,
+                "message": "Invalid email address.",
+                "errors": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    auth_service = AuthenticationService()
+    auth_service.resend_verification_email(serializer.validated_data["email"])
+
+    return Response(
+        {
+            "status": True,
+            "message": "If an unverified account exists for this email, a verification link has been sent.",
+        },
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@throttle_classes([PasswordResetRateThrottle])
+def forgot_password(request):
+    """
+    Initiates password reset flow by sending a 10-minute reset link.
+    Protected against email enumeration.
+    """
+    serializer = ForgotPasswordSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(
+            {
+                "status": False,
+                "message": "Invalid email address.",
+                "errors": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    auth_service = AuthenticationService()
+    auth_service.request_password_reset(serializer.validated_data["email"])
+
+    return Response(
+        {
+            "status": True,
+            "message": "If an account exists for this email, a password reset link has been sent.",
+        },
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["POST", "GET"])
+@permission_classes([AllowAny])
+@throttle_classes([PasswordResetRateThrottle])
+def verify_reset_token(request, token=None):
+    """
+    Validates whether a password reset token is active and not expired.
+    """
+    token_value = token or request.query_params.get("token") or (request.data.get("token") if hasattr(request, "data") else None)
+    serializer = VerifyResetTokenSerializer(data={"token": token_value})
+
+    if not serializer.is_valid():
+        return Response(
+            {
+                "status": False,
+                "message": "Reset token is required.",
+                "errors": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    auth_service = AuthenticationService()
+    try:
+        auth_service.verify_password_reset_token(serializer.validated_data["token"])
+        return Response(
+            {
+                "status": True,
+                "message": "Password reset token is valid.",
+            },
+            status=status.HTTP_200_OK,
+        )
+    except ValueError as exc:
+        return Response(
+            {
+                "status": False,
+                "message": str(exc),
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@throttle_classes([PasswordResetRateThrottle])
+def reset_password(request):
+    """
+    Completes password reset with the validated single-use token.
+    """
+    serializer = ResetPasswordSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(
+            {
+                "status": False,
+                "message": "Invalid password reset submission.",
+                "errors": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    auth_service = AuthenticationService()
+    try:
+        auth_service.reset_password(
+            token=serializer.validated_data["token"],
+            new_password=serializer.validated_data["new_password"]
+        )
+        return Response(
+            {
+                "status": True,
+                "message": "Password has been reset successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )
+    except ValueError as exc:
+        return Response(
+            {
+                "status": False,
+                "message": str(exc),
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+

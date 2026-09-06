@@ -65,6 +65,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         default=UserRole.NORMAL_USER
     )
     is_active = models.BooleanField(default=True)
+    is_email_verified = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     profile_image = models.URLField(max_length=500, blank=True, null=True, default=None)

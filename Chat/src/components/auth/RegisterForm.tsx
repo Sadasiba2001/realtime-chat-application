@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { User as UserIcon, AtSign, Mail, Phone, Lock, Loader2 } from 'lucide-react';
+import { User as UserIcon, AtSign, Mail, Phone, Lock, Loader2, MailCheck, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { authService } from '../../services/auth.service';
 
 interface RegisterFormProps {
   onSuccess: () => void;
@@ -15,6 +16,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onToggleV
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
 
+  // Post-registration email verification state
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
+  const [resendStatus, setResendStatus] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !username.trim() || !email.trim() || !password.trim()) return;
@@ -27,11 +33,74 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onToggleV
         phone_number: phone,
         password,
       });
-      onSuccess();
+      setRegisteredEmail(email.trim().toLowerCase());
     } catch {
       // Error handled by AuthContext
     }
   };
+
+  const handleResend = async () => {
+    if (!registeredEmail || isResending) return;
+    setIsResending(true);
+    setResendStatus(null);
+    try {
+      const res = await authService.resendVerification(registeredEmail);
+      setResendStatus(res.message || 'Verification email resent successfully.');
+    } catch {
+      setResendStatus('Failed to resend email. Please try again later.');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  // If registration is complete, show the verification guidance screen
+  if (registeredEmail) {
+    return (
+      <div className="space-y-5 text-white text-center py-2 animate-fade-in">
+        <div className="mx-auto w-14 h-14 bg-purple-600/30 border border-purple-400/40 rounded-full flex items-center justify-center text-purple-300 shadow-lg shadow-purple-600/30">
+          <MailCheck className="w-7 h-7" />
+        </div>
+
+        <div className="space-y-2">
+          <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-100 to-purple-200">
+            Check your email
+          </h3>
+          <p className="text-xs text-purple-200/90 leading-relaxed px-2">
+            We've sent a verification link to <strong className="text-white">{registeredEmail}</strong>.
+          </p>
+          <p className="text-[11px] text-purple-300/70">
+            Click the link in the email to activate your SB Chat account. The link expires in 10 minutes.
+          </p>
+        </div>
+
+        {resendStatus && (
+          <div className="p-2.5 text-xs text-purple-200 bg-purple-900/60 border border-purple-400/30 rounded-2xl">
+            {resendStatus}
+          </div>
+        )}
+
+        <div className="pt-2 space-y-3">
+          <button
+            type="button"
+            onClick={onToggleView || onSuccess}
+            className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 hover:scale-[1.02] text-white font-extrabold rounded-full transition-all duration-300 shadow-lg shadow-purple-600/40 text-xs tracking-wider uppercase cursor-pointer"
+          >
+            CONTINUE TO SIGN IN
+          </button>
+
+          <button
+            type="button"
+            disabled={isResending}
+            onClick={handleResend}
+            className="text-purple-300/70 hover:text-purple-200 text-xs flex items-center justify-center gap-1.5 mx-auto transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isResending ? 'animate-spin' : ''}`} />
+            {isResending ? 'Resending...' : "Didn't receive email? Resend"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3 text-white">
@@ -127,7 +196,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onToggleV
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Create password"
+            placeholder="Create password (min 6 characters)"
             className="w-full pl-11 pr-4 py-2.5 text-xs bg-white/10 dark:bg-[#251545]/70 text-white placeholder-purple-300/40 rounded-full border border-purple-400/25 outline-hidden focus:scale-[1.01] focus:ring-2 focus:ring-purple-400/70 focus:border-purple-400 focus:shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all duration-200 shadow-inner"
           />
         </div>
@@ -162,4 +231,3 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onToggleV
     </form>
   );
 };
-
