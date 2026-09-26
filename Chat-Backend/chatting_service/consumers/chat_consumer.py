@@ -222,8 +222,19 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                         continue
                 if became_online:
                     await self.broadcast_presence("online")
+                await self.broadcast_expired_presence()
         except asyncio.CancelledError:
             pass
+
+    async def broadcast_expired_presence(self):
+        """Announces OFFLINE for users whose last connection expired without a clean disconnect."""
+        try:
+            expired = await database_sync_to_async(self.presence_service.sweep_expired)()
+        except Exception:
+            logger.exception("[PRESENCE] Expiry sweep failed")
+            return
+        for user_id, last_seen in expired:
+            await self.broadcast_presence("offline", last_seen, user_id=user_id)
 
     async def unregister_presence(self) -> bool:
         """
@@ -251,9 +262,10 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             return True
         return False
 
-    async def broadcast_presence(self, status, last_seen=None):
-        partner_ids = await database_sync_to_async(self.message_service.get_conversation_partner_ids)(self.user.id)
-        data = {"type": "presence", "user_id": self.user.id, "status": status}
+    async def broadcast_presence(self, status, last_seen=None, user_id=None):
+        user_id = self.user.id if user_id is None else user_id
+        partner_ids = await database_sync_to_async(self.message_service.get_conversation_partner_ids)(user_id)
+        data = {"type": "presence", "user_id": user_id, "status": status}
         if status == "offline":
             data["last_seen"] = last_seen
         for partner_id in partner_ids:

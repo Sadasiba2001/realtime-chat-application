@@ -308,7 +308,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     const unsubNewMessage = webSocketService.on<BackendMessagePayload>('NEW_MESSAGE', (payload) => {
-      console.log('[ChatContext] Real-time message received:', payload);
+      console.log('[ChatContext] Real-time message received:', payload?.id);
 
       // Deterministic conversation ID for this 1-to-1 pair
       const convId = getDirectConversationId(payload.sender_id, payload.receiver_id);
@@ -536,7 +536,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     const unsubHistory = webSocketService.on<WSHistoryEvent>('HISTORY_LOADED', (event) => {
-      console.log('[ChatContext] HISTORY_LOADED received:', event);
+      console.log('[ChatContext] HISTORY_LOADED received for user', event?.target_user_id);
       setIsLoadingHistory(false);
 
       const targetId = event.target_user_id;
@@ -783,7 +783,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     const unsubEditMessage = webSocketService.on<WSMessageEditedEvent>('MESSAGE_EDITED', (event) => {
-      console.log('[ChatContext] Real-time MESSAGE_EDITED event received:', event);
+      console.log('[ChatContext] Real-time MESSAGE_EDITED event received:', event?.data?.id);
       const payload = event.data;
       if (!payload || !payload.id) return;
 
@@ -1113,7 +1113,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       : undefined;
 
     // Send through real Django WebSocket
-    console.log(`[ChatContext] Sending WebSocket message to receiver ${targetUserId}:`, trimmed, attachmentIds);
+    console.log(`[ChatContext] Sending WebSocket message to receiver ${targetUserId} (${attachmentIds?.length ?? 0} attachment(s))`);
     let sent = webSocketService.sendMessage(targetUserId, trimmed, replyToId, attachmentIds);
     if (!sent) {
       const token = storage.getAuthToken();

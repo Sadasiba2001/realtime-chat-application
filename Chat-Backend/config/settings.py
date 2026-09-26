@@ -150,13 +150,18 @@ else:
 # Do not point a local dev server at a Redis shared with another environment: presence
 # (and the channel layer) would then mix users connected to that other environment.
 # Each WebSocket connection expires PRESENCE_CONNECTION_TTL seconds after its last heartbeat.
+# Defaults: heartbeat every 30s, TTL 90s = three heartbeat periods, so a healthy socket must miss
+# two consecutive heartbeats (60s+ of event-loop stall or cache outage) before it can flicker
+# offline, while a dead socket is reported offline within ~TTL + one heartbeat (<= 2 minutes).
+# Heartbeats are server-side, so browser throttling of background tabs does not affect them.
 PRESENCE_CONNECTION_TTL = env.int('PRESENCE_CONNECTION_TTL', default=90)
 PRESENCE_HEARTBEAT_INTERVAL = env.int('PRESENCE_HEARTBEAT_INTERVAL', default=30)
 if PRESENCE_HEARTBEAT_INTERVAL >= PRESENCE_CONNECTION_TTL:
     raise ImproperlyConfigured('PRESENCE_HEARTBEAT_INTERVAL must be shorter than PRESENCE_CONNECTION_TTL.')
 
 
-if env('DB_HOST', default=None):
+# The test runner never connects to the configured (possibly shared) PostgreSQL server.
+if env('DB_HOST', default=None) and not RUNNING_TESTS:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',

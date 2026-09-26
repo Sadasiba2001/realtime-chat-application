@@ -65,12 +65,14 @@ class WebSocketService {
       };
 
       this.socket.onmessage = (event: MessageEvent) => {
-        console.log('[WS CLIENT] WebSocket MESSAGE received:', event.data);
         try {
           const payload = JSON.parse(event.data) as WSServerEvent;
+          if (import.meta.env.DEV) {
+            console.debug('[WS CLIENT] event received:', (payload as { type?: string }).type);
+          }
           this.handleServerMessage(payload);
         } catch (err) {
-          console.error('[WebSocket] Failed to parse message JSON:', event.data, err);
+          console.error('[WebSocket] Failed to parse server event JSON.', err);
         }
       };
 

@@ -20,6 +20,10 @@ CACHES = {
     },
 }
 
+# Outgoing email is captured in memory (Django's test runner also enforces this).
+EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+MAILERS = {'default': {'BACKEND': 'django.core.mail.backends.locmem.EmailBackend'}}
+
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',
 ]

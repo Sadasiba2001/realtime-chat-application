@@ -20,7 +20,7 @@ import time
 import uuid
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Dict, Iterable, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -37,6 +37,11 @@ class PresenceService:
     IP_CONNECTIONS_PREFIX = "presence:ip_conns:"
     LAST_SEEN_PREFIX = "presence:last_seen:"
     LOCK_PREFIX = "presence:lock:"
+    # Set while partners have been told a user is ONLINE; deleting it (atomic, returns whether
+    # it existed) decides who emits the single matching OFFLINE event.
+    ANNOUNCED_PREFIX = "presence:announced:"
+    ANNOUNCED_INDEX_KEY = "presence:announced_index"
+    SWEEP_LOCK_KEY = "presence:sweep"
 
     CONNECTION_TTL = getattr(settings, "PRESENCE_CONNECTION_TTL", 90)
     HEARTBEAT_INTERVAL = getattr(settings, "PRESENCE_HEARTBEAT_INTERVAL", 30)
@@ -57,6 +62,9 @@ class PresenceService:
 
     def _last_seen_key(self, user_id) -> str:
         return f"{self.LAST_SEEN_PREFIX}{user_id}"
+
+    def _announced_key(self, user_id) -> str:
+        return f"{self.ANNOUNCED_PREFIX}{user_id}"
 
     @staticmethod
     def _now() -> float:
@@ -89,29 +97,60 @@ class PresenceService:
             if acquired and cache.get(lock_key) == token:
                 cache.delete(lock_key)
 
-    def _add_entry(self, key: str, connection_id: str) -> Tuple[int, int]:
-        """Adds/refreshes one connection. Returns (live_before, live_after)."""
+    def _add_entry_unlocked(self, key: str, connection_id: str) -> int:
+        """Adds/refreshes one connection (caller holds the key's lock). Returns live_before."""
         now = self._now()
-        with self._locked(key):
-            entries = self._live(cache.get(key), now)
-            live_before = len(entries)
-            entries[connection_id] = now + self.CONNECTION_TTL
-            cache.set(key, entries, timeout=self.CONNECTION_TTL)
-        return live_before, len(entries)
+        entries = self._live(cache.get(key), now)
+        live_before = len(entries)
+        entries[connection_id] = now + self.CONNECTION_TTL
+        cache.set(key, entries, timeout=self.CONNECTION_TTL)
+        return live_before
 
-    def _remove_entry(self, key: str, connection_id: str) -> Tuple[bool, int]:
-        """Removes one connection. Returns (was_present, live_remaining)."""
-        now = self._now()
-        with self._locked(key):
-            raw = cache.get(key)
-            entries = self._live(raw, now)
-            was_present = isinstance(raw, dict) and connection_id in raw
-            entries.pop(connection_id, None)
-            if entries:
-                cache.set(key, entries, timeout=self.CONNECTION_TTL)
+    def _remove_entry_unlocked(self, key: str, connection_id: str) -> int:
+        """Removes one connection (caller holds the key's lock). Returns live_remaining."""
+        entries = self._live(cache.get(key), self._now())
+        entries.pop(connection_id, None)
+        if entries:
+            cache.set(key, entries, timeout=self.CONNECTION_TTL)
+        else:
+            cache.delete(key)
+        return len(entries)
+
+    def _update_announced_index(self, user_id, present: bool):
+        with self._locked(self.ANNOUNCED_INDEX_KEY):
+            index = cache.get(self.ANNOUNCED_INDEX_KEY)
+            index = index if isinstance(index, dict) else {}
+            if present:
+                index[str(user_id)] = True
             else:
-                cache.delete(key)
-        return was_present, len(entries)
+                index.pop(str(user_id), None)
+            cache.set(self.ANNOUNCED_INDEX_KEY, index, timeout=None)
+
+    def _announce_online(self, user_id) -> bool:
+        """Marks the user as announced ONLINE. True only for the caller that set the marker."""
+        if cache.add(self._announced_key(user_id), 1, timeout=None):
+            self._update_announced_index(user_id, True)
+            return True
+        return False
+
+    def _announce_offline(self, user_id) -> bool:
+        """Clears the ONLINE marker. True only for the caller that actually removed it."""
+        removed = bool(cache.delete(self._announced_key(user_id)))
+        if removed:
+            self._update_announced_index(user_id, False)
+        return removed
+
+    def _record_offline(self, user_id, last_seen_iso: Optional[str] = None) -> str:
+        now = timezone.now()
+        if not last_seen_iso:
+            last_seen_iso = now.isoformat().replace("+00:00", "Z")
+            cache.set(self._last_seen_key(user_id), last_seen_iso, timeout=None)
+        try:
+            dt = datetime.fromisoformat(last_seen_iso.replace("Z", "+00:00"))
+        except ValueError:
+            dt = now
+        self._update_db_last_seen(user_id, dt)
+        return last_seen_iso
 
     # ---------------------------------------------------------- connection API
 
@@ -120,10 +159,15 @@ class PresenceService:
         Registers one WebSocket connection.
         Returns True when this made the user go from OFFLINE to ONLINE.
         """
-        live_before, _ = self._add_entry(self._user_key(user_id), connection_id)
+        key = self._user_key(user_id)
+        with self._locked(key):
+            live_before = self._add_entry_unlocked(key, connection_id)
+            became_online = live_before == 0 and self._announce_online(user_id)
         if ip_address:
-            self._add_entry(self._ip_key(ip_address), connection_id)
-        return live_before == 0
+            ip_key = self._ip_key(ip_address)
+            with self._locked(ip_key):
+                self._add_entry_unlocked(ip_key, connection_id)
+        return became_online
 
     def heartbeat(self, user_id: int, connection_id: str, ip_address: Optional[str] = None) -> bool:
         """
@@ -149,17 +193,47 @@ class PresenceService:
         connection; otherwise (False, None).
         """
         if ip_address:
-            self._remove_entry(self._ip_key(ip_address), connection_id)
+            ip_key = self._ip_key(ip_address)
+            with self._locked(ip_key):
+                self._remove_entry_unlocked(ip_key, connection_id)
 
-        was_present, remaining = self._remove_entry(self._user_key(user_id), connection_id)
-        if not was_present or remaining > 0:
+        key = self._user_key(user_id)
+        with self._locked(key):
+            remaining = self._remove_entry_unlocked(key, connection_id)
+            became_offline = remaining == 0 and self._announce_offline(user_id)
+        if not became_offline:
             return False, None
+        return True, self._record_offline(user_id)
 
-        now = timezone.now()
-        last_seen_iso = now.isoformat().replace("+00:00", "Z")
-        cache.set(self._last_seen_key(user_id), last_seen_iso, timeout=None)
-        self._update_db_last_seen(user_id, now)
-        return True, last_seen_iso
+    def sweep_expired(self) -> List[Tuple[int, str]]:
+        """
+        Finds users announced ONLINE whose connections have all expired without a clean
+        disconnect (crash, lost network) and flips them OFFLINE exactly once.
+        Returns [(user_id, last_seen_iso)] for the caller to broadcast. At most one caller per
+        heartbeat interval (across all processes sharing the cache) does the work.
+        """
+        if not cache.add(self.SWEEP_LOCK_KEY, 1, timeout=self.HEARTBEAT_INTERVAL):
+            return []
+        index = cache.get(self.ANNOUNCED_INDEX_KEY)
+        if not isinstance(index, dict) or not index:
+            return []
+        expired = []
+        for raw_id in list(index.keys()):
+            try:
+                user_id = int(raw_id)
+            except (TypeError, ValueError):
+                self._update_announced_index(raw_id, False)
+                continue
+            key = self._user_key(user_id)
+            with self._locked(key):
+                if self._live(cache.get(key), self._now()):
+                    continue
+                if not self._announce_offline(user_id):
+                    self._update_announced_index(user_id, False)
+                    continue
+            last_seen = cache.get(self._last_seen_key(user_id))
+            expired.append((user_id, self._record_offline(user_id, last_seen)))
+        return expired
 
     def count_user_connections(self, user_id: int) -> int:
         return len(self._live(cache.get(self._user_key(user_id)), self._now()))

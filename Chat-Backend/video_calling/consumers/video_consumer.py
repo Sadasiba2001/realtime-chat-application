@@ -1,4 +1,5 @@
 import logging
+from channels.consumer import get_handler_name
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from video_calling.services import VideoCallService, VideoCallStateService
 
@@ -10,6 +11,17 @@ class VideoCallConsumer(AsyncJsonWebsocketConsumer):
     Dedicated WebSocket consumer for video calling signaling (/ws/video/).
     Requires authenticated user in scope.
     """
+
+    async def dispatch(self, message):
+        """
+        This consumer shares the user_<id> channel group with ChatConsumer so it can receive
+        call events. Other events sent to that group (presence, chat messages, receipts...)
+        have no handler here and are ignored instead of crashing the socket.
+        """
+        handler_name = get_handler_name(message)
+        if handler_name.startswith("websocket_") or hasattr(self, handler_name):
+            return await super().dispatch(message)
+        logger.debug("[%s] Ignoring unhandled channel event %s", type(self).__name__, message.get("type"))
 
     async def connect(self):
         self.user = self.scope.get("user")
