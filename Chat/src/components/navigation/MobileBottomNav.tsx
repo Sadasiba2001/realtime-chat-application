@@ -33,7 +33,7 @@ export const MobileBottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 dark:bg-[#111827]/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-around z-40 select-none px-2 shadow-lg">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 dark:bg-g-bg2 backdrop-blur-md border-t border-slate-200/80 dark:border-g-line flex items-center justify-around z-40 select-none px-2 shadow-lg">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
@@ -52,14 +52,14 @@ export const MobileBottomNav: React.FC = () => {
               <div
                 className={`px-4 py-1 rounded-full transition-all duration-200 flex items-center justify-center ${
                   isActive
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-400 font-bold scale-105'
-                    : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-gold/12 dark:text-gold font-bold scale-105'
+                    : 'text-slate-500 dark:text-g-text2 group-hover:text-slate-800 dark:group-hover:text-g-text'
                 }`}
               >
                 {tab.icon}
               </div>
               {tab.badge && tab.badge > 0 ? (
-                <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[10px] font-bold text-white bg-emerald-600 rounded-full shadow-xs">
+                <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[10px] font-bold text-white bg-emerald-600 rounded-full shadow-xs dark:bg-gold dark:text-[#171717]">
                   {tab.badge > 99 ? '99+' : tab.badge}
                 </span>
               ) : null}
@@ -67,8 +67,8 @@ export const MobileBottomNav: React.FC = () => {
             <span
               className={`text-[11px] mt-0.5 transition-colors ${
                 isActive
-                  ? 'font-bold text-slate-900 dark:text-slate-100'
-                  : 'text-slate-500 dark:text-slate-400'
+                  ? 'font-bold text-slate-900 dark:text-g-text'
+                  : 'text-slate-500 dark:text-g-text2'
               }`}
             >
               {tab.label}

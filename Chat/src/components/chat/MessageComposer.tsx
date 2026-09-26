@@ -232,9 +232,9 @@ export const MessageComposer: React.FC = () => {
   };
 
   return (
-    <footer className="p-2.5 md:px-6 md:pb-5 md:pt-2 dark:md:p-3 bg-canvas dark:bg-transparent select-none relative z-20">
+    <footer className="p-2.5 md:px-6 md:pb-5 md:pt-2 bg-canvas dark:bg-transparent select-none relative z-20">
       {activeConversation?.isBlocked ? (
-        <div className="flex items-center justify-between p-3.5 bg-red-50 dark:bg-rose-950/40 border border-red-200 dark:border-rose-900/60 rounded-xl dark:rounded-2xl text-xs text-red-800 dark:text-rose-200 dark:shadow-md">
+        <div className="flex items-center justify-between p-3.5 bg-red-50 dark:bg-rose-950/40 border border-red-200 dark:border-rose-900/60 rounded-xl text-xs text-red-800 dark:text-rose-200">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-danger dark:text-rose-500 flex-shrink-0" />
             <span className="font-medium">You blocked this user. Unblock to send messages.</span>
@@ -244,30 +244,30 @@ export const MessageComposer: React.FC = () => {
               const partnerId = activeConversation.participantIds.find((pid) => pid !== currentUser.id) || activeConversation.id;
               unblockUser(partnerId);
             }}
-            className="px-3 py-1.5 dark:py-1 bg-surface dark:bg-rose-600 hover:bg-red-50 dark:hover:bg-rose-700 dark:active:bg-rose-800 text-danger dark:text-white border border-red-200 dark:border-0 font-semibold rounded-lg dark:rounded-xl dark:shadow-xs transition-all cursor-pointer"
+            className="px-3 py-1.5 bg-surface dark:bg-rose-600 hover:bg-red-50 dark:hover:bg-rose-700 dark:active:bg-rose-800 text-danger dark:text-g-text border border-red-200 dark:border-transparent font-semibold rounded-lg transition-all cursor-pointer"
           >
             Unblock
           </button>
         </div>
       ) : activeConversation?.isBlockedByThem ? (
-        <div className="flex items-center gap-2 p-3.5 bg-surface-2 dark:bg-slate-800/80 border border-line dark:border-slate-700 rounded-xl dark:rounded-2xl text-xs text-ink-2 dark:text-slate-300 dark:shadow-md">
-          <ShieldAlert className="w-4 h-4 text-ink-3 dark:text-slate-400 flex-shrink-0" />
+        <div className="flex items-center gap-2 p-3.5 bg-surface-2 dark:bg-g-s2 border border-line dark:border-g-line rounded-xl text-xs text-ink-2 dark:text-g-text2">
+          <ShieldAlert className="w-4 h-4 text-ink-3 dark:text-g-text2 flex-shrink-0" />
           <span className="font-medium">Messaging is unavailable because this user has blocked you.</span>
         </div>
       ) : (
         <>
           {/* Reply-To Preview Banner */}
           {replyingToMessage && (
-            <div className="flex items-center justify-between px-4 py-2 mb-2 bg-surface dark:bg-[#1a2234]/95 dark:backdrop-blur-md rounded-lg dark:rounded-2xl border-l-3 dark:border-l-4 border-l-accent dark:border-l-violet-500 border border-line dark:border-white/10 text-xs shadow-softer dark:shadow-md">
+            <div className="flex items-center justify-between px-4 py-2 mb-2 bg-surface dark:bg-g-s2 rounded-lg border-l-3 border-l-accent dark:border-l-gold border border-line dark:border-g-line text-xs shadow-softer dark:shadow-none">
               <div className="min-w-0 flex-1 pr-2">
-                <span className="font-semibold dark:font-bold text-accent dark:text-violet-400">
+                <span className="font-semibold text-accent dark:text-gold">
                   Replying to {replyingToMessage.senderName}
                 </span>
-                <p className="truncate text-ink-2 dark:text-slate-300">{replyingToMessage.text}</p>
+                <p className="truncate text-ink-2 dark:text-g-text2">{replyingToMessage.text}</p>
               </div>
               <button
                 onClick={() => setReplyTo(null)}
-                className="p-1 rounded-md dark:rounded-full text-ink-3 dark:text-slate-400 hover:text-ink dark:hover:text-slate-200 hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors"
+                className="p-1 rounded-md text-ink-3 dark:text-g-text2 hover:text-ink dark:hover:text-g-text hover:bg-surface-2 dark:hover:bg-g-hover transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -276,14 +276,14 @@ export const MessageComposer: React.FC = () => {
 
           {/* Editing Message Banner */}
           {editingMessage && (
-            <div className="flex items-center justify-between px-4 py-2 mb-2 bg-surface dark:bg-[#1a2234]/95 dark:backdrop-blur-md rounded-lg dark:rounded-2xl border-l-3 dark:border-l-4 border-l-accent dark:border-l-indigo-500 border border-line dark:border-white/10 text-xs shadow-softer dark:shadow-md">
+            <div className="flex items-center justify-between px-4 py-2 mb-2 bg-surface dark:bg-g-s2 rounded-lg border-l-3 border-l-accent dark:border-l-gold border border-line dark:border-g-line text-xs shadow-softer dark:shadow-none">
               <div className="min-w-0 flex-1 pr-2 flex items-center gap-1.5">
-                <Pencil className="w-3.5 h-3.5 text-accent dark:text-indigo-500 flex-shrink-0" />
+                <Pencil className="w-3.5 h-3.5 text-accent dark:text-gold flex-shrink-0" />
                 <div className="min-w-0">
-                  <span className="font-semibold dark:font-bold text-accent dark:text-indigo-400 block">
+                  <span className="font-semibold text-accent dark:text-gold block">
                     Editing Message
                   </span>
-                  <p className="truncate text-ink-2 dark:text-slate-300">{editingMessage.text}</p>
+                  <p className="truncate text-ink-2 dark:text-g-text2">{editingMessage.text}</p>
                 </div>
               </div>
               <button
@@ -291,7 +291,7 @@ export const MessageComposer: React.FC = () => {
                   setEditingMessage(null);
                   setText('');
                 }}
-                className="p-1 rounded-md dark:rounded-full text-ink-3 dark:text-slate-400 hover:text-ink dark:hover:text-slate-200 hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors"
+                className="p-1 rounded-md text-ink-3 dark:text-g-text2 hover:text-ink dark:hover:text-g-text hover:bg-surface-2 dark:hover:bg-g-hover transition-colors"
                 title="Cancel edit"
               >
                 <X className="w-4 h-4" />
@@ -305,9 +305,9 @@ export const MessageComposer: React.FC = () => {
               {attachments.map((att, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-2 bg-accent-soft dark:bg-violet-950/50 px-3 py-1.5 rounded-md dark:rounded-full border border-accent-active dark:border-violet-800/80 text-xs dark:shadow-xs"
+                  className="flex items-center gap-2 bg-accent-soft dark:bg-gold/12 px-3 py-1.5 rounded-md border border-accent-active dark:border-gold/30 text-xs"
                 >
-                  <span className="font-medium dark:font-semibold text-accent dark:text-violet-300">{att.name || att.type}</span>
+                  <span className="font-medium text-accent dark:text-gold">{att.name || att.type}</span>
                   <button
                     onClick={() => setAttachments(attachments.filter((_, i) => i !== idx))}
                     className="text-ink-3 hover:text-danger dark:text-rose-500 dark:hover:text-rose-600 transition-colors"
@@ -337,9 +337,9 @@ export const MessageComposer: React.FC = () => {
 
           {/* Floating Capsule Composer */}
           {isRecording ? (
-            <div className="flex items-center justify-between gap-4 py-2 px-4 dark:px-5 bg-surface dark:bg-rose-950/60 dark:backdrop-blur-md rounded-xl dark:rounded-full border border-line dark:border-rose-900/50 text-danger dark:text-rose-400 shadow-soft dark:shadow-lg">
+            <div className="flex items-center justify-between gap-4 py-2 px-4 bg-surface dark:bg-rose-950/60 rounded-xl border border-line dark:border-rose-900/50 text-danger dark:text-rose-400 shadow-soft dark:shadow-g">
               <div className="flex items-center gap-2.5">
-                <span className="w-2.5 h-2.5 dark:w-3 dark:h-3 bg-danger dark:bg-rose-600 rounded-full animate-pulse dark:animate-ping" />
+                <span className="w-2.5 h-2.5 bg-danger dark:bg-rose-600 rounded-full animate-pulse" />
                 <span className="font-mono text-sm font-semibold">
                   🔴 Recording {Math.floor(recordSeconds / 60)}:{recordSeconds % 60 < 10 ? '0' : ''}{recordSeconds % 60}
                 </span>
@@ -347,14 +347,14 @@ export const MessageComposer: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={cancelRecording}
-                  className="p-2 hover:bg-red-50 dark:hover:bg-rose-900/60 rounded-lg dark:rounded-full transition-colors text-xs font-semibold"
+                  className="p-2 hover:bg-red-50 dark:hover:bg-rose-900/60 rounded-lg transition-colors text-xs font-semibold"
                   title="Cancel Recording"
                 >
                   <Trash2 className="w-5 h-5 text-danger dark:text-rose-400" />
                 </button>
                 <button
                   onClick={stopRecording}
-                  className="px-3.5 py-1.5 bg-accent hover:bg-accent-hover dark:bg-gradient-to-tr dark:from-violet-600 dark:to-indigo-600 text-white font-semibold text-xs rounded-lg dark:rounded-full transition-all dark:hover:scale-105 dark:shadow-md flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 bg-accent hover:bg-accent-hover text-white font-semibold text-xs rounded-lg transition-all flex items-center gap-1.5 dark:bg-gold dark:hover:bg-gold-light dark:text-[#171717]"
                   title="Stop & Preview"
                 >
                   <Check className="w-4 h-4" /> Stop
@@ -362,9 +362,9 @@ export const MessageComposer: React.FC = () => {
               </div>
             </div>
           ) : isPreviewing && previewUrl ? (
-            <div className="flex items-center justify-between gap-3 py-2 px-4 bg-surface dark:bg-[#1a2234]/95 dark:backdrop-blur-md rounded-xl dark:rounded-2xl border border-line dark:border-white/10 shadow-soft dark:shadow-lg">
+            <div className="flex items-center justify-between gap-3 py-2 px-4 bg-surface dark:bg-g-s2 rounded-xl border border-line dark:border-g-line shadow-soft dark:shadow-g">
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold dark:font-bold text-accent dark:text-violet-400 mb-1 flex items-center gap-1">
+                <p className="text-xs font-semibold text-accent dark:text-gold mb-1 flex items-center gap-1">
                   🎤 Voice Message Preview ({Math.floor(recordSeconds / 60)}:{recordSeconds % 60 < 10 ? '0' : ''}{recordSeconds % 60})
                 </p>
                 <audio src={previewUrl} controls className="w-full h-8" />
@@ -373,7 +373,7 @@ export const MessageComposer: React.FC = () => {
                 <button
                   onClick={cancelRecording}
                   disabled={isUploadingVoice}
-                  className="p-2 text-danger dark:text-rose-500 hover:bg-red-50 dark:hover:bg-rose-950/40 rounded-lg dark:rounded-xl transition-colors"
+                  className="p-2 text-danger dark:text-rose-500 hover:bg-red-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
                   title="Cancel"
                 >
                   <Trash2 className="w-5 h-5" />
@@ -381,23 +381,23 @@ export const MessageComposer: React.FC = () => {
                 <button
                   onClick={sendVoiceMessage}
                   disabled={isUploadingVoice}
-                  className="px-4 py-2 bg-accent hover:bg-accent-hover dark:bg-gradient-to-tr dark:from-violet-600 dark:to-indigo-600 text-white font-semibold text-xs rounded-lg dark:rounded-xl dark:shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                  className="px-4 py-2 bg-accent hover:bg-accent-hover text-white font-semibold text-xs rounded-lg transition-all active:scale-95 flex items-center gap-1.5 dark:bg-gold dark:hover:bg-gold-light dark:text-[#171717]"
                 >
                   <Send className="w-4 h-4" /> {isUploadingVoice ? 'Uploading...' : 'Send'}
                 </button>
               </div>
             </div>
           ) : (
-            <div className="flex items-end gap-1 dark:gap-2 bg-surface dark:bg-[#1a2234]/95 dark:backdrop-blur-md p-1.5 dark:md:p-2 rounded-xl dark:rounded-3xl border border-line dark:border-white/10 shadow-soft dark:shadow-lg focus-within:border-accent-2 dark:focus-within:border-white/10 transition-all">
+            <div className="flex items-end gap-1 bg-surface dark:bg-g-s1 p-1.5 rounded-xl border border-line dark:border-g-line shadow-soft dark:shadow-g focus-within:border-accent-2 dark:focus-within:border-gold/50 transition-all">
               {/* Attachment Button */}
               <button
                 onClick={() => {
                   setShowAttachmentMenu(!showAttachmentMenu);
                   setShowEmojiPicker(false);
                 }}
-                className={`p-2 dark:p-2.5 rounded-lg dark:rounded-full transition-all dark:active:scale-95 ${showAttachmentMenu
-                    ? 'bg-accent-soft dark:bg-violet-950/80 text-accent dark:text-violet-400'
-                    : 'text-ink-3 dark:text-slate-400 hover:text-ink dark:hover:text-slate-200 hover:bg-surface-2 dark:hover:bg-slate-800/80'
+                className={`p-2 rounded-lg transition-all ${showAttachmentMenu
+                    ? 'bg-accent-soft dark:bg-gold/12 text-accent dark:text-gold'
+                    : 'text-ink-3 dark:text-g-text2 hover:text-ink dark:hover:text-g-text hover:bg-surface-2 dark:hover:bg-g-hover'
                   }`}
                 title="Attach file"
               >
@@ -411,7 +411,7 @@ export const MessageComposer: React.FC = () => {
                 onKeyDown={handleKeyDown}
                 placeholder="Write a message..."
                 rows={1}
-                className="flex-1 max-h-32 min-h-[38px] py-2 px-2 text-sm bg-transparent text-ink dark:text-slate-100 placeholder-ink-3 dark:placeholder-slate-500 outline-hidden resize-none"
+                className="flex-1 max-h-32 min-h-[38px] py-2 px-2 text-sm bg-transparent text-ink dark:text-g-text placeholder-ink-3 dark:placeholder-g-text3 outline-hidden resize-none"
               />
 
               {/* Emoji Button */}
@@ -420,9 +420,9 @@ export const MessageComposer: React.FC = () => {
                   setShowEmojiPicker(!showEmojiPicker);
                   setShowAttachmentMenu(false);
                 }}
-                className={`p-2 dark:p-2.5 rounded-lg dark:rounded-full transition-all dark:active:scale-95 ${showEmojiPicker
-                    ? 'bg-accent-soft dark:bg-amber-950/80 text-accent dark:text-amber-400'
-                    : 'text-ink-3 dark:text-slate-400 hover:text-ink dark:hover:text-slate-200 hover:bg-surface-2 dark:hover:bg-slate-800/80'
+                className={`p-2 rounded-lg transition-all ${showEmojiPicker
+                    ? 'bg-accent-soft dark:bg-gold/12 text-accent dark:text-gold'
+                    : 'text-ink-3 dark:text-g-text2 hover:text-ink dark:hover:text-g-text hover:bg-surface-2 dark:hover:bg-g-hover'
                   }`}
                 title="Emoji picker"
               >
@@ -433,15 +433,15 @@ export const MessageComposer: React.FC = () => {
               {text.trim() || attachments.length > 0 ? (
                 <button
                   onClick={handleSend}
-                  className="w-9 h-9 dark:w-auto dark:h-auto dark:p-2.5 bg-accent hover:bg-accent-hover dark:bg-gradient-to-tr dark:from-violet-600 dark:to-indigo-600 dark:hover:from-violet-500 dark:hover:to-indigo-500 text-white rounded-lg dark:rounded-full transition-all dark:hover:scale-105 active:scale-95 dark:shadow-md dark:shadow-indigo-500/25 flex items-center justify-center"
+                  className="w-9 h-9 bg-accent hover:bg-accent-hover text-white rounded-lg transition-all active:scale-95 flex items-center justify-center dark:bg-gold dark:hover:bg-gold-light dark:text-[#171717]"
                   title="Send message"
                 >
-                  <Send className="w-4 h-4 dark:w-4.5 dark:h-4.5" />
+                  <Send className="w-4 h-4" />
                 </button>
               ) : (
                 <button
                   onClick={startRecording}
-                  className="p-2 dark:p-2.5 text-ink-3 dark:text-slate-400 hover:text-accent dark:hover:text-violet-400 hover:bg-accent-soft dark:hover:bg-violet-950/50 rounded-lg dark:rounded-full transition-all dark:active:scale-95"
+                  className="p-2 text-ink-3 dark:text-g-text2 hover:text-accent dark:hover:text-gold hover:bg-accent-soft dark:hover:bg-gold/12 rounded-lg transition-all"
                   title="Record voice note"
                 >
                   <Mic className="w-5 h-5" />

@@ -57,14 +57,14 @@ export const SharedMediaSection: React.FC<SharedMediaSectionProps> = ({ targetUs
   };
 
   return (
-    <div className="p-4 bg-surface-2 dark:bg-[#1a2234] rounded-xl border border-line dark:border-white/5 space-y-3 dark:rounded-2xl">
+    <div className="p-4 bg-surface-2 dark:bg-g-s2 rounded-xl border border-line dark:border-g-line2 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-ink-3 dark:text-slate-500 uppercase tracking-wider">
+        <span className="text-[11px] font-semibold text-ink-3 dark:text-gold-light uppercase tracking-wider">
           Shared Content ({totalCount})
         </span>
         <button
           onClick={() => fetchSharedMedia(activeTab, 1, false)}
-          className="text-ink-3 hover:text-ink dark:hover:text-slate-200 transition-colors p-1 dark:text-slate-400"
+          className="text-ink-3 hover:text-ink dark:hover:text-g-text transition-colors p-1 dark:text-g-text2"
           title="Refresh Shared Media"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -72,13 +72,13 @@ export const SharedMediaSection: React.FC<SharedMediaSectionProps> = ({ targetUs
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-surface-2 dark:bg-slate-800/60 p-1 rounded-xl gap-1">
+      <div className="flex bg-surface-2 dark:bg-g-s2 p-1 rounded-xl gap-1">
         <button
           onClick={() => handleTabChange('media')}
           className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'media'
-              ? 'bg-surface dark:bg-[#111827] text-accent dark:text-violet-400 shadow-xs'
-              : 'text-ink-2 dark:text-slate-400 hover:text-ink dark:hover:text-slate-200'
+              ? 'bg-surface dark:bg-g-bg2 text-accent dark:text-gold shadow-xs'
+              : 'text-ink-2 dark:text-g-text2 hover:text-ink dark:hover:text-g-text'
           }`}
         >
           <ImageIcon className="w-3.5 h-3.5" /> Media
@@ -87,8 +87,8 @@ export const SharedMediaSection: React.FC<SharedMediaSectionProps> = ({ targetUs
           onClick={() => handleTabChange('files')}
           className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'files'
-              ? 'bg-surface dark:bg-[#111827] text-accent dark:text-violet-400 shadow-xs'
-              : 'text-ink-2 dark:text-slate-400 hover:text-ink dark:hover:text-slate-200'
+              ? 'bg-surface dark:bg-g-bg2 text-accent dark:text-gold shadow-xs'
+              : 'text-ink-2 dark:text-g-text2 hover:text-ink dark:hover:text-g-text'
           }`}
         >
           <FileText className="w-3.5 h-3.5" /> Files
@@ -97,8 +97,8 @@ export const SharedMediaSection: React.FC<SharedMediaSectionProps> = ({ targetUs
           onClick={() => handleTabChange('links')}
           className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'links'
-              ? 'bg-surface dark:bg-[#111827] text-accent dark:text-violet-400 shadow-xs'
-              : 'text-ink-2 dark:text-slate-400 hover:text-ink dark:hover:text-slate-200'
+              ? 'bg-surface dark:bg-g-bg2 text-accent dark:text-gold shadow-xs'
+              : 'text-ink-2 dark:text-g-text2 hover:text-ink dark:hover:text-g-text'
           }`}
         >
           <LinkIcon className="w-3.5 h-3.5" /> Links
@@ -117,11 +117,11 @@ export const SharedMediaSection: React.FC<SharedMediaSectionProps> = ({ targetUs
           </button>
         </div>
       ) : loading && items.length === 0 ? (
-        <div className="py-8 text-center text-xs text-ink-3 dark:text-slate-500 animate-pulse">
+        <div className="py-8 text-center text-xs text-ink-3 dark:text-g-text3 animate-pulse">
           Loading...
         </div>
       ) : items.length === 0 ? (
-        <div className="py-8 text-center text-xs text-ink-3 dark:text-slate-500">
+        <div className="py-8 text-center text-xs text-ink-3 dark:text-g-text3">
           {activeTab === 'media' && 'No media shared yet'}
           {activeTab === 'files' && 'No files shared yet'}
           {activeTab === 'links' && 'No links shared yet'}
@@ -132,7 +132,7 @@ export const SharedMediaSection: React.FC<SharedMediaSectionProps> = ({ targetUs
           {activeTab === 'media' && (
             <div className="grid grid-cols-3 gap-1.5 max-h-60 overflow-y-auto pr-1">
               {items.map((item) => (
-                <div key={item.id} className="relative group aspect-square rounded-xl overflow-hidden bg-surface-2 dark:bg-slate-800">
+                <div key={item.id} className="relative group aspect-square rounded-xl overflow-hidden bg-surface-2 dark:bg-g-s2">
                   {item.type === 'image' && (
                     <img
                       src={item.url}
@@ -174,14 +174,14 @@ export const SharedMediaSection: React.FC<SharedMediaSectionProps> = ({ targetUs
                   target="_blank"
                   rel="noreferrer"
                   download={item.name}
-                  className="flex items-center gap-2.5 p-2 rounded-xl bg-surface dark:bg-[#111827] border border-line dark:border-white/5 hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors text-xs"
+                  className="flex items-center gap-2.5 p-2 rounded-xl bg-surface dark:bg-g-bg2 border border-line dark:border-g-line2 hover:bg-surface-2 dark:hover:bg-g-hover transition-colors text-xs"
                 >
-                  <FileText className="w-5 h-5 text-accent flex-shrink-0 dark:text-violet-500" />
+                  <FileText className="w-5 h-5 text-accent flex-shrink-0 dark:text-gold" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-ink dark:text-slate-200 truncate">{item.name}</p>
-                    <span className="text-[10px] text-ink-3 dark:text-slate-400">{item.size}</span>
+                    <p className="font-semibold text-ink dark:text-g-text truncate">{item.name}</p>
+                    <span className="text-[10px] text-ink-3 dark:text-g-text2">{item.size}</span>
                   </div>
-                  <Download className="w-3.5 h-3.5 text-ink-3 flex-shrink-0 dark:text-slate-400" />
+                  <Download className="w-3.5 h-3.5 text-ink-3 flex-shrink-0 dark:text-g-text2" />
                 </a>
               ))}
             </div>
@@ -196,16 +196,16 @@ export const SharedMediaSection: React.FC<SharedMediaSectionProps> = ({ targetUs
                   href={item.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="block p-2 rounded-xl bg-surface dark:bg-[#111827] border border-line dark:border-white/5 hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors text-xs space-y-1"
+                  className="block p-2 rounded-xl bg-surface dark:bg-g-bg2 border border-line dark:border-g-line2 hover:bg-surface-2 dark:hover:bg-g-hover transition-colors text-xs space-y-1"
                 >
-                  <div className="flex items-center justify-between text-accent dark:text-violet-400 font-semibold gap-2">
+                  <div className="flex items-center justify-between text-accent dark:text-gold font-semibold gap-2">
                     <span className="truncate flex-1">{item.url}</span>
                     <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
                   </div>
                   {item.snippet && (
-                    <p className="text-[11px] text-ink-2 dark:text-slate-400 line-clamp-2">{item.snippet}</p>
+                    <p className="text-[11px] text-ink-2 dark:text-g-text2 line-clamp-2">{item.snippet}</p>
                   )}
-                  <div className="flex items-center justify-between text-[10px] text-ink-3 dark:text-slate-400">
+                  <div className="flex items-center justify-between text-[10px] text-ink-3 dark:text-g-text2">
                     <span>{item.domain}</span>
                     <span>Shared by {item.sender_name}</span>
                   </div>
@@ -219,7 +219,7 @@ export const SharedMediaSection: React.FC<SharedMediaSectionProps> = ({ targetUs
             <button
               onClick={handleLoadMore}
               disabled={loading}
-              className="w-full py-1.5 text-center text-xs font-semibold text-accent dark:text-violet-400 hover:underline transition-colors"
+              className="w-full py-1.5 text-center text-xs font-semibold text-accent dark:text-gold hover:underline transition-colors"
             >
               {loading ? 'Loading...' : 'Load More'}
             </button>

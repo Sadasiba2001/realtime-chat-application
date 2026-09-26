@@ -19,7 +19,27 @@
   --color-danger: #ef4444;
   --color-warning: #f59e0b;
 
+  --color-g-bg: #111315;
+  --color-g-deep: #151719;
+  --color-g-bg2: #1a1c1f;
+  --color-g-s1: #1d2023;
+  --color-g-s2: #222528;
+  --color-g-s3: #272a2e;
+  --color-g-hover: #2b2e32;
+  --color-g-line: #303338;
+  --color-g-line2: #292c30;
+  --color-g-text: #f5f1e8;
+  --color-g-text2: #b8b3a8;
+  --color-g-text3: #858178;
+  --color-g-text4: #62605b;
+  --color-gold: #d6b36a;
+  --color-gold-2: #c8a45d;
+  --color-gold-light: #e4c98a;
+  --color-gold-dark: #a98445;
+  --color-gold-ink: #171717;
+
   --shadow-soft: 0 4px 20px rgba(31, 41, 55, 0.06);
+  --shadow-g: 0 8px 30px rgba(0, 0, 0, 0.25);
   --shadow-softer: 0 1px 3px rgba(31, 41, 55, 0.05);
   --shadow-menu: 0 8px 28px rgba(31, 41, 55, 0.1);
 }
@@ -44,21 +64,21 @@
   }
 
   .dark {
-    --bg-canvas: #0f0c1b;
-    --bg-island: #171324;
-    --bg-island-secondary: #201a30;
-    --bg-chat-canvas: #0f0c1b;
-    --bg-bubble-incoming: #201a30;
-    --bg-bubble-outgoing: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
-    --border-island: rgba(255, 255, 255, 0.08);
-    --border-island-subtle: rgba(255, 255, 255, 0.04);
-    --text-primary: #f8fafc;
-    --text-secondary: #a79cb8;
-    --text-muted: #726685;
-    --accent-primary: #a855f7;
-    --accent-secondary: #8b5cf6;
-    --accent-hover: #9333ea;
-    --pill-active-bg: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+    --bg-canvas: #111315;
+    --bg-island: #1a1c1f;
+    --bg-island-secondary: #222528;
+    --bg-chat-canvas: #111315;
+    --bg-bubble-incoming: #222528;
+    --bg-bubble-outgoing: #a98445;
+    --border-island: #303338;
+    --border-island-subtle: #292c30;
+    --text-primary: #f5f1e8;
+    --text-secondary: #b8b3a8;
+    --text-muted: #858178;
+    --accent-primary: #d6b36a;
+    --accent-secondary: #c8a45d;
+    --accent-hover: #e4c98a;
+    --pill-active-bg: rgba(214, 179, 106, 0.14);
   }
 
   html,
@@ -97,11 +117,16 @@
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.25);
+  background: #303338;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.45);
+  background: #3a3e44;
+}
+
+.dark ::selection {
+  background: rgba(214, 179, 106, 0.28);
+  color: #f5f1e8;
 }
 
 /* Hide scrollbar for Chrome, Safari, Opera, IE, Edge and Firefox */
@@ -120,9 +145,7 @@
 }
 
 .chat-pattern-dark {
-  background-color: #0b0f19;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg opacity='0.08'%3E%3Ctext x='20' y='30' font-size='14'%3E💬%3C/text%3E%3Ctext x='90' y='25' font-size='13'%3E⭐%3C/text%3E%3Ctext x='160' y='35' font-size='14'%3E🎵%3C/text%3E%3Ctext x='225' y='28' font-size='13'%3E🚀%3C/text%3E%3Ctext x='50' y='75' font-size='13'%3E⚡%3C/text%3E%3Ctext x='125' y='70' font-size='14'%3E❤️%3C/text%3E%3Ctext x='195' y='75' font-size='13'%3E🎧%3C/text%3E%3Ctext x='240' y='80' font-size='14'%3E☕%3C/text%3E%3Ctext x='15' y='120' font-size='13'%3E✨%3C/text%3E%3Ctext x='85' y='125' font-size='14'%3E📱%3C/text%3E%3Ctext x='155' y='120' font-size='13'%3E🐱%3C/text%3E%3Ctext x='215' y='125' font-size='14'%3E🎨%3C/text%3E%3Ctext x='45' y='170' font-size='14'%3E🎮%3C/text%3E%3Ctext x='115' y='165' font-size='13'%3E💡%3C/text%3E%3Ctext x='185' y='170' font-size='14'%3E🌴%3C/text%3E%3Ctext x='235' y='165' font-size='13'%3E🐶%3C/text%3E%3Ctext x='20' y='215' font-size='13'%3E🍕%3C/text%3E%3Ctext x='80' y='220' font-size='14'%3E🏀%3C/text%3E%3Ctext x='145' y='215' font-size='13'%3E✈️%3C/text%3E%3Ctext x='205' y='220' font-size='14'%3E🔔%3C/text%3E%3Ctext x='50' y='255' font-size='14'%3E💎%3C/text%3E%3Ctext x='110' y='250' font-size='13'%3E🎯%3C/text%3E%3Ctext x='175' y='255' font-size='14'%3E🌟%3C/text%3E%3Ctext x='235' y='250' font-size='13'%3E🔥%3C/text%3E%3C/g%3E%3C/svg%3E");
-  background-repeat: repeat;
+  background-color: #111315;
 }
 
 /* Animations */

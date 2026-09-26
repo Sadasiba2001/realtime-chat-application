@@ -90,7 +90,7 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
   if (hasError) {
     return (
       <div className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs ${
-        isOutgoing ? 'bg-white/10 border-white/20 text-white' : 'bg-surface-2 dark:bg-[#111827] border-line dark:border-white/10 text-ink dark:text-slate-200'
+        isOutgoing ? 'bg-white/10 border-white/20 text-white dark:bg-black/10 dark:border-black/15 dark:text-[#171717]' : 'bg-surface-2 dark:bg-g-bg2 border-line dark:border-g-line text-ink dark:text-g-text'
       }`}>
         <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
         <span>Voice message unavailable</span>
@@ -104,8 +104,8 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
     <div
       className={`flex items-center gap-3 p-2.5 rounded-xl border text-xs min-w-[220px] transition-colors ${
         isOutgoing
-          ? 'bg-white/10 border-white/20 text-white'
-          : 'bg-surface-2 dark:bg-[#111827] border-line dark:border-white/10 text-ink dark:text-slate-200'
+          ? 'bg-white/10 border-white/20 text-white dark:bg-black/10 dark:border-black/15 dark:text-[#171717]'
+          : 'bg-surface-2 dark:bg-g-bg2 border-line dark:border-g-line text-ink dark:text-g-text'
       }`}
     >
       <button
@@ -113,8 +113,8 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
         onClick={togglePlayPause}
         className={`p-2 rounded-full flex items-center justify-center transition-transform active:scale-95 flex-shrink-0 ${
           isOutgoing
-            ? 'bg-surface text-accent hover:bg-surface-2 dark:bg-white dark:text-violet-600 dark:hover:bg-slate-100'
-            : 'bg-accent text-white hover:bg-accent-hover dark:bg-violet-600 dark:hover:bg-violet-700'
+            ? 'bg-surface text-accent hover:bg-surface-2 dark:bg-g-deep dark:text-gold dark:hover:bg-g-s1'
+            : 'bg-accent text-white hover:bg-accent-hover dark:bg-gold dark:hover:bg-gold-light dark:text-[#171717]'
         }`}
         title={isPlaying ? 'Pause Voice Note' : 'Play Voice Note'}
       >
@@ -139,7 +139,7 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
           step={0.1}
           value={currentTime}
           onChange={handleSeek}
-          className="w-full h-1 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500"
+          className="w-full h-1 bg-slate-300 dark:bg-g-s3 rounded-lg appearance-none cursor-pointer accent-violet-500 dark:accent-gold"
         />
       </div>
     </div>

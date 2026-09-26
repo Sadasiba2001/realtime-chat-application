@@ -37,21 +37,21 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1f2937]/30 dark:bg-black/60 animate-fade-in dark:backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1f2937]/30 dark:bg-black/60 animate-fade-in">
       <div
         className="fixed inset-0"
         onClick={onClose}
         aria-hidden="true"
       />
       <div
-        className={`relative w-full ${maxWidthClasses[maxWidth]} bg-surface dark:bg-[#111b21] rounded-xl shadow-menu overflow-hidden border border-line dark:border-gray-800 z-10 dark:rounded-2xl dark:shadow-2xl`}
+        className={`relative w-full ${maxWidthClasses[maxWidth]} bg-surface dark:bg-g-bg2 rounded-xl shadow-menu overflow-hidden border border-line dark:border-g-line z-10 dark:shadow-g`}
       >
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-line dark:border-gray-800/80 bg-surface-2 dark:bg-[#202c33]/40">
-            <h3 className="text-lg font-semibold text-ink dark:text-gray-100">{title}</h3>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-line dark:border-g-line bg-surface-2 dark:bg-g-s2">
+            <h3 className="text-lg font-semibold text-ink dark:text-g-text">{title}</h3>
             <button
               onClick={onClose}
-              className="p-1 text-ink-2 hover:text-ink dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-surface-2 dark:hover:bg-gray-700 transition-colors"
+              className="p-1 text-ink-2 hover:text-ink dark:text-g-text2 dark:hover:text-g-text rounded-full hover:bg-surface-2 dark:hover:bg-g-s3 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>

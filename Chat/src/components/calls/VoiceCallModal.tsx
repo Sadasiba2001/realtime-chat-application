@@ -19,19 +19,19 @@ export const VoiceCallModal: React.FC = () => {
   const isTerminalState = ['rejected', 'busy', 'cancelled', 'ended', 'failed'].includes(state);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in select-none">
-      <div className="relative w-full max-w-sm rounded-3xl bg-[#0f172a] dark:bg-[#0f172a] border border-slate-800 shadow-2xl p-6 flex flex-col items-center justify-between min-h-[440px] text-white overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in select-none dark:backdrop-blur-none">
+      <div className="relative w-full max-w-sm rounded-3xl bg-[#0f172a] dark:bg-g-bg border border-slate-800 shadow-2xl p-6 flex flex-col items-center justify-between min-h-[440px] text-white overflow-hidden dark:border-g-line dark:text-g-text">
         {/* Subtle Ambient Background */}
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-64 bg-violet-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-64 bg-violet-600/20 rounded-full blur-3xl pointer-events-none dark:hidden" />
 
         {/* Top Header */}
         <div className="flex flex-col items-center text-center z-10 mt-2 space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-[11px] font-medium tracking-wide uppercase text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-[11px] font-medium tracking-wide uppercase text-slate-300 dark:bg-g-s2 dark:border-g-line dark:text-g-text2">
+            <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse dark:bg-gold" />
             Voice Call
           </div>
 
-          <h2 className="text-xl font-bold text-slate-100 tracking-tight truncate max-w-[260px] mt-2">
+          <h2 className="text-xl font-bold text-slate-100 tracking-tight truncate max-w-[260px] mt-2 dark:text-g-text">
             {counterparty.name || 'User'}
           </h2>
 
@@ -50,7 +50,7 @@ export const VoiceCallModal: React.FC = () => {
                   ? 'text-rose-400'
                   : state === 'rejected'
                   ? 'text-amber-400'
-                  : 'text-slate-400'
+                  : 'text-slate-400 dark:text-g-text2'
               }`}
             >
               {error || statusMessage || 'Connecting...'}
@@ -91,7 +91,7 @@ export const VoiceCallModal: React.FC = () => {
           </div>
 
           {state === 'failed' && (
-            <div className="absolute -bottom-2 -right-2 p-1.5 bg-rose-600 rounded-full text-white shadow-lg">
+            <div className="absolute -bottom-2 -right-2 p-1.5 bg-rose-600 rounded-full text-white shadow-lg dark:text-g-text">
               <AlertCircle className="w-4 h-4" />
             </div>
           )}
@@ -104,12 +104,12 @@ export const VoiceCallModal: React.FC = () => {
             <div className="flex flex-col items-center gap-2">
               <button
                 onClick={cancelCall}
-                className="flex items-center justify-center w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-lg shadow-rose-900/50 transition-all"
+                className="flex items-center justify-center w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-lg shadow-rose-900/50 transition-all dark:text-g-text"
                 title="Cancel Call"
               >
                 <PhoneOff className="w-6 h-6" />
               </button>
-              <span className="text-xs text-slate-400">Cancel</span>
+              <span className="text-xs text-slate-400 dark:text-g-text2">Cancel</span>
             </div>
           )}
 
@@ -120,19 +120,19 @@ export const VoiceCallModal: React.FC = () => {
               <div className="flex flex-col items-center gap-2">
                 <button
                   onClick={rejectCall}
-                  className="flex items-center justify-center w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-lg shadow-rose-900/50 transition-all"
+                  className="flex items-center justify-center w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-lg shadow-rose-900/50 transition-all dark:text-g-text"
                   title="Decline"
                 >
                   <PhoneOff className="w-6 h-6" />
                 </button>
-                <span className="text-xs text-slate-400">Decline</span>
+                <span className="text-xs text-slate-400 dark:text-g-text2">Decline</span>
               </div>
 
               {/* Accept Button */}
               <div className="flex flex-col items-center gap-2">
                 <button
                   onClick={acceptCall}
-                  className="flex items-center justify-center w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white shadow-lg shadow-emerald-900/50 transition-all animate-bounce"
+                  className="flex items-center justify-center w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white shadow-lg shadow-emerald-900/50 transition-all animate-bounce dark:text-g-text"
                   title="Accept"
                 >
                   <Phone className="w-6 h-6" />
@@ -152,13 +152,13 @@ export const VoiceCallModal: React.FC = () => {
                   className={`flex items-center justify-center w-12 h-12 rounded-full transition-all active:scale-95 ${
                     isMuted
                       ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-lg'
-                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 dark:bg-g-s2 dark:hover:bg-g-s3 dark:text-g-text dark:border-g-line'
                   }`}
                   title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
                 >
                   {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                 </button>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-slate-400 dark:text-g-text2">
                   {isMuted ? 'Unmute' : 'Mute'}
                 </span>
               </div>
@@ -167,20 +167,20 @@ export const VoiceCallModal: React.FC = () => {
               <div className="flex flex-col items-center gap-1.5">
                 <button
                   onClick={endCall}
-                  className="flex items-center justify-center w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-xl shadow-rose-900/50 transition-all"
+                  className="flex items-center justify-center w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-xl shadow-rose-900/50 transition-all dark:text-g-text"
                   title="End Call"
                 >
                   <PhoneOff className="w-6 h-6" />
                 </button>
-                <span className="text-[11px] text-slate-400">End</span>
+                <span className="text-[11px] text-slate-400 dark:text-g-text2">End</span>
               </div>
             </div>
           )}
 
           {/* Terminal / Closing State Banner */}
           {isTerminalState && (
-            <div className="py-2 px-4 rounded-xl bg-slate-800/60 border border-slate-700 text-center">
-              <span className="text-xs text-slate-300">Returning to chat...</span>
+            <div className="py-2 px-4 rounded-xl bg-slate-800/60 border border-slate-700 text-center dark:bg-g-s2 dark:border-g-line">
+              <span className="text-xs text-slate-300 dark:text-g-text2">Returning to chat...</span>
             </div>
           )}
         </div>

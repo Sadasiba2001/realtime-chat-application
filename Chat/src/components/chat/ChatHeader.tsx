@@ -69,13 +69,13 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         : formatLastSeen(otherParticipant?.lastSeen);
 
   return (
-    <header className="h-16 px-3 sm:px-4 md:px-5 flex items-center justify-between bg-surface dark:bg-[#111827]/90 dark:backdrop-blur-md border-b border-line dark:border-slate-800/60 z-20 select-none transition-colors">
+    <header className="h-16 px-3 sm:px-4 md:px-5 flex items-center justify-between bg-surface dark:bg-g-bg2 border-b border-line dark:border-g-line z-20 select-none transition-colors">
       {/* Contact Info & Mobile Back Button */}
       <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 mr-3">
         {isMobileView && (
           <button
             onClick={backToChatListMobile}
-            className="p-1.5 sm:p-2 rounded-lg dark:rounded-full text-ink-2 dark:text-slate-300 hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors shrink-0 -ml-1"
+            className="p-1.5 sm:p-2 rounded-lg text-ink-2 dark:text-g-text2 hover:bg-surface-2 dark:hover:bg-g-hover transition-colors shrink-0 -ml-1"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -91,15 +91,15 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           />
 
           <div className="min-w-0 flex-1 overflow-hidden">
-            <h3 className="text-sm sm:text-base font-semibold text-ink dark:text-slate-100 group-hover:text-accent dark:group-hover:text-violet-400 transition-colors truncate leading-tight">
+            <h3 className="text-sm sm:text-base font-semibold text-ink dark:text-g-text group-hover:text-accent dark:group-hover:text-gold transition-colors truncate leading-tight">
               {displayName}
             </h3>
             <p
               className={`text-[11px] sm:text-xs truncate leading-normal ${activeConversation.isTyping
-                  ? 'text-accent dark:text-violet-400 font-medium dark:font-semibold'
+                  ? 'text-accent dark:text-gold font-medium'
                   : otherParticipant?.status === 'online'
-                    ? 'text-emerald-600 dark:text-violet-400 font-medium dark:font-semibold'
-                    : 'text-ink-3 dark:text-slate-500'
+                    ? 'text-emerald-600 dark:text-emerald-400 font-medium'
+                    : 'text-ink-3 dark:text-g-text3'
                 }`}
             >
               {statusSubtext}
@@ -114,10 +114,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         {otherParticipant && (
           <button
             onClick={() => startVideoCall(otherParticipant)}
-            className="p-2 dark:sm:p-2.5 text-ink-2 dark:text-slate-400 hover:text-ink dark:hover:text-violet-400 hover:bg-surface-2 dark:hover:bg-slate-800/80 rounded-lg dark:rounded-full transition-all dark:active:scale-95 cursor-pointer"
+            className="p-2 text-ink-2 dark:text-g-text2 hover:text-ink dark:hover:text-gold hover:bg-surface-2 dark:hover:bg-g-hover rounded-lg transition-all cursor-pointer"
             title="Video Call"
           >
-            <Video className="w-4.5 h-4.5 dark:sm:w-5 dark:sm:h-5" />
+            <Video className="w-4.5 h-4.5" />
           </button>
         )}
 
@@ -125,49 +125,49 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         {otherParticipant && (
           <button
             onClick={() => startVoiceCall(otherParticipant)}
-            className="p-2 dark:sm:p-2.5 text-ink-2 dark:text-slate-400 hover:text-ink dark:hover:text-violet-400 hover:bg-surface-2 dark:hover:bg-slate-800/80 rounded-lg dark:rounded-full transition-all dark:active:scale-95 cursor-pointer"
+            className="p-2 text-ink-2 dark:text-g-text2 hover:text-ink dark:hover:text-gold hover:bg-surface-2 dark:hover:bg-g-hover rounded-lg transition-all cursor-pointer"
             title="Voice Call"
           >
-            <Phone className="w-4.5 h-4.5 dark:sm:w-5 dark:sm:h-5" />
+            <Phone className="w-4.5 h-4.5" />
           </button>
         )}
 
         {/* In-Chat Search (Visible on sm+ screens) */}
         <button
           onClick={onToggleSearch}
-          className="hidden sm:flex p-2 dark:sm:p-2.5 text-ink-2 dark:text-slate-400 hover:text-ink dark:hover:text-violet-400 hover:bg-surface-2 dark:hover:bg-slate-800/80 rounded-lg dark:rounded-full transition-all dark:active:scale-95 cursor-pointer"
+          className="hidden sm:flex p-2 text-ink-2 dark:text-g-text2 hover:text-ink dark:hover:text-gold hover:bg-surface-2 dark:hover:bg-g-hover rounded-lg transition-all cursor-pointer"
           title="Search in conversation"
         >
-          <Search className="w-4.5 h-4.5 dark:sm:w-5 dark:sm:h-5" />
+          <Search className="w-4.5 h-4.5" />
         </button>
 
         {/* Info Drawer Toggle (Visible on md+ screens) */}
         <button
           onClick={onToggleInfo}
-          className="hidden md:flex p-2 dark:sm:p-2.5 text-ink-2 dark:text-slate-400 hover:text-ink dark:hover:text-violet-400 hover:bg-surface-2 dark:hover:bg-slate-800/80 rounded-lg dark:rounded-full transition-all dark:active:scale-95 cursor-pointer"
+          className="hidden md:flex p-2 text-ink-2 dark:text-g-text2 hover:text-ink dark:hover:text-gold hover:bg-surface-2 dark:hover:bg-g-hover rounded-lg transition-all cursor-pointer"
           title="Contact Info"
         >
-          <Info className="w-4.5 h-4.5 dark:sm:w-5 dark:sm:h-5" />
+          <Info className="w-4.5 h-4.5" />
         </button>
 
         {/* More Options Dropdown */}
         <div className="relative">
           <button
             onClick={() => setShowDropdown(!showDropdown)}
-            className="p-2 dark:sm:p-2.5 text-ink-2 dark:text-slate-400 hover:text-ink dark:hover:text-violet-400 hover:bg-surface-2 dark:hover:bg-slate-800/80 rounded-lg dark:rounded-full transition-all dark:active:scale-95 cursor-pointer"
+            className="p-2 text-ink-2 dark:text-g-text2 hover:text-ink dark:hover:text-gold hover:bg-surface-2 dark:hover:bg-g-hover rounded-lg transition-all cursor-pointer"
             title="More Options"
           >
-            <MoreVertical className="w-4.5 h-4.5 dark:sm:w-5 dark:sm:h-5" />
+            <MoreVertical className="w-4.5 h-4.5" />
           </button>
 
           {showDropdown && (
-            <div className="absolute right-0 mt-2 w-52 dark:w-48 bg-surface dark:bg-[#1a2234] border border-line dark:border-white/10 rounded-xl dark:rounded-2xl shadow-menu dark:shadow-2xl py-1.5 text-sm z-50 animate-fade-in dark:backdrop-blur-md">
+            <div className="absolute right-0 mt-2 w-52 bg-surface dark:bg-g-s2 border border-line dark:border-g-line rounded-xl shadow-menu dark:shadow-g py-1.5 text-sm z-50 animate-fade-in">
               <button
                 onClick={() => {
                   onToggleSearch();
                   setShowDropdown(false);
                 }}
-                className="w-full px-4 py-2 text-left text-ink dark:text-slate-200 hover:bg-surface-2 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors sm:hidden"
+                className="w-full px-4 py-2 text-left text-ink dark:text-g-text hover:bg-surface-2 dark:hover:bg-g-hover flex items-center gap-2 transition-colors sm:hidden"
               >
                 <Search className="w-4 h-4" />
                 Search in Chat
@@ -177,7 +177,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   togglePin(activeConversation.id);
                   setShowDropdown(false);
                 }}
-                className="w-full px-4 py-2 text-left text-ink dark:text-slate-200 hover:bg-surface-2 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors"
+                className="w-full px-4 py-2 text-left text-ink dark:text-g-text hover:bg-surface-2 dark:hover:bg-g-hover flex items-center gap-2 transition-colors"
               >
                 <Pin className="w-4 h-4" />
                 {activeConversation.pinned ? 'Unpin Conversation' : 'Pin Conversation'}
@@ -187,7 +187,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   toggleArchive(activeConversation.id);
                   setShowDropdown(false);
                 }}
-                className="w-full px-4 py-2 text-left text-ink dark:text-slate-200 hover:bg-surface-2 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors"
+                className="w-full px-4 py-2 text-left text-ink dark:text-g-text hover:bg-surface-2 dark:hover:bg-g-hover flex items-center gap-2 transition-colors"
               >
                 <Archive className="w-4 h-4" />
                 {activeConversation.archived ? 'Unarchive Conversation' : 'Archive Conversation'}
@@ -201,7 +201,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   }
                   setShowDropdown(false);
                 }}
-                className="w-full px-4 py-2 text-left text-ink dark:text-slate-200 hover:bg-surface-2 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors"
+                className="w-full px-4 py-2 text-left text-ink dark:text-g-text hover:bg-surface-2 dark:hover:bg-g-hover flex items-center gap-2 transition-colors"
               >
                 <VolumeX className="w-4 h-4" />
                 {activeConversation.muted ? 'Unmute Notifications' : 'Mute Notifications'}
@@ -211,7 +211,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                   onToggleInfo();
                   setShowDropdown(false);
                 }}
-                className="w-full px-4 py-2 text-left text-ink dark:text-slate-200 hover:bg-surface-2 dark:hover:bg-slate-800 flex items-center gap-2 border-t border-line dark:border-slate-800 transition-colors"
+                className="w-full px-4 py-2 text-left text-ink dark:text-g-text hover:bg-surface-2 dark:hover:bg-g-hover flex items-center gap-2 border-t border-line dark:border-g-line transition-colors"
               >
                 <Info className="w-4 h-4" />
                 View Contact Info
@@ -228,7 +228,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                       }
                       setShowDropdown(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-danger dark:text-rose-400 hover:bg-red-50 dark:hover:bg-rose-950/40 flex items-center gap-2 transition-colors border-t border-line dark:border-slate-800 font-medium"
+                    className="w-full px-4 py-2 text-left text-danger dark:text-rose-400 hover:bg-red-50 dark:hover:bg-rose-950/40 flex items-center gap-2 transition-colors border-t border-line dark:border-g-line font-medium"
                   >
                     <ShieldAlert className="w-4 h-4" />
                     {activeConversation.isBlocked ? 'Unblock User' : 'Block User'}
@@ -238,7 +238,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                       openModal('report_user', activeConversation);
                       setShowDropdown(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center gap-2 transition-colors border-t border-line dark:border-slate-800 font-medium"
+                    className="w-full px-4 py-2 text-left text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center gap-2 transition-colors border-t border-line dark:border-g-line font-medium"
                   >
                     <Flag className="w-4 h-4" />
                     Report User

@@ -94,28 +94,28 @@ export const MediaViewer: React.FC = () => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-fade-in select-none overflow-hidden"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-fade-in select-none overflow-hidden dark:backdrop-blur-none"
       onMouseUp={handleMouseUp}
     >
       {/* Top Header Bar */}
       <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
         {type === 'image' && (
-          <div className="flex items-center gap-1 bg-gray-900/80 border border-white/10 p-1 rounded-full text-white text-xs mr-2 shadow-lg">
+          <div className="flex items-center gap-1 bg-gray-900/80 border border-white/10 p-1 rounded-full text-white text-xs mr-2 shadow-lg dark:text-g-text">
             <button
               onClick={handleZoomOut}
               disabled={scale <= 1}
-              className="p-1.5 hover:bg-gray-800 rounded-full transition-colors disabled:opacity-40"
+              className="p-1.5 hover:bg-gray-800 rounded-full transition-colors disabled:opacity-40 dark:hover:bg-g-s2"
               title="Zoom Out (-)"
             >
               <ZoomOut className="w-4 h-4" />
             </button>
-            <span className="px-2 font-mono text-[11px] font-bold text-gray-300">
+            <span className="px-2 font-mono text-[11px] font-bold text-gray-300 dark:text-g-text2">
               {Math.round(scale * 100)}%
             </span>
             <button
               onClick={handleZoomIn}
               disabled={scale >= 3}
-              className="p-1.5 hover:bg-gray-800 rounded-full transition-colors disabled:opacity-40"
+              className="p-1.5 hover:bg-gray-800 rounded-full transition-colors disabled:opacity-40 dark:hover:bg-g-s2"
               title="Zoom In (+)"
             >
               <ZoomIn className="w-4 h-4" />
@@ -123,7 +123,7 @@ export const MediaViewer: React.FC = () => {
             {scale > 1 && (
               <button
                 onClick={handleResetZoom}
-                className="p-1.5 hover:bg-gray-800 rounded-full transition-colors text-amber-400"
+                className="p-1.5 hover:bg-gray-800 rounded-full transition-colors text-amber-400 dark:hover:bg-g-s2"
                 title="Reset Zoom"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -134,14 +134,14 @@ export const MediaViewer: React.FC = () => {
 
         <button
           onClick={handleDownload}
-          className="p-2 bg-gray-800/80 hover:bg-gray-700 text-white rounded-full transition-colors"
+          className="p-2 bg-gray-800/80 hover:bg-gray-700 text-white rounded-full transition-colors dark:bg-g-s2 dark:hover:bg-g-s3 dark:text-g-text"
           title="Download Image"
         >
           <Download className="w-5 h-5" />
         </button>
         <button
           onClick={closeModal}
-          className="p-2 bg-gray-800/80 hover:bg-gray-700 text-white rounded-full transition-colors"
+          className="p-2 bg-gray-800/80 hover:bg-gray-700 text-white rounded-full transition-colors dark:bg-g-s2 dark:hover:bg-g-s3 dark:text-g-text"
           title="Close (Esc)"
         >
           <X className="w-5 h-5" />
@@ -170,7 +170,7 @@ export const MediaViewer: React.FC = () => {
             draggable={false}
           />
         )}
-        {name && <p className="mt-3 text-sm text-gray-300 font-medium z-10 pointer-events-none">{name}</p>}
+        {name && <p className="mt-3 text-sm text-gray-300 font-medium z-10 pointer-events-none dark:text-g-text2">{name}</p>}
       </div>
     </div>
   );

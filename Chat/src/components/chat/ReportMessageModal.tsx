@@ -68,22 +68,22 @@ export const ReportMessageModal: React.FC<ReportMessageModalProps> = (props) => 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1f2937]/30 dark:bg-slate-900/60 animate-fade-in dark:backdrop-blur-xs">
-      <div className="w-full max-w-md bg-surface dark:bg-[#111827] rounded-xl shadow-menu border border-line dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh] dark:rounded-3xl dark:shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1f2937]/30 dark:bg-black/60 animate-fade-in">
+      <div className="w-full max-w-md bg-surface dark:bg-g-bg2 rounded-xl shadow-menu border border-line dark:border-g-line overflow-hidden flex flex-col max-h-[90vh] dark:shadow-g">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-line dark:border-slate-800/80 bg-surface dark:bg-[#111827]/80 dark:backdrop-blur-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line dark:border-g-line bg-surface dark:bg-g-bg2">
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-amber-100 dark:bg-amber-950/60 rounded-xl text-amber-600 dark:text-amber-400">
               <Flag className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-ink dark:text-slate-100">Report Message</h3>
-              <p className="text-xs text-ink-2 dark:text-slate-400">Report message from {senderName}</p>
+              <h3 className="text-base font-bold text-ink dark:text-g-text">Report Message</h3>
+              <p className="text-xs text-ink-2 dark:text-g-text2">Report message from {senderName}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-ink-3 hover:text-ink dark:hover:text-slate-200 rounded-full hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors dark:text-slate-400"
+            className="p-1.5 text-ink-3 hover:text-ink dark:hover:text-g-text rounded-full hover:bg-surface-2 dark:hover:bg-g-hover transition-colors dark:text-g-text2"
           >
             <X className="w-5 h-5" />
           </button>
@@ -99,18 +99,18 @@ export const ReportMessageModal: React.FC<ReportMessageModalProps> = (props) => 
           )}
 
           {/* Message Preview Banner */}
-          <div className="p-3 bg-surface-2 dark:bg-[#1a2234] border border-line dark:border-slate-800 rounded-xl dark:rounded-2xl">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-ink-3 uppercase tracking-wider mb-1 dark:text-slate-400">
+          <div className="p-3 bg-surface-2 dark:bg-g-s2 border border-line dark:border-g-line rounded-xl">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-ink-3 uppercase tracking-wider mb-1 dark:text-g-text2">
               <MessageSquare className="w-3.5 h-3.5 text-amber-500" />
               <span>Reported Message Preview</span>
             </div>
-            <p className="text-xs text-ink dark:text-slate-300 italic line-clamp-3 bg-white/60 dark:bg-black/20 p-2.5 rounded-xl border border-line dark:border-white/5">
+            <p className="text-xs text-ink dark:text-g-text2 italic line-clamp-3 bg-white/60 dark:bg-black/20 p-2.5 rounded-xl border border-line dark:border-g-line2">
               "{messageText}"
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-ink dark:text-slate-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-bold text-ink dark:text-g-text2 uppercase tracking-wider mb-2">
               Why are you reporting this message?
             </label>
 
@@ -120,10 +120,10 @@ export const ReportMessageModal: React.FC<ReportMessageModalProps> = (props) => 
                 return (
                   <label
                     key={r.id}
-                    className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer dark:rounded-2xl ${
+                    className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer ${
                       isChecked
-                        ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/30 text-ink dark:text-slate-100 shadow-xs'
-                        : 'border-line dark:border-slate-800 hover:bg-surface-2 dark:hover:bg-slate-800/50 text-ink dark:text-slate-300'
+                        ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/30 text-ink dark:text-g-text shadow-xs'
+                        : 'border-line dark:border-g-line hover:bg-surface-2 dark:hover:bg-g-hover text-ink dark:text-g-text2'
                     }`}
                   >
                     <input
@@ -139,7 +139,7 @@ export const ReportMessageModal: React.FC<ReportMessageModalProps> = (props) => 
                     />
                     <div className="min-w-0 flex-1">
                       <span className="block text-sm font-semibold">{r.label}</span>
-                      <span className="block text-xs text-ink-2 dark:text-slate-400 font-normal mt-0.5">{r.desc}</span>
+                      <span className="block text-xs text-ink-2 dark:text-g-text2 font-normal mt-0.5">{r.desc}</span>
                     </div>
                   </label>
                 );
@@ -150,10 +150,10 @@ export const ReportMessageModal: React.FC<ReportMessageModalProps> = (props) => 
           {/* Description Textarea */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold text-ink dark:text-slate-300 uppercase tracking-wider">
+              <label className="block text-xs font-bold text-ink dark:text-g-text2 uppercase tracking-wider">
                 Explanation {selectedReason === 'OTHER' ? <span className="text-rose-500">*</span> : '(Optional)'}
               </label>
-              <span className="text-[10px] text-ink-3 font-mono dark:text-slate-400">{description.length}/500</span>
+              <span className="text-[10px] text-ink-3 font-mono dark:text-g-text2">{description.length}/500</span>
             </div>
             <textarea
               value={description}
@@ -161,7 +161,7 @@ export const ReportMessageModal: React.FC<ReportMessageModalProps> = (props) => 
               maxLength={500}
               rows={3}
               placeholder={selectedReason === 'OTHER' ? 'Please describe the issue in detail...' : 'Additional details (optional)...'}
-              className="w-full p-3 bg-surface-2 dark:bg-[#1a2234] border border-line dark:border-slate-700 rounded-xl text-xs text-ink dark:text-slate-100 placeholder-ink-3 dark:placeholder-slate-500 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all resize-none dark:rounded-2xl"
+              className="w-full p-3 bg-surface-2 dark:bg-g-s2 border border-line dark:border-g-line rounded-xl text-xs text-ink dark:text-g-text placeholder-ink-3 dark:placeholder-g-text3 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all resize-none"
             />
           </div>
 
@@ -171,14 +171,14 @@ export const ReportMessageModal: React.FC<ReportMessageModalProps> = (props) => 
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-ink-2 dark:text-slate-300 hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors"
+              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-ink-2 dark:text-g-text2 hover:bg-surface-2 dark:hover:bg-g-hover transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-xl text-xs font-bold shadow-softer transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer dark:shadow-amber-600/20 dark:shadow-md"
+              className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-xl text-xs font-bold shadow-softer transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer dark:shadow-none"
             >
               {isSubmitting ? (
                 <>

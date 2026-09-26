@@ -14,18 +14,18 @@ interface AvatarProps {
 
 
 const AVATAR_BG_COLORS = [
-  'bg-gradient-to-br from-indigo-500 to-purple-600',
-  'bg-gradient-to-br from-sky-500 to-blue-600',
+  'bg-gradient-to-br from-indigo-500 to-purple-600 dark:bg-gold',
+  'bg-gradient-to-br from-sky-500 to-blue-600 dark:bg-gold',
   'bg-gradient-to-br from-emerald-500 to-teal-600',
   'bg-gradient-to-br from-amber-500 to-orange-600',
   'bg-gradient-to-br from-rose-500 to-pink-600',
-  'bg-gradient-to-br from-violet-500 to-indigo-600',
+  'bg-gradient-to-br from-violet-500 to-indigo-600 dark:bg-gold',
   'bg-gradient-to-br from-fuchsia-500 to-rose-600',
   'bg-gradient-to-br from-teal-500 to-cyan-600',
   'bg-gradient-to-br from-blue-600 to-indigo-700',
   'bg-gradient-to-br from-pink-500 to-rose-600',
   'bg-gradient-to-br from-amber-600 to-red-600',
-  'bg-gradient-to-br from-purple-600 to-pink-600',
+  'bg-gradient-to-br from-purple-600 to-pink-600 dark:bg-gold',
 ];
 
 const getAvatarColor = (name: string): string => {
@@ -105,11 +105,11 @@ export const Avatar: React.FC<AvatarProps> = ({
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
           decoding="async"
-          className={`${sizeClasses[size]} rounded-full object-cover shadow-xs border border-gray-200 dark:border-gray-700/50`}
+          className={`${sizeClasses[size]} rounded-full object-cover shadow-xs border border-gray-200 dark:border-g-line`}
         />
       ) : (
         <div
-          className={`${sizeClasses[size]} rounded-full ${bgColorClass} text-white font-bold flex items-center justify-center shadow-xs select-none tracking-wider`}
+          className={`${sizeClasses[size]} rounded-full ${bgColorClass} text-white font-bold flex items-center justify-center shadow-xs select-none tracking-wider dark:bg-none dark:bg-g-s3 dark:text-gold-light dark:font-semibold dark:shadow-none dark:ring-1 dark:ring-g-line`}
         >
           {initials}
         </div>
@@ -118,7 +118,7 @@ export const Avatar: React.FC<AvatarProps> = ({
 
       {showStatus && status && (
         <span
-          className={`absolute rounded-full ${statusDotSizes[size]} ${statusColors[status]} border-white dark:border-[#111b21]`}
+          className={`absolute rounded-full ${statusDotSizes[size]} ${statusColors[status]} border-white dark:border-g-bg2`}
           title={`Status: ${status}`}
         />
       )}

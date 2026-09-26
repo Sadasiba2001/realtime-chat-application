@@ -42,46 +42,46 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({ message, isOpen, onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1f2937]/30 dark:bg-slate-900/60 animate-fade-in dark:backdrop-blur-xs">
-      <div className="w-full max-w-md bg-surface dark:bg-[#1a2234] rounded-xl shadow-menu border border-line dark:border-white/10 overflow-hidden flex flex-col max-h-[85vh] dark:rounded-2xl dark:shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1f2937]/30 dark:bg-black/60 animate-fade-in">
+      <div className="w-full max-w-md bg-surface dark:bg-g-s2 rounded-xl shadow-menu border border-line dark:border-g-line overflow-hidden flex flex-col max-h-[85vh] dark:shadow-g">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-line dark:border-white/5">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-line dark:border-g-line2">
           <div className="flex items-center gap-2">
-            <Share2 className="w-5 h-5 text-accent dark:text-indigo-400" />
-            <h3 className="font-bold text-ink dark:text-slate-100 text-base">Forward Message</h3>
+            <Share2 className="w-5 h-5 text-accent dark:text-gold" />
+            <h3 className="font-bold text-ink dark:text-g-text text-base">Forward Message</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-full text-ink-3 hover:text-ink dark:hover:text-slate-200 hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors dark:text-slate-400"
+            className="p-1 rounded-full text-ink-3 hover:text-ink dark:hover:text-g-text hover:bg-surface-2 dark:hover:bg-g-hover transition-colors dark:text-g-text2"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Message Preview Banner */}
-        <div className="p-3.5 mx-4 mt-3 rounded-xl bg-surface-2 dark:bg-[#111827] border border-line dark:border-white/5 text-xs">
-          <span className="font-semibold text-accent dark:text-indigo-400 block mb-1">Forwarding Content:</span>
-          <p className="text-ink dark:text-slate-300 italic truncate max-h-12">{message.text}</p>
+        <div className="p-3.5 mx-4 mt-3 rounded-xl bg-surface-2 dark:bg-g-bg2 border border-line dark:border-g-line2 text-xs">
+          <span className="font-semibold text-accent dark:text-gold block mb-1">Forwarding Content:</span>
+          <p className="text-ink dark:text-g-text2 italic truncate max-h-12">{message.text}</p>
         </div>
 
         {/* Search Bar */}
         <div className="px-4 py-3">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-ink-3 dark:text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-ink-3 dark:text-g-text2" />
             <input
               type="text"
               placeholder="Search contacts or chats..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-xs bg-surface-2 dark:bg-slate-800/60 border border-line dark:border-white/10 rounded-xl text-ink dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-indigo-500/50"
+              className="w-full pl-9 pr-4 py-2 text-xs bg-surface-2 dark:bg-g-s2 border border-line dark:border-g-line rounded-xl text-ink dark:text-g-text focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-gold/30"
             />
           </div>
         </div>
 
         {/* Contacts List */}
-        <div className="flex-1 overflow-y-auto px-4 py-1 space-y-1 divide-y divide-slate-100 dark:divide-white/5">
+        <div className="flex-1 overflow-y-auto px-4 py-1 space-y-1 divide-y divide-slate-100 dark:divide-g-line2">
           {filteredConversations.length === 0 ? (
-            <p className="text-center py-6 text-xs text-ink-3 dark:text-slate-400">No chats found.</p>
+            <p className="text-center py-6 text-xs text-ink-3 dark:text-g-text2">No chats found.</p>
           ) : (
             filteredConversations.map((c) => {
               const targetUserId = c.participants?.[0]?.id || c.id;
@@ -94,8 +94,8 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({ message, isOpen, onC
                   onClick={() => toggleSelect(targetUserId)}
                   className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors ${
                     isSelected
-                      ? 'bg-accent-soft dark:bg-indigo-900/30'
-                      : 'hover:bg-surface-2 dark:hover:bg-slate-800/50'
+                      ? 'bg-accent-soft dark:bg-gold/12'
+                      : 'hover:bg-surface-2 dark:hover:bg-g-hover'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -105,19 +105,19 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({ message, isOpen, onC
                       crossOrigin="anonymous"
                       referrerPolicy="no-referrer"
                       decoding="async"
-                      className="w-9 h-9 rounded-full object-cover border border-line dark:border-white/10"
+                      className="w-9 h-9 rounded-full object-cover border border-line dark:border-g-line"
                     />
                     <div className="min-w-0">
-                      <p className="font-semibold text-xs text-ink dark:text-slate-100 truncate">{displayName}</p>
-                      <p className="text-[11px] text-ink-3 truncate dark:text-slate-400">{c.lastMessage?.text || 'Click to select'}</p>
+                      <p className="font-semibold text-xs text-ink dark:text-g-text truncate">{displayName}</p>
+                      <p className="text-[11px] text-ink-3 truncate dark:text-g-text2">{c.lastMessage?.text || 'Click to select'}</p>
                     </div>
                   </div>
 
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${
                       isSelected
-                        ? 'bg-accent border-accent text-white dark:bg-indigo-600 dark:border-indigo-600'
-                        : 'border-line dark:border-slate-600 bg-surface dark:bg-slate-800'
+                        ? 'bg-accent border-accent text-white dark:bg-gold dark:border-gold/30 dark:text-[#171717]'
+                        : 'border-line dark:border-g-line bg-surface dark:bg-g-s2'
                     }`}
                   >
                     {isSelected && <Check className="w-3.5 h-3.5" />}
@@ -129,17 +129,17 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({ message, isOpen, onC
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-2 p-4 border-t border-line dark:border-white/5 bg-surface-2 dark:bg-[#111827]/30">
+        <div className="flex items-center justify-end gap-2 p-4 border-t border-line dark:border-g-line2 bg-surface-2 dark:bg-g-bg2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-ink-2 dark:text-slate-300 hover:bg-surface-2 dark:hover:bg-slate-800 rounded-xl transition-colors"
+            className="px-4 py-2 text-xs font-semibold text-ink-2 dark:text-g-text2 hover:bg-surface-2 dark:hover:bg-g-hover rounded-xl transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleForward}
             disabled={selectedContactIds.length === 0 || isSubmitting}
-            className="px-5 py-2 text-xs font-semibold text-white bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-softer transition-all flex items-center gap-1.5 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:shadow-indigo-500/20 dark:shadow-md"
+            className="px-5 py-2 text-xs font-semibold text-white bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-softer transition-all flex items-center gap-1.5 dark:bg-gold dark:hover:bg-gold-light dark:shadow-none dark:text-[#171717]"
           >
             <Share2 className="w-3.5 h-3.5" />
             <span>Forward {selectedContactIds.length > 0 ? `(${selectedContactIds.length})` : ''}</span>

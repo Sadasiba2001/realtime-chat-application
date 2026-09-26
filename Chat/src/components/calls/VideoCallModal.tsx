@@ -70,8 +70,8 @@ export const VideoCallModal: React.FC = () => {
   const isCallActive = state === 'connected';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in select-none">
-      <div className="relative w-full max-w-2xl h-[92vh] max-h-[720px] rounded-3xl bg-[#0b0f17] border border-slate-800 shadow-2xl flex flex-col overflow-hidden text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in select-none dark:backdrop-blur-none">
+      <div className="relative w-full max-w-2xl h-[92vh] max-h-[720px] rounded-3xl bg-[#0b0f17] border border-slate-800 shadow-2xl flex flex-col overflow-hidden text-white dark:border-g-line dark:text-g-text">
         {/* Main Video View (Remote Video or Fallback) */}
         <div className="relative flex-1 w-full h-full bg-slate-950 flex items-center justify-center overflow-hidden">
           {isCallActive && remoteStream ? (
@@ -104,15 +104,15 @@ export const VideoCallModal: React.FC = () => {
 
           {/* Top Bar Overlay */}
           <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
-            <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-slate-700/60 shadow-lg">
-              <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse" />
-              <span className="text-xs font-semibold tracking-wide uppercase text-slate-200">
+            <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-slate-700/60 shadow-lg dark:bg-g-s1 dark:border-g-line dark:backdrop-blur-none">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse dark:bg-gold" />
+              <span className="text-xs font-semibold tracking-wide uppercase text-slate-200 dark:text-g-text">
                 Video Call
               </span>
             </div>
 
             <div className="flex flex-col items-end">
-              <span className="text-sm font-bold text-white drop-shadow-md truncate max-w-[200px]">
+              <span className="text-sm font-bold text-white drop-shadow-md truncate max-w-[200px] dark:text-g-text">
                 {counterparty.name || 'User'}
               </span>
               {isCallActive ? (
@@ -129,7 +129,7 @@ export const VideoCallModal: React.FC = () => {
                       ? 'text-rose-400'
                       : state === 'rejected'
                       ? 'text-amber-400'
-                      : 'text-slate-300'
+                      : 'text-slate-300 dark:text-g-text2'
                   }`}
                 >
                   {error || statusMessage || 'Connecting...'}
@@ -140,9 +140,9 @@ export const VideoCallModal: React.FC = () => {
 
           {/* Picture-in-Picture Local Video Preview */}
           {localStream && (
-            <div className="absolute bottom-24 right-4 z-30 w-28 h-40 sm:w-36 sm:h-48 rounded-2xl bg-slate-900 border-2 border-slate-700/80 shadow-2xl overflow-hidden group">
+            <div className="absolute bottom-24 right-4 z-30 w-28 h-40 sm:w-36 sm:h-48 rounded-2xl bg-slate-900 border-2 border-slate-700/80 shadow-2xl overflow-hidden group dark:bg-g-s1 dark:border-g-line">
               {isCameraOff ? (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-400">
+                <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-400 dark:bg-g-s1 dark:text-g-text2">
                   <VideoOff className="w-6 h-6 mb-1" />
                   <span className="text-[10px]">Camera Off</span>
                 </div>
@@ -155,7 +155,7 @@ export const VideoCallModal: React.FC = () => {
                   className="w-full h-full object-cover scale-x-[-1]"
                 />
               )}
-              <div className="absolute bottom-1.5 left-2 px-1.5 py-0.5 rounded bg-black/60 text-[9px] font-medium text-slate-300">
+              <div className="absolute bottom-1.5 left-2 px-1.5 py-0.5 rounded bg-black/60 text-[9px] font-medium text-slate-300 dark:text-g-text2">
                 You
               </div>
             </div>
@@ -163,18 +163,18 @@ export const VideoCallModal: React.FC = () => {
         </div>
 
         {/* Bottom Call Controls */}
-        <div className="w-full bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 p-4 sm:p-5 flex items-center justify-center z-30">
+        <div className="w-full bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 p-4 sm:p-5 flex items-center justify-center z-30 dark:bg-g-s1 dark:border-g-line dark:backdrop-blur-none">
           {/* Outgoing Call State Controls */}
           {state === 'calling' && (
             <div className="flex flex-col items-center gap-1.5">
               <button
                 onClick={cancelVideoCall}
-                className="flex items-center justify-center w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-lg shadow-rose-900/50 transition-all"
+                className="flex items-center justify-center w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-lg shadow-rose-900/50 transition-all dark:text-g-text"
                 title="Cancel Call"
               >
                 <PhoneOff className="w-6 h-6" />
               </button>
-              <span className="text-xs text-slate-400">Cancel</span>
+              <span className="text-xs text-slate-400 dark:text-g-text2">Cancel</span>
             </div>
           )}
 
@@ -184,18 +184,18 @@ export const VideoCallModal: React.FC = () => {
               <div className="flex flex-col items-center gap-1.5">
                 <button
                   onClick={rejectVideoCall}
-                  className="flex items-center justify-center w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-lg shadow-rose-900/50 transition-all"
+                  className="flex items-center justify-center w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-lg shadow-rose-900/50 transition-all dark:text-g-text"
                   title="Decline"
                 >
                   <PhoneOff className="w-6 h-6" />
                 </button>
-                <span className="text-xs text-slate-400">Decline</span>
+                <span className="text-xs text-slate-400 dark:text-g-text2">Decline</span>
               </div>
 
               <div className="flex flex-col items-center gap-1.5">
                 <button
                   onClick={acceptVideoCall}
-                  className="flex items-center justify-center w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white shadow-lg shadow-emerald-900/50 transition-all animate-bounce"
+                  className="flex items-center justify-center w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white shadow-lg shadow-emerald-900/50 transition-all animate-bounce dark:text-g-text"
                   title="Accept Video Call"
                 >
                   <Video className="w-6 h-6" />
@@ -215,13 +215,13 @@ export const VideoCallModal: React.FC = () => {
                   className={`flex items-center justify-center w-12 h-12 rounded-full transition-all active:scale-95 ${
                     isMuted
                       ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-lg'
-                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 dark:bg-g-s2 dark:hover:bg-g-s3 dark:text-g-text dark:border-g-line'
                   }`}
                   title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
                 >
                   {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                 </button>
-                <span className="text-[10px] text-slate-400">{isMuted ? 'Unmute' : 'Mute'}</span>
+                <span className="text-[10px] text-slate-400 dark:text-g-text2">{isMuted ? 'Unmute' : 'Mute'}</span>
               </div>
 
               {/* Camera On / Off */}
@@ -231,45 +231,45 @@ export const VideoCallModal: React.FC = () => {
                   className={`flex items-center justify-center w-12 h-12 rounded-full transition-all active:scale-95 ${
                     isCameraOff
                       ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-lg'
-                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 dark:bg-g-s2 dark:hover:bg-g-s3 dark:text-g-text dark:border-g-line'
                   }`}
                   title={isCameraOff ? 'Turn camera on' : 'Turn camera off'}
                 >
                   {isCameraOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
                 </button>
-                <span className="text-[10px] text-slate-400">{isCameraOff ? 'Camera On' : 'Camera Off'}</span>
+                <span className="text-[10px] text-slate-400 dark:text-g-text2">{isCameraOff ? 'Camera On' : 'Camera Off'}</span>
               </div>
 
               {/* Switch Camera */}
               <div className="flex flex-col items-center gap-1">
                 <button
                   onClick={switchCamera}
-                  className="flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-95 transition-all"
+                  className="flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-95 transition-all dark:bg-g-s2 dark:hover:bg-g-s3 dark:text-g-text dark:border-g-line"
                   title="Switch camera"
                 >
                   <RefreshCw className="w-5 h-5" />
                 </button>
-                <span className="text-[10px] text-slate-400">Flip</span>
+                <span className="text-[10px] text-slate-400 dark:text-g-text2">Flip</span>
               </div>
 
               {/* End Call */}
               <div className="flex flex-col items-center gap-1">
                 <button
                   onClick={endVideoCall}
-                  className="flex items-center justify-center w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-xl shadow-rose-900/50 transition-all"
+                  className="flex items-center justify-center w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-700 active:scale-95 text-white shadow-xl shadow-rose-900/50 transition-all dark:text-g-text"
                   title="End Video Call"
                 >
                   <PhoneOff className="w-6 h-6" />
                 </button>
-                <span className="text-[10px] text-slate-400">End</span>
+                <span className="text-[10px] text-slate-400 dark:text-g-text2">End</span>
               </div>
             </div>
           )}
 
           {/* Terminal Banner */}
           {isTerminalState && (
-            <div className="py-2 px-5 rounded-xl bg-slate-800/80 border border-slate-700 text-center">
-              <span className="text-xs text-slate-300">Returning to chat...</span>
+            <div className="py-2 px-5 rounded-xl bg-slate-800/80 border border-slate-700 text-center dark:bg-g-s2 dark:border-g-line">
+              <span className="text-xs text-slate-300 dark:text-g-text2">Returning to chat...</span>
             </div>
           )}
         </div>

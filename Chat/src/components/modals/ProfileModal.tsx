@@ -177,7 +177,7 @@ export const ProfileModal: React.FC = () => {
               title={hasCustomPhoto ? 'Change Profile Photo' : 'Upload Profile Photo'}
             >
               {isUploading ? (
-                <Loader2 className="w-7 h-7 animate-spin text-sky-400" />
+                <Loader2 className="w-7 h-7 animate-spin text-sky-400 dark:text-gold" />
               ) : (
                 <>
                   <Camera className="w-6 h-6 mb-1" />
@@ -189,7 +189,7 @@ export const ProfileModal: React.FC = () => {
             {/* Uploading Spinner Badge */}
             {isUploading && (
               <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-sky-400" />
+                <Loader2 className="w-8 h-8 animate-spin text-sky-400 dark:text-gold" />
               </div>
             )}
           </div>
@@ -200,7 +200,7 @@ export const ProfileModal: React.FC = () => {
               type="button"
               disabled={isUploading}
               onClick={() => fileInputRef.current?.click()}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-gold/12 text-sky-600 dark:text-gold hover:bg-sky-100 dark:hover:bg-gold/12 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <Camera className="w-3.5 h-3.5" />
               {hasCustomPhoto ? 'Change Photo' : 'Upload Photo'}
@@ -211,7 +211,7 @@ export const ProfileModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleViewFullPhoto}
-                  className="text-xs text-ink-2 dark:text-gray-400 hover:text-ink dark:hover:text-gray-200 font-medium hover:underline flex items-center gap-1 cursor-pointer"
+                  className="text-xs text-ink-2 dark:text-g-text2 hover:text-ink dark:hover:text-g-text font-medium hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <ZoomIn className="w-3.5 h-3.5" /> View Full
                 </button>
@@ -247,61 +247,61 @@ export const ProfileModal: React.FC = () => {
         {/* Form Inputs */}
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-ink dark:text-gray-300 mb-1">
+            <label className="block text-xs font-semibold text-ink dark:text-g-text2 mb-1">
               Your Name
             </label>
             <div className="relative">
-              <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3 dark:text-gray-400" />
+              <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3 dark:text-g-text2" />
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm bg-surface-2 dark:bg-slate-800 text-ink dark:text-gray-100 rounded-xl border border-line dark:border-gray-700 outline-hidden"
+                className="w-full pl-10 pr-4 py-2 text-sm bg-surface-2 dark:bg-g-s2 text-ink dark:text-g-text rounded-xl border border-line dark:border-g-line outline-hidden"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-ink dark:text-gray-300 mb-1">
+            <label className="block text-xs font-semibold text-ink dark:text-g-text2 mb-1">
               About / Bio
             </label>
             <div className="relative">
-              <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3 dark:text-gray-400" />
+              <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3 dark:text-g-text2" />
               <input
                 type="text"
                 value={about}
                 onChange={(e) => setAbout(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm bg-surface-2 dark:bg-slate-800 text-ink dark:text-gray-100 rounded-xl border border-line dark:border-gray-700 outline-hidden"
+                className="w-full pl-10 pr-4 py-2 text-sm bg-surface-2 dark:bg-g-s2 text-ink dark:text-g-text rounded-xl border border-line dark:border-g-line outline-hidden"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-ink dark:text-gray-300 mb-1">
+            <label className="block text-xs font-semibold text-ink dark:text-g-text2 mb-1">
               Phone Number
             </label>
             <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3 dark:text-gray-400" />
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3 dark:text-g-text2" />
               <input
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm bg-surface-2 dark:bg-slate-800 text-ink dark:text-gray-100 rounded-xl border border-line dark:border-gray-700 outline-hidden"
+                className="w-full pl-10 pr-4 py-2 text-sm bg-surface-2 dark:bg-g-s2 text-ink dark:text-g-text rounded-xl border border-line dark:border-g-line outline-hidden"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-ink dark:text-gray-300 mb-1">
+            <label className="block text-xs font-semibold text-ink dark:text-g-text2 mb-1">
               Email Address
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3 dark:text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3 dark:text-g-text2" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm bg-surface-2 dark:bg-slate-800 text-ink dark:text-gray-100 rounded-xl border border-line dark:border-gray-700 outline-hidden"
+                className="w-full pl-10 pr-4 py-2 text-sm bg-surface-2 dark:bg-g-s2 text-ink dark:text-g-text rounded-xl border border-line dark:border-g-line outline-hidden"
               />
             </div>
           </div>
@@ -310,7 +310,7 @@ export const ProfileModal: React.FC = () => {
         {/* Save Button */}
         <button
           onClick={handleSave}
-          className="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm rounded-xl transition-all shadow-softer flex items-center justify-center gap-2 cursor-pointer dark:shadow-sky-600/30 dark:shadow-md"
+          className="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm rounded-xl transition-all shadow-softer flex items-center justify-center gap-2 cursor-pointer dark:bg-gold dark:hover:bg-gold-light dark:shadow-none dark:text-[#171717]"
         >
           <Save className="w-4 h-4" /> Save Profile Changes
         </button>
