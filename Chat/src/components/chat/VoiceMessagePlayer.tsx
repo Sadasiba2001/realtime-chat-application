@@ -90,7 +90,7 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
   if (hasError) {
     return (
       <div className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs ${
-        isOutgoing ? 'bg-white/10 border-white/20 text-white' : 'bg-slate-50 dark:bg-[#111827] border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200'
+        isOutgoing ? 'bg-white/10 border-white/20 text-white' : 'bg-surface-2 dark:bg-[#111827] border-line dark:border-white/10 text-ink dark:text-slate-200'
       }`}>
         <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
         <span>Voice message unavailable</span>
@@ -105,7 +105,7 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
       className={`flex items-center gap-3 p-2.5 rounded-xl border text-xs min-w-[220px] transition-colors ${
         isOutgoing
           ? 'bg-white/10 border-white/20 text-white'
-          : 'bg-slate-50 dark:bg-[#111827] border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200'
+          : 'bg-surface-2 dark:bg-[#111827] border-line dark:border-white/10 text-ink dark:text-slate-200'
       }`}
     >
       <button
@@ -113,8 +113,8 @@ export const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = ({
         onClick={togglePlayPause}
         className={`p-2 rounded-full flex items-center justify-center transition-transform active:scale-95 flex-shrink-0 ${
           isOutgoing
-            ? 'bg-white text-violet-600 hover:bg-slate-100'
-            : 'bg-violet-600 text-white hover:bg-violet-700'
+            ? 'bg-surface text-accent hover:bg-surface-2 dark:bg-white dark:text-violet-600 dark:hover:bg-slate-100'
+            : 'bg-accent text-white hover:bg-accent-hover dark:bg-violet-600 dark:hover:bg-violet-700'
         }`}
         title={isPlaying ? 'Pause Voice Note' : 'Play Voice Note'}
       >

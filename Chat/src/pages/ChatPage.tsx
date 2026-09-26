@@ -12,6 +12,7 @@ import { CallsView } from '../components/calls/CallsView';
 import { SettingsView } from '../components/settings/SettingsView';
 import { NotificationToast } from '../components/common/NotificationToast';
 import { MobileBottomNav } from '../components/navigation/MobileBottomNav';
+import { MobileUnsupportedScreen } from '../components/common/MobileUnsupportedScreen';
 
 export const ChatPage: React.FC = () => {
   const {
@@ -58,22 +59,26 @@ export const ChatPage: React.FC = () => {
       ? matchingMessageIds[Math.abs(currentMatchIndex) % matchingMessageIds.length]
       : undefined;
 
+  if (isMobileView) {
+    return <MobileUnsupportedScreen />;
+  }
+
   return (
-    <div className="h-screen w-screen flex p-0 md:p-2.5 lg:p-3 gap-0 md:gap-2.5 lg:gap-3 bg-[#eef2f6] dark:bg-[#0b0f19] overflow-hidden select-none relative">
+    <div className="h-screen w-screen flex p-0 dark:md:p-2.5 dark:lg:p-3 gap-0 dark:md:gap-2.5 dark:lg:gap-3 bg-canvas dark:bg-[#0b0f19] overflow-hidden select-none relative">
       {/* Left Navigation Sidebar Island */}
       {(!isMobileView || !mobileShowChat) && <Sidebar />}
 
       {/* Conditional Active Tab Content */}
       {activeTab === 'status' ? (
-        <div className="flex-1 flex overflow-hidden rounded-none md:rounded-2xl border-0 md:border border-slate-200/80 dark:border-white/10 shadow-none md:shadow-2xl bg-white dark:bg-[#111827] pb-16 md:pb-0">
+        <div className="flex-1 flex overflow-hidden rounded-none dark:md:rounded-2xl border-0 dark:md:border dark:border-white/10 shadow-none dark:md:shadow-2xl bg-surface dark:bg-[#111827] pb-16 md:pb-0">
           <StatusView />
         </div>
       ) : activeTab === 'calls' ? (
-        <div className="flex-1 flex overflow-hidden rounded-none md:rounded-2xl border-0 md:border border-slate-200/80 dark:border-white/10 shadow-none md:shadow-2xl bg-white dark:bg-[#111827] pb-16 md:pb-0">
+        <div className="flex-1 flex overflow-hidden rounded-none dark:md:rounded-2xl border-0 dark:md:border dark:border-white/10 shadow-none dark:md:shadow-2xl bg-surface dark:bg-[#111827] pb-16 md:pb-0">
           <CallsView />
         </div>
       ) : activeTab === 'settings' ? (
-        <div className="flex-1 flex overflow-hidden rounded-none md:rounded-2xl border-0 md:border border-slate-200/80 dark:border-white/10 shadow-none md:shadow-2xl bg-white dark:bg-[#111827] pb-16 md:pb-0">
+        <div className="flex-1 flex overflow-hidden rounded-none dark:md:rounded-2xl border-0 dark:md:border dark:border-white/10 shadow-none dark:md:shadow-2xl bg-surface dark:bg-[#111827] pb-16 md:pb-0">
           <SettingsView />
         </div>
       ) : (
@@ -84,7 +89,7 @@ export const ChatPage: React.FC = () => {
 
           {/* Main Chat Area Island (Mobile shows when chat active, Desktop always visible) */}
           {(!isMobileView || mobileShowChat) && (
-            <div className="flex-1 flex flex-col h-full min-w-0 bg-white dark:bg-[#111827] rounded-none md:rounded-2xl border-0 md:border border-slate-200/80 dark:border-white/10 shadow-none md:shadow-2xl relative overflow-hidden">
+            <div className="flex-1 flex flex-col h-full min-w-0 bg-surface dark:bg-[#111827] rounded-none dark:md:rounded-2xl border-0 dark:md:border dark:border-white/10 shadow-none dark:md:shadow-2xl relative overflow-hidden">
               {activeConversation ? (
                 <>
                   <ChatHeader

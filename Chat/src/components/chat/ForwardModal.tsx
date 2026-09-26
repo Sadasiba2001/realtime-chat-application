@@ -42,38 +42,38 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({ message, isOpen, onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-      <div className="w-full max-w-md bg-white dark:bg-[#1a2234] rounded-2xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1f2937]/30 dark:bg-slate-900/60 animate-fade-in dark:backdrop-blur-xs">
+      <div className="w-full max-w-md bg-surface dark:bg-[#1a2234] rounded-xl shadow-menu border border-line dark:border-white/10 overflow-hidden flex flex-col max-h-[85vh] dark:rounded-2xl dark:shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/5">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-line dark:border-white/5">
           <div className="flex items-center gap-2">
-            <Share2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Forward Message</h3>
+            <Share2 className="w-5 h-5 text-accent dark:text-indigo-400" />
+            <h3 className="font-bold text-ink dark:text-slate-100 text-base">Forward Message</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-1 rounded-full text-ink-3 hover:text-ink dark:hover:text-slate-200 hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors dark:text-slate-400"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Message Preview Banner */}
-        <div className="p-3.5 mx-4 mt-3 rounded-xl bg-slate-50 dark:bg-[#111827] border border-slate-200/80 dark:border-white/5 text-xs">
-          <span className="font-semibold text-indigo-600 dark:text-indigo-400 block mb-1">Forwarding Content:</span>
-          <p className="text-slate-700 dark:text-slate-300 italic truncate max-h-12">{message.text}</p>
+        <div className="p-3.5 mx-4 mt-3 rounded-xl bg-surface-2 dark:bg-[#111827] border border-line dark:border-white/5 text-xs">
+          <span className="font-semibold text-accent dark:text-indigo-400 block mb-1">Forwarding Content:</span>
+          <p className="text-ink dark:text-slate-300 italic truncate max-h-12">{message.text}</p>
         </div>
 
         {/* Search Bar */}
         <div className="px-4 py-3">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-ink-3 dark:text-slate-400" />
             <input
               type="text"
               placeholder="Search contacts or chats..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-xs bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-white/10 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full pl-9 pr-4 py-2 text-xs bg-surface-2 dark:bg-slate-800/60 border border-line dark:border-white/10 rounded-xl text-ink dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20 dark:focus:ring-indigo-500/50"
             />
           </div>
         </div>
@@ -81,7 +81,7 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({ message, isOpen, onC
         {/* Contacts List */}
         <div className="flex-1 overflow-y-auto px-4 py-1 space-y-1 divide-y divide-slate-100 dark:divide-white/5">
           {filteredConversations.length === 0 ? (
-            <p className="text-center py-6 text-xs text-slate-400">No chats found.</p>
+            <p className="text-center py-6 text-xs text-ink-3 dark:text-slate-400">No chats found.</p>
           ) : (
             filteredConversations.map((c) => {
               const targetUserId = c.participants?.[0]?.id || c.id;
@@ -94,8 +94,8 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({ message, isOpen, onC
                   onClick={() => toggleSelect(targetUserId)}
                   className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors ${
                     isSelected
-                      ? 'bg-indigo-50/80 dark:bg-indigo-900/30'
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      ? 'bg-accent-soft dark:bg-indigo-900/30'
+                      : 'hover:bg-surface-2 dark:hover:bg-slate-800/50'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -105,19 +105,19 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({ message, isOpen, onC
                       crossOrigin="anonymous"
                       referrerPolicy="no-referrer"
                       decoding="async"
-                      className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-white/10"
+                      className="w-9 h-9 rounded-full object-cover border border-line dark:border-white/10"
                     />
                     <div className="min-w-0">
-                      <p className="font-semibold text-xs text-slate-800 dark:text-slate-100 truncate">{displayName}</p>
-                      <p className="text-[11px] text-slate-400 truncate">{c.lastMessage?.text || 'Click to select'}</p>
+                      <p className="font-semibold text-xs text-ink dark:text-slate-100 truncate">{displayName}</p>
+                      <p className="text-[11px] text-ink-3 truncate dark:text-slate-400">{c.lastMessage?.text || 'Click to select'}</p>
                     </div>
                   </div>
 
                   <div
                     className={`w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${
                       isSelected
-                        ? 'bg-indigo-600 border-indigo-600 text-white'
-                        : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                        ? 'bg-accent border-accent text-white dark:bg-indigo-600 dark:border-indigo-600'
+                        : 'border-line dark:border-slate-600 bg-surface dark:bg-slate-800'
                     }`}
                   >
                     {isSelected && <Check className="w-3.5 h-3.5" />}
@@ -129,17 +129,17 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({ message, isOpen, onC
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-2 p-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-[#111827]/30">
+        <div className="flex items-center justify-end gap-2 p-4 border-t border-line dark:border-white/5 bg-surface-2 dark:bg-[#111827]/30">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+            className="px-4 py-2 text-xs font-semibold text-ink-2 dark:text-slate-300 hover:bg-surface-2 dark:hover:bg-slate-800 rounded-xl transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleForward}
             disabled={selectedContactIds.length === 0 || isSubmitting}
-            className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1.5"
+            className="px-5 py-2 text-xs font-semibold text-white bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-softer transition-all flex items-center gap-1.5 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:shadow-indigo-500/20 dark:shadow-md"
           >
             <Share2 className="w-3.5 h-3.5" />
             <span>Forward {selectedContactIds.length > 0 ? `(${selectedContactIds.length})` : ''}</span>

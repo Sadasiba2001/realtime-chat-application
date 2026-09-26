@@ -131,23 +131,23 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       {/* Bubble Wrapper */}
       <div
         onClick={handleBubbleClick}
-        className={`relative px-4 py-2.5 rounded-2xl text-sm transition-all duration-150 cursor-pointer ${
+        className={`relative px-3.5 dark:px-4 py-2 dark:py-2.5 rounded-xl dark:rounded-2xl text-sm transition-all duration-150 cursor-pointer ${
           isOutgoing
-            ? 'bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-600 text-white rounded-tr-xs shadow-md shadow-indigo-500/15 border border-violet-400/20'
-            : 'bg-white dark:bg-[#1a2234] text-slate-900 dark:text-slate-100 rounded-tl-xs border border-slate-200/80 dark:border-white/10 shadow-xs'
+            ? 'bg-accent text-white rounded-br-sm border border-accent dark:bg-gradient-to-br dark:from-violet-600 dark:via-indigo-600 dark:to-purple-600 dark:rounded-tr-xs dark:shadow-md dark:shadow-indigo-500/15 dark:border-violet-400/20'
+            : 'bg-surface dark:bg-[#1a2234] text-ink dark:text-slate-100 rounded-bl-sm dark:rounded-tl-xs border border-line dark:border-white/10 shadow-softer dark:shadow-xs'
         }`}
       >
         {/* Group Chat Sender Name */}
         {showSenderName && displayName && !isOutgoing && (
-          <p className="text-xs font-bold text-violet-600 dark:text-violet-400 mb-1">
+          <p className="text-xs font-semibold dark:font-bold text-accent dark:text-violet-400 mb-1">
             {displayName}
           </p>
         )}
 
         {/* Forwarded Header Indicator */}
         {message.isForwarded && (
-          <p className="flex items-center gap-1 text-[11px] font-medium text-slate-400 dark:text-slate-400 mb-1 italic">
-            <Share2 className="w-3 h-3 text-indigo-400" />
+          <p className={`flex items-center gap-1 text-[11px] font-medium ${isOutgoing ? 'text-white/75' : 'text-ink-3'} dark:text-slate-400 mb-1 italic`}>
+            <Share2 className="w-3 h-3 dark:text-indigo-400" />
             <span>Forwarded {message.forwardedFromName ? `from ${message.forwardedFromName}` : ''}</span>
           </p>
         )}
@@ -167,10 +167,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 }
               }
             }}
-            className={`p-2 mb-2 rounded-xl text-xs border-l-3 cursor-pointer hover:opacity-90 transition-opacity ${
+            className={`p-2 mb-2 rounded-lg dark:rounded-xl text-xs border-l-3 cursor-pointer hover:opacity-90 transition-opacity ${
               isOutgoing
-                ? 'bg-black/20 border-l-white/90 text-violet-100'
-                : 'bg-slate-100 dark:bg-[#111827] border-l-violet-500 text-slate-700 dark:text-slate-300'
+                ? 'bg-white/15 dark:bg-black/20 border-l-white/90 text-white/90 dark:text-violet-100'
+                : 'bg-surface-2 dark:bg-[#111827] border-l-accent dark:border-l-violet-500 text-ink-2 dark:text-slate-300'
             }`}
             title="Click to locate original message"
           >
@@ -196,7 +196,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 {att.type === 'image' && (
                   <div
                     onClick={() => openModal('media_viewer', { url: att.url, name: att.name, type: 'image' })}
-                    className="relative rounded-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity border border-black/10 shadow-xs"
+                    className="relative rounded-lg dark:rounded-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity border border-black/10 dark:shadow-xs"
                   >
                     <img src={att.url} alt={att.name || 'Attachment'} className="max-h-60 w-full object-cover" />
                   </div>
@@ -208,13 +208,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     target="_blank"
                     rel="noreferrer"
                     download={att.name}
-                    className={`flex items-center gap-3 p-2.5 rounded-xl border text-xs transition-colors ${
+                    className={`flex items-center gap-3 p-2.5 rounded-lg dark:rounded-xl border text-xs transition-colors ${
                       isOutgoing
                         ? 'bg-white/10 border-white/20 text-white hover:bg-white/15'
-                        : 'bg-slate-50 dark:bg-[#111827] border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        : 'bg-surface-2 dark:bg-[#111827] border-line dark:border-white/10 text-ink dark:text-slate-200 hover:bg-canvas dark:hover:bg-slate-800'
                     }`}
                   >
-                    <FileText className="w-6 h-6 text-violet-400 flex-shrink-0" />
+                    <FileText className={`w-6 h-6 ${isOutgoing ? 'text-white/90' : 'text-accent'} dark:text-violet-400 flex-shrink-0`} />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold truncate">{att.name}</p>
                       <span className="opacity-75">{att.size}</span>
@@ -235,13 +235,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 {att.type === 'video' && (
                   <div
                     onClick={() => openModal('media_viewer', { url: att.url, name: att.name, type: 'video' })}
-                    className={`flex items-center gap-3 p-2.5 rounded-xl border text-xs cursor-pointer transition-colors ${
+                    className={`flex items-center gap-3 p-2.5 rounded-lg dark:rounded-xl border text-xs cursor-pointer transition-colors ${
                       isOutgoing
                         ? 'bg-white/10 border-white/20 text-white hover:bg-white/15'
-                        : 'bg-slate-50 dark:bg-[#111827] border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        : 'bg-surface-2 dark:bg-[#111827] border-line dark:border-white/10 text-ink dark:text-slate-200 hover:bg-canvas dark:hover:bg-slate-800'
                     }`}
                   >
-                    <Film className="w-6 h-6 text-rose-400 flex-shrink-0" />
+                    <Film className={`w-6 h-6 ${isOutgoing ? 'text-white/90' : 'text-accent'} dark:text-rose-400 flex-shrink-0`} />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold truncate">{att.name}</p>
                       <span className="opacity-75">{att.size}</span>
@@ -281,7 +281,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           {isOutgoing && (
             <span className="inline-flex">
               {message.status === 'read' ? (
-                <CheckCheck className="w-3.5 h-3.5 text-emerald-300 font-bold" />
+                <CheckCheck className="w-3.5 h-3.5 text-white dark:text-emerald-300 font-bold" />
               ) : message.status === 'delivered' ? (
                 <CheckCheck className="w-3.5 h-3.5 text-white/90" />
               ) : (
@@ -296,14 +296,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           <div
             className={`absolute top-1/2 -translate-y-1/2 ${
               isOutgoing ? 'right-full mr-2' : 'left-full ml-2'
-            } flex items-center gap-0.5 sm:gap-1 bg-white/95 dark:bg-[#1a2234]/95 backdrop-blur-md p-1 sm:p-1.5 rounded-full shadow-2xl border border-slate-200/80 dark:border-white/15 z-40 animate-fade-in whitespace-nowrap`}
+            } flex items-center gap-0.5 sm:gap-1 bg-surface dark:bg-[#1a2234]/95 dark:backdrop-blur-md p-1 dark:sm:p-1.5 rounded-lg dark:rounded-full shadow-menu dark:shadow-2xl border border-line dark:border-white/15 z-40 animate-fade-in whitespace-nowrap`}
           >
             <button
               onClick={() => {
                 setShowEmojiPicker(!showEmojiPicker);
                 setShowDeleteMenu(false);
               }}
-              className="p-1 text-slate-500 hover:text-amber-500 dark:text-slate-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 dark:p-1 text-ink-2 hover:text-accent dark:hover:text-amber-500 dark:text-slate-400 rounded-md dark:rounded-full hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors"
               title="React"
             >
               <Smile className="w-3.5 h-3.5" />
@@ -316,14 +316,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   text: message.text,
                 })
               }
-              className="p-1 text-slate-500 hover:text-violet-600 dark:text-slate-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 dark:p-1 text-ink-2 hover:text-accent dark:hover:text-violet-600 dark:text-slate-400 rounded-md dark:rounded-full hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors"
               title="Reply"
             >
               <Reply className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => toggleStarMessage(message.id)}
-              className="p-1 text-slate-500 hover:text-amber-400 dark:text-slate-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 dark:p-1 text-ink-2 hover:text-accent dark:hover:text-amber-400 dark:text-slate-400 rounded-md dark:rounded-full hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors"
               title="Star"
             >
               <Star className="w-3.5 h-3.5" />
@@ -333,7 +333,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 setShowForwardModal(true);
                 setShowActions(false);
               }}
-              className="p-1 text-slate-500 hover:text-indigo-500 dark:text-slate-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 dark:p-1 text-ink-2 hover:text-accent dark:hover:text-indigo-500 dark:text-slate-400 rounded-md dark:rounded-full hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors"
               title="Forward"
             >
               <Share2 className="w-3.5 h-3.5" />
@@ -344,7 +344,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   setEditingMessage(message);
                   setShowActions(false);
                 }}
-                className="p-1 text-slate-500 hover:text-indigo-500 dark:text-slate-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 dark:p-1 text-ink-2 hover:text-accent dark:hover:text-indigo-500 dark:text-slate-400 rounded-md dark:rounded-full hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors"
                 title="Edit"
               >
                 <Pencil className="w-3.5 h-3.5" />
@@ -360,7 +360,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   });
                   setShowActions(false);
                 }}
-                className="p-1 text-slate-500 hover:text-amber-500 dark:text-slate-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 dark:p-1 text-ink-2 hover:text-accent dark:hover:text-amber-500 dark:text-slate-400 rounded-md dark:rounded-full hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors"
                 title="Report Message"
               >
                 <Flag className="w-3.5 h-3.5" />
@@ -372,7 +372,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   setShowDeleteMenu((prev) => !prev);
                   setShowEmojiPicker(false);
                 }}
-                className="p-1 text-slate-500 hover:text-rose-500 dark:text-slate-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 dark:p-1 text-ink-2 hover:text-danger dark:hover:text-rose-500 dark:text-slate-400 rounded-md dark:rounded-full hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors"
                 title="Delete"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -382,7 +382,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 <div
                   className={`absolute z-50 bottom-full mb-2 ${
                     isOutgoing ? 'right-0' : 'left-0'
-                  } w-44 bg-white/95 dark:bg-[#1a2234]/95 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-xl shadow-xl py-1.5 px-1 animate-fade-in text-xs whitespace-nowrap`}
+                  } w-44 bg-surface dark:bg-[#1a2234]/95 dark:backdrop-blur-md border border-line dark:border-white/10 rounded-lg dark:rounded-xl shadow-menu dark:shadow-xl py-1.5 px-1 animate-fade-in text-xs whitespace-nowrap`}
                 >
                   <button
                     onClick={() => {
@@ -390,9 +390,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                       setShowDeleteMenu(false);
                       setShowActions(false);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-medium cursor-pointer"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left rounded-md dark:rounded-lg text-ink dark:text-slate-200 hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors font-medium cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-slate-400" />
+                    <Trash2 className="w-3.5 h-3.5 text-ink-3 dark:text-slate-400" />
                     <span>Delete for me</span>
                   </button>
 
@@ -402,9 +402,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                       setShowDeleteMenu(false);
                       setShowActions(false);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors font-medium cursor-pointer"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left rounded-md dark:rounded-lg text-danger dark:text-rose-400 hover:bg-red-50 dark:hover:bg-rose-950/30 transition-colors font-medium cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                    <Trash2 className="w-3.5 h-3.5 text-danger dark:text-rose-500" />
                     <span>Delete for everyone</span>
                   </button>
                 </div>
@@ -447,10 +447,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               <button
                 key={g.emoji}
                 onClick={() => addReaction(message.id, g.emoji)}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-all shadow-sm cursor-pointer ${
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-all dark:shadow-sm cursor-pointer ${
                   g.userReacted
-                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-500/50 font-semibold'
-                    : 'bg-white dark:bg-[#1a2234] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    ? 'bg-accent-soft text-accent dark:bg-indigo-900/50 dark:text-indigo-300 border border-accent-active dark:border-indigo-500/50 font-semibold'
+                    : 'bg-surface dark:bg-[#1a2234] text-ink-2 dark:text-slate-300 border border-line dark:border-white/10 hover:bg-surface-2 dark:hover:bg-slate-800'
                 }`}
                 title={g.users.length > 0 ? `${g.emoji} by ${g.users.join(', ')}` : g.emoji}
               >

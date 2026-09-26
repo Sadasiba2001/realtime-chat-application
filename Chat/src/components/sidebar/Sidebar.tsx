@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   MessageSquare,
   CircleDashed,
@@ -7,6 +7,8 @@ import {
   Sun,
   Moon,
   LogOut,
+  MoreHorizontal,
+  UserRound,
 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { useAuth } from '../../hooks/useAuth';
@@ -27,6 +29,19 @@ export const Sidebar: React.FC = () => {
   } = useChat();
 
   const { logout } = useAuth();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showUserMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showUserMenu]);
 
   const totalUnread = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
 
@@ -59,7 +74,106 @@ export const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="hidden md:flex w-20 flex-col justify-between items-center py-4 bg-white dark:bg-[#171324] rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-2xl flex-shrink-0 z-30 select-none transition-all">
+    <>
+    <aside className="hidden md:flex dark:md:hidden w-[72px] flex-col items-center bg-surface border-r border-line flex-shrink-0 z-30 select-none">
+      <div className="h-16 w-full flex items-center justify-center border-b border-line">
+        <img src={appLogo} alt="SB Chat" className="w-8 h-8 object-contain" />
+      </div>
+
+      <nav className="flex-1 flex flex-col items-center gap-2 py-3" aria-label="Main navigation">
+        {navItems.map((item) => {
+          const isActive = activeTab === item.id;
+          return (
+            <Tooltip key={item.id} content={item.label} position="right">
+              <button
+                onClick={() => setActiveTab(item.id)}
+                aria-label={item.label}
+                aria-current={isActive ? 'page' : undefined}
+                className={`relative w-10 h-10 flex items-center justify-center rounded-lg transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-accent [&>svg]:w-[18px] [&>svg]:h-[18px] ${isActive
+                  ? 'bg-accent-soft text-accent'
+                  : 'text-ink-2 hover:bg-surface-2 hover:text-ink'
+                  }`}
+              >
+                {item.icon}
+                {item.badge && item.badge > 0 ? (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] px-1 text-[10px] leading-4 font-semibold text-white text-center bg-accent rounded-full ring-2 ring-surface">
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
+                ) : null}
+              </button>
+            </Tooltip>
+          );
+        })}
+      </nav>
+
+      <div ref={userMenuRef} className="relative w-full flex flex-col items-center gap-1.5 py-3 border-t border-line">
+        {showUserMenu && (
+          <div className="absolute bottom-3 left-full ml-2 w-52 bg-surface border border-line rounded-xl shadow-menu p-1.5 text-sm z-50 animate-fade-in">
+            <div className="px-3 py-2 mb-1 border-b border-line">
+              <p className="text-sm font-medium text-ink truncate">{currentUser.name}</p>
+              <p className="text-xs text-ink-3 capitalize">{currentUser.status || 'online'}</p>
+            </div>
+            <button
+              onClick={() => {
+                openModal('profile');
+                setShowUserMenu(false);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink hover:bg-surface-2 transition-colors"
+            >
+              <UserRound className="w-4 h-4 text-ink-2" />
+              Profile
+            </button>
+            <button
+              onClick={() => {
+                toggleTheme();
+                setShowUserMenu(false);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-ink hover:bg-surface-2 transition-colors"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-ink-2" /> : <Moon className="w-4 h-4 text-ink-2" />}
+              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            </button>
+            <div className="my-1 h-px bg-line" />
+            <button
+              onClick={() => {
+                setShowUserMenu(false);
+                handleLogout();
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-danger hover:bg-red-50 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Log out
+            </button>
+          </div>
+        )}
+
+        <Tooltip content="Profile" position="right">
+          <button
+            onClick={() => openModal('profile')}
+            className="rounded-full focus-visible:outline-2 focus-visible:outline-accent"
+            aria-label="Open profile"
+          >
+            <Avatar
+              src={currentUser.avatar}
+              name={currentUser.name}
+              size="sm"
+              status={currentUser.status}
+              showStatus
+            />
+          </button>
+        </Tooltip>
+        <button
+          onClick={() => setShowUserMenu((prev) => !prev)}
+          aria-label="Account menu"
+          aria-expanded={showUserMenu}
+          className={`w-10 h-7 flex items-center justify-center rounded-lg transition-colors ${showUserMenu ? 'bg-surface-2 text-ink' : 'text-ink-3 hover:bg-surface-2 hover:text-ink'}`}
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
+      </div>
+    </aside>
+
+    <aside className="hidden dark:md:flex w-20 flex-col justify-between items-center py-4 bg-white dark:bg-[#171324] rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-2xl flex-shrink-0 z-30 select-none transition-all">
       {/* Top Section: Standalone Logo & Navigation */}
       <div className="flex flex-col items-center gap-5 w-full">
         {/* Standalone App Logo */}
@@ -131,6 +245,7 @@ export const Sidebar: React.FC = () => {
         </Tooltip>
       </div>
     </aside>
+    </>
   );
 };
 

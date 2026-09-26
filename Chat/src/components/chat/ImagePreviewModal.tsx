@@ -60,24 +60,24 @@ export const ImagePreviewModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-fade-in select-none">
-      <div className="w-full max-w-xl bg-white dark:bg-[#111827] rounded-3xl shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1f2937]/40 dark:bg-slate-900/80 animate-fade-in select-none dark:backdrop-blur-md">
+      <div className="w-full max-w-xl bg-surface dark:bg-[#111827] rounded-xl shadow-menu border border-line dark:border-white/10 overflow-hidden flex flex-col max-h-[90vh] dark:rounded-3xl dark:shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line dark:border-slate-800 bg-surface dark:bg-[#111827]/80 dark:backdrop-blur-md">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-purple-100 dark:bg-purple-950/60 rounded-xl text-purple-600 dark:text-purple-400">
+            <div className="p-2 bg-purple-100 dark:bg-purple-950/60 rounded-xl text-accent dark:text-purple-400">
               <ImageIcon className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Image Preview</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[250px]">
+              <h3 className="text-base font-bold text-ink dark:text-slate-100">Image Preview</h3>
+              <p className="text-xs text-ink-2 dark:text-slate-400 truncate max-w-[250px]">
                 {name} • {size}
               </p>
             </div>
           </div>
           <button
             onClick={handleCancel}
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-1.5 text-ink-3 hover:text-ink dark:hover:text-slate-200 rounded-full hover:bg-surface-2 dark:hover:bg-slate-800 transition-colors dark:text-slate-400"
             title="Close preview"
           >
             <X className="w-5 h-5" />
@@ -89,12 +89,12 @@ export const ImagePreviewModal: React.FC = () => {
           <img
             src={previewUrl}
             alt={name || 'Selected preview'}
-            className="max-w-full max-h-full object-contain rounded-2xl shadow-xl border border-white/10"
+            className="max-w-full max-h-full object-contain rounded-xl shadow-menu border border-white/10 dark:rounded-2xl dark:shadow-xl"
           />
         </div>
 
         {/* Footer Controls */}
-        <div className="p-5 bg-white dark:bg-[#111827] border-t border-slate-100 dark:border-slate-800 space-y-4">
+        <div className="p-5 bg-surface dark:bg-[#111827] border-t border-line dark:border-slate-800 space-y-4">
           {/* Caption Input */}
           <div className="relative">
             <input
@@ -108,7 +108,7 @@ export const ImagePreviewModal: React.FC = () => {
                 }
               }}
               placeholder="Add an optional caption..."
-              className="w-full pl-4 pr-12 py-3 bg-slate-100 dark:bg-[#1a2234] border border-slate-200 dark:border-slate-700 rounded-2xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+              className="w-full pl-4 pr-12 py-3 bg-surface-2 dark:bg-[#1a2234] border border-line dark:border-slate-700 rounded-xl text-xs text-ink dark:text-slate-100 placeholder-ink-3 dark:placeholder-slate-500 outline-none focus:border-accent-2 focus:ring-1 focus:ring-accent/20 transition-all dark:rounded-2xl dark:focus:border-purple-500 dark:focus:ring-purple-500"
             />
           </div>
 
@@ -126,7 +126,7 @@ export const ImagePreviewModal: React.FC = () => {
               type="button"
               onClick={handleSend}
               disabled={isSending}
-              className="flex items-center gap-2 px-6 py-2.5 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-600/20 transition-all disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-2 px-6 py-2.5 bg-accent hover:bg-accent-hover active:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-softer transition-all disabled:opacity-50 cursor-pointer dark:shadow-purple-600/20 dark:bg-purple-600 dark:hover:bg-purple-700 dark:shadow-md"
             >
               {isSending ? (
                 <>

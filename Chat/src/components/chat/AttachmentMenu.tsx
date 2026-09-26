@@ -204,7 +204,7 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
   ];
 
   return (
-    <div className="w-56 bg-white dark:bg-[#111b21] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl p-2 animate-fade-in z-50 select-none">
+    <div className="w-56 bg-surface dark:bg-[#111b21] border border-line dark:border-gray-800 rounded-xl shadow-menu p-2 animate-fade-in z-50 select-none dark:rounded-2xl dark:shadow-xl">
       <input
         type="file"
         ref={fileInputRef}
@@ -231,12 +231,12 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
           <button
             key={item.label}
             onClick={item.onClick}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-2 dark:hover:bg-gray-800 transition-colors text-left"
           >
             <div className={`p-2 rounded-xl ${item.bg} flex items-center justify-center`}>
               {item.icon}
             </div>
-            <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+            <span className="text-xs font-semibold text-ink dark:text-gray-200">
               {item.label}
             </span>
           </button>
