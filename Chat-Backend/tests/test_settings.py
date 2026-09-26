@@ -13,6 +13,13 @@ CHANNEL_LAYERS = {
     },
 }
 
+# Never touch a real Redis from tests (presence, rate limits and call state all use the cache).
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    },
+}
+
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',
 ]

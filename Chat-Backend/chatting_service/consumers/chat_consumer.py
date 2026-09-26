@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 from django.conf import settings
 from django.core.cache import cache
@@ -6,6 +7,11 @@ from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from chatting_service.services import MessageService, PresenceService
 from chatting_service.middleware.jwt_auth_middleware import get_token_from_scope
+
+logger = logging.getLogger(__name__)
+
+MAX_CONNECTIONS_PER_USER = 5
+MAX_CONNECTIONS_PER_IP = 10
 
 
 class ChatConsumer(AsyncJsonWebsocketConsumer):
@@ -17,7 +23,12 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         self.target_user_id = None
         self.user_group = None
         self.group_name = None
-        self.added_to_connection_cache = False
+        self.connection_id = PresenceService.new_connection_id()
+        self.client_ip = None
+        self.presence_registered = False
+        self.presence_closed = False
+        self.presence_lock = asyncio.Lock()
+        self.heartbeat_task = None
 
     async def connect(self):
         self.user = self.scope.get("user")
@@ -35,34 +46,23 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=4001)
             return
 
-        # 1.5. Connection Limiting (B-10)
+        # 1.5. Connection limiting (B-10), counted from live presence connections only,
+        # so an expired/stale connection never holds a slot.
         client = self.scope.get('client')
-        ip_address = client[0] if client else '127.0.0.1'
-        user_conn_key = f"ws_conn_user_{self.user.id}"
-        ip_conn_key = f"ws_conn_ip_{ip_address}"
-        
-        user_conns = cache.get(user_conn_key, 0)
-        ip_conns = cache.get(ip_conn_key, 0)
-
-        if user_conns >= 5 or ip_conns >= 10:
-            print(f"[WS CONNECT] CONNECTION LIMIT EXCEEDED: user_conns={user_conns}, ip_conns={ip_conns}")
+        self.client_ip = client[0] if client else '127.0.0.1'
+        user_conns = await database_sync_to_async(self.presence_service.count_user_connections)(self.user.id)
+        ip_conns = await database_sync_to_async(self.presence_service.count_ip_connections)(self.client_ip)
+        if user_conns >= MAX_CONNECTIONS_PER_USER or ip_conns >= MAX_CONNECTIONS_PER_IP:
+            logger.warning(
+                "[WS CONNECT] Connection limit exceeded for user %s (user_conns=%s, ip_conns=%s)",
+                self.user.id, user_conns, ip_conns,
+            )
             await self.close(code=4003)
             return
 
-        cache.set(user_conn_key, user_conns + 1, timeout=300)
-        cache.set(ip_conn_key, ip_conns + 1, timeout=300)
-        self.added_to_connection_cache = True
-
-        # 2. Join user's personal channel group (for persistent user-level delivery)
+        # 2. Join user's personal channel group. Multiple tabs/devices are allowed, so existing
+        # connections for this user are left untouched.
         self.user_group = f"user_{self.user.id}"
-        # Disconnect any existing connections for this user (prevent duplicate connections - F-06/F-07)
-        await self.channel_layer.group_send(
-            self.user_group,
-            {
-                "type": "disconnect.duplicate",
-                "message": "Connected in another location.",
-            }
-        )
         await self.channel_layer.group_add(self.user_group, self.channel_name)
 
         # 3. If target user id was provided in URL kwargs, validate and join conversation group
@@ -109,22 +109,17 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         if token:
             self.lifecycle_task = asyncio.create_task(self.monitor_token_lifecycle(token))
 
-        # 5. Track presence (increment connection count) and broadcast if became ONLINE
-        is_first_connection = await database_sync_to_async(self.presence_service.user_connected)(self.user.id)
-        if is_first_connection:
-            partner_ids = await database_sync_to_async(self.message_service.get_conversation_partner_ids)(self.user.id)
-            for partner_id in partner_ids:
-                await self.channel_layer.group_send(
-                    f"user_{partner_id}",
-                    {
-                        "type": "presence.event",
-                        "data": {
-                            "type": "presence",
-                            "user_id": self.user.id,
-                            "status": "online",
-                        },
-                    },
-                )
+        # 5. Register this connection for presence; announce ONLINE only on offline -> online.
+        async with self.presence_lock:
+            if self.presence_closed:
+                return
+            became_online = await database_sync_to_async(self.presence_service.user_connected)(
+                self.user.id, self.connection_id, self.client_ip
+            )
+            self.presence_registered = True
+        if became_online:
+            await self.broadcast_presence("online")
+        self.heartbeat_task = asyncio.create_task(self.presence_heartbeat())
 
         # 6. Send connection event
         await self.send_json({
@@ -147,31 +142,16 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         if hasattr(self, "lifecycle_task"):
             self.lifecycle_task.cancel()
 
-        if getattr(self, "added_to_connection_cache", False) and self.user:
-            client = self.scope.get('client')
-            ip_address = client[0] if client else '127.0.0.1'
-            user_conn_key = f"ws_conn_user_{self.user.id}"
-            ip_conn_key = f"ws_conn_ip_{ip_address}"
-            
-            user_conns = cache.get(user_conn_key, 0)
-            if user_conns > 1:
-                cache.set(user_conn_key, user_conns - 1, timeout=300)
-            else:
-                cache.delete(user_conn_key)
-            
-            ip_conns = cache.get(ip_conn_key, 0)
-            if ip_conns > 1:
-                cache.set(ip_conn_key, ip_conns - 1, timeout=300)
-            else:
-                cache.delete(ip_conn_key)
+        was_last_connection = await self.unregister_presence()
 
         if self.user_group:
             await self.channel_layer.group_discard(self.user_group, self.channel_name)
         if self.group_name:
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
-        # Track presence (decrement connection count) and broadcast if became OFFLINE
-        if self.user and self.user.is_authenticated:
+        # End an active voice/video call only when the user's last connection closes; with
+        # multiple tabs allowed, closing an unrelated tab must not hang up a call elsewhere.
+        if was_last_connection and self.user and self.user.is_authenticated:
             # Cleanup any active voice/video call session for this user
             try:
                 from voice_calling.services import CallStateService, CallState
@@ -224,35 +204,63 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             except Exception:
                 pass
 
-            is_last_connection, last_seen_iso = await database_sync_to_async(
-                self.presence_service.user_disconnected
-            )(self.user.id)
+    async def presence_heartbeat(self):
+        """Keeps this connection's presence entry alive while the socket is open."""
+        interval = self.presence_service.HEARTBEAT_INTERVAL
+        try:
+            while True:
+                await asyncio.sleep(interval)
+                async with self.presence_lock:
+                    if self.presence_closed:
+                        return
+                    try:
+                        became_online = await database_sync_to_async(self.presence_service.heartbeat)(
+                            self.user.id, self.connection_id, self.client_ip
+                        )
+                    except Exception:
+                        logger.exception("[PRESENCE] Heartbeat failed for user %s", self.user.id)
+                        continue
+                if became_online:
+                    await self.broadcast_presence("online")
+        except asyncio.CancelledError:
+            pass
 
-            if is_last_connection:
-                partner_ids = await database_sync_to_async(
-                    self.message_service.get_conversation_partner_ids
-                )(self.user.id)
-                for partner_id in partner_ids:
-                    await self.channel_layer.group_send(
-                        f"user_{partner_id}",
-                        {
-                            "type": "presence.event",
-                            "data": {
-                                "type": "presence",
-                                "user_id": self.user.id,
-                                "status": "offline",
-                                "last_seen": last_seen_iso,
-                            },
-                        },
-                    )
+    async def unregister_presence(self) -> bool:
+        """
+        Removes only this connection's presence entry. Safe to call more than once.
+        Returns True when this was the user's last live connection.
+        """
+        async with self.presence_lock:
+            if self.presence_closed:
+                return False
+            self.presence_closed = True
+            registered = self.presence_registered
+        if self.heartbeat_task:
+            self.heartbeat_task.cancel()
+        if not registered or not self.user:
+            return False
+        try:
+            became_offline, last_seen_iso = await database_sync_to_async(self.presence_service.user_disconnected)(
+                self.user.id, self.connection_id, self.client_ip
+            )
+        except Exception:
+            logger.exception("[PRESENCE] Failed to unregister connection for user %s", self.user.id)
+            return True
+        if became_offline:
+            await self.broadcast_presence("offline", last_seen_iso)
+            return True
+        return False
 
-    async def disconnect_duplicate(self, event):
-        await self.send_json({
-            "type": "error",
-            "code": "DUPLICATE_CONNECTION",
-            "message": event["message"],
-        })
-        await self.close(code=4002)
+    async def broadcast_presence(self, status, last_seen=None):
+        partner_ids = await database_sync_to_async(self.message_service.get_conversation_partner_ids)(self.user.id)
+        data = {"type": "presence", "user_id": self.user.id, "status": status}
+        if status == "offline":
+            data["last_seen"] = last_seen
+        for partner_id in partner_ids:
+            await self.channel_layer.group_send(
+                f"user_{partner_id}",
+                {"type": "presence.event", "data": data},
+            )
 
     async def monitor_token_lifecycle(self, token_string):
         from rest_framework_simplejwt.tokens import AccessToken

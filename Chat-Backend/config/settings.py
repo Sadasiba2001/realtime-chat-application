@@ -1,4 +1,5 @@
 import os
+import sys
 import environ
 from pathlib import Path
 from datetime import timedelta
@@ -108,7 +109,10 @@ ASGI_APPLICATION = 'config.asgi.application'
 
 REDIS_URL = env('REDIS_URL', default=None)
 
-if REDIS_URL:
+# The test runner must never read or write a real (possibly shared/production) Redis.
+RUNNING_TESTS = len(sys.argv) > 1 and sys.argv[1] == 'test'
+
+if REDIS_URL and not RUNNING_TESTS:
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
@@ -138,6 +142,18 @@ else:
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         }
     }
+
+# User presence (chatting_service/services/presence_service.py) lives in the default cache.
+# - Redis (REDIS_URL): shared by all backend processes; required for multiple workers/servers.
+# - LocMemCache (no REDIS_URL): process-local; presence is only accurate with a single local
+#   Django process. It is not a distributed presence store.
+# Do not point a local dev server at a Redis shared with another environment: presence
+# (and the channel layer) would then mix users connected to that other environment.
+# Each WebSocket connection expires PRESENCE_CONNECTION_TTL seconds after its last heartbeat.
+PRESENCE_CONNECTION_TTL = env.int('PRESENCE_CONNECTION_TTL', default=90)
+PRESENCE_HEARTBEAT_INTERVAL = env.int('PRESENCE_HEARTBEAT_INTERVAL', default=30)
+if PRESENCE_HEARTBEAT_INTERVAL >= PRESENCE_CONNECTION_TTL:
+    raise ImproperlyConfigured('PRESENCE_HEARTBEAT_INTERVAL must be shorter than PRESENCE_CONNECTION_TTL.')
 
 
 if env('DB_HOST', default=None):

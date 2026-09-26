@@ -435,7 +435,9 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           name: otherName || `User ${otherId}`,
           username: payload.sender_username || '',
           avatar: otherAvatar || '',
-          status: 'online',
+          // Presence is unknown here (the message may have been queued while they were away);
+          // never assume another user is online. Real status arrives via presence events/refresh.
+          status: 'offline',
           about: 'Available',
           phone: '',
         };

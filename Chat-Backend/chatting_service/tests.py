@@ -1,5 +1,6 @@
 from datetime import timedelta
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import TestCase, TransactionTestCase, override_settings
 from django.utils import timezone
 from channels.testing import WebsocketCommunicator
@@ -21,6 +22,7 @@ User = get_user_model()
 )
 class ChatServiceUnitTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.user1 = User.objects.create_user(
             email="user1@example.com",
             username="user1",
@@ -157,27 +159,27 @@ class ChatServiceUnitTests(TestCase):
 
     def test_presence_service_single_and_multi_connection(self):
         user_id = self.user2.id
+        tab1 = PresenceService.new_connection_id()
+        tab2 = PresenceService.new_connection_id()
         # Initially offline
         self.assertFalse(self.presence_service.is_user_online(user_id))
 
         # Tab 1 connects
-        is_first = self.presence_service.user_connected(user_id)
-        self.assertTrue(is_first)
+        self.assertTrue(self.presence_service.user_connected(user_id, tab1))
         self.assertTrue(self.presence_service.is_user_online(user_id))
 
         # Tab 2 connects (multi-tab)
-        is_first_tab2 = self.presence_service.user_connected(user_id)
-        self.assertFalse(is_first_tab2)
+        self.assertFalse(self.presence_service.user_connected(user_id, tab2))
         self.assertTrue(self.presence_service.is_user_online(user_id))
 
         # Tab 1 closes (still 1 tab open)
-        is_last_tab1, last_seen_tab1 = self.presence_service.user_disconnected(user_id)
+        is_last_tab1, last_seen_tab1 = self.presence_service.user_disconnected(user_id, tab1)
         self.assertFalse(is_last_tab1)
         self.assertIsNone(last_seen_tab1)
         self.assertTrue(self.presence_service.is_user_online(user_id))
 
         # Tab 2 closes (0 tabs open -> offline)
-        is_last_tab2, last_seen_tab2 = self.presence_service.user_disconnected(user_id)
+        is_last_tab2, last_seen_tab2 = self.presence_service.user_disconnected(user_id, tab2)
         self.assertTrue(is_last_tab2)
         self.assertIsNotNone(last_seen_tab2)
         self.assertFalse(self.presence_service.is_user_online(user_id))
@@ -189,14 +191,15 @@ class ChatServiceUnitTests(TestCase):
     def test_presence_initial_state_in_conversations(self):
         self.repository.create_message(self.user1, self.user2, "Message")
         # Set user2 as connected
-        self.presence_service.user_connected(self.user2.id)
+        conn = PresenceService.new_connection_id()
+        self.presence_service.user_connected(self.user2.id, conn)
 
         convs = self.service.get_user_conversations(self.user1.id)
         self.assertEqual(len(convs), 1)
         self.assertEqual(convs[0]["user"]["status"], "online")
 
         # Disconnect user2
-        self.presence_service.user_disconnected(self.user2.id)
+        self.presence_service.user_disconnected(self.user2.id, conn)
         convs_after = self.service.get_user_conversations(self.user1.id)
         self.assertEqual(convs_after[0]["user"]["status"], "offline")
         self.assertIsNotNone(convs_after[0]["user"]["last_seen"])
@@ -269,6 +272,7 @@ class ChatServiceUnitTests(TestCase):
 )
 class ChatWebSocketTests(TransactionTestCase):
     def setUp(self):
+        cache.clear()
         self.user_a = User.objects.create_user(
             email="usera@example.com",
             username="usera",

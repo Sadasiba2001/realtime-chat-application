@@ -1,3 +1,4 @@
+import { describeEnvironment, resolveWebSocketBaseUrl } from './backend.config';
 import type {
   WSEventType,
   WSServerEvent,
@@ -17,47 +18,13 @@ class WebSocketService {
   private intentionalDisconnect = false;
 
   private resolveWebSocketUrl(): string {
-    let rawWsUrl = (import.meta.env.VITE_WS_URL || '').trim();
-    const rawBackendUrl = (import.meta.env.VITE_REMOTE_BACKEND_URL || '').trim();
-
-    let baseUrl = '';
-
-    const isBackendRemote = rawBackendUrl && !rawBackendUrl.includes('localhost') && !rawBackendUrl.includes('127.0.0.1');
-    const isWsLocalhost = rawWsUrl.includes('localhost') || rawWsUrl.includes('127.0.0.1');
-
-    if (isBackendRemote && (!rawWsUrl || isWsLocalhost)) {
-      const isHttps = rawBackendUrl.startsWith('https');
-      const wsProtocol = isHttps ? 'wss' : 'ws';
-      const host = rawBackendUrl.replace(/^https?:\/\//, '').replace(/\/+$/, '');
-      baseUrl = `${wsProtocol}://${host}/ws`;
-    } else if (rawWsUrl) {
-      if (isWsLocalhost && rawWsUrl.startsWith('wss://')) {
-        rawWsUrl = rawWsUrl.replace('wss://', 'ws://');
-      }
-      baseUrl = rawWsUrl.replace(/\/+$/, '');
-      if (!baseUrl.endsWith('/ws')) {
-        baseUrl = `${baseUrl}/ws`;
-      }
-    } else if (rawBackendUrl) {
-      const isHttps = rawBackendUrl.startsWith('https');
-      const wsProtocol = isHttps ? 'wss' : 'ws';
-      const host = rawBackendUrl.replace(/^https?:\/\//, '').replace(/\/+$/, '');
-      baseUrl = `${wsProtocol}://${host}/ws`;
+    const { url, source } = resolveWebSocketBaseUrl();
+    const wsUrl = `${url}/chat/`;
+    if (import.meta.env.DEV) {
+      console.log(`[WS CONFIG] Environment: ${describeEnvironment(wsUrl)}`);
+      console.log(`[WS CONFIG] WebSocket URL: ${wsUrl} (from ${source})`);
     }
-
-    if (!baseUrl) {
-      if (typeof window !== 'undefined') {
-        const isHttps = window.location.protocol === 'https:';
-        const wsProtocol = isHttps ? 'wss' : 'ws';
-        const hostname = window.location.hostname || 'localhost';
-        const port = (window.location.port === '5173' || window.location.port === '3000') ? '8000' : (window.location.port || '8000');
-        baseUrl = `${wsProtocol}://${hostname}:${port}/ws`;
-      } else {
-        baseUrl = 'ws://localhost:8000/ws';
-      }
-    }
-
-    return `${baseUrl}/chat/`;
+    return wsUrl;
   }
 
   public connect(token: string): void {
@@ -71,6 +38,10 @@ class WebSocketService {
     }
 
     this.intentionalDisconnect = false;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     this.cleanupSocket();
     this.currentToken = token;
     this.setStatus('connecting');
@@ -78,8 +49,6 @@ class WebSocketService {
     const wsUrl = this.resolveWebSocketUrl();
     console.log('[WS CLIENT] connect() called');
     console.log(`[WS CLIENT] WebSocket URL = ${wsUrl}`);
-    console.log(`[WS CLIENT] token exists = ${Boolean(token)}`);
-    console.log(`[WS CLIENT] token length = ${token ? token.length : 0}`);
     console.log('[WS CLIENT] subprotocol = access_token');
     console.log(`[WebSocket] Connecting to user-level socket... (${wsUrl})`);
 
